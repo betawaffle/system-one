@@ -139,9 +139,12 @@ def main():
     ap.add_argument("--data", default=os.path.expanduser("~/.local/share/ganglion"))
     ap.add_argument("--name", default="prose-v2")
     ap.add_argument("--cap-other", type=int, default=150000, help="max sentences per other speaker/kind")
-    ap.add_argument("--near", type=float, default=0.6, help="shingle share that makes a paraphrased quote")
+    ap.add_argument("--near", type=float, default=0.75, help="shingle share that makes a paraphrased quote")
+    ap.add_argument("--min-near-words", type=int, default=10, help="shorter sentences are never treated as paraphrases")
+    ap.add_argument("--min-quote-words", type=int, default=8, help="shorter sentences are never treated as quotes")
     ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 4) - 4))
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--ignore-blacklist", action="store_true", help="for testing what quote detection alone catches")
     a = ap.parse_args()
     t0 = time.time()
     rng = random.Random(a.seed)
@@ -155,13 +158,15 @@ def main():
 
     black = {}
     bl_path = os.path.join(a.data, "blacklist.jsonl")
-    if os.path.exists(bl_path):
+    if os.path.exists(bl_path) and not a.ignore_blacklist:
         for line in open(bl_path):
             e = json.loads(line)
             black[e["hash"]] = e
 
     rows = db.execute("""SELECT u.hash, u.speaker, u.kind, COALESCE(u.model, ''),
-            GROUP_CONCAT(DISTINCT s.split), MIN(s.source), COALESCE(MIN(s.at), '')
+            GROUP_CONCAT(DISTINCT s.split), MIN(s.source), COALESCE(MIN(s.at), ''),
+            (SELECT unit FROM usources f WHERE f.utterance = u.id ORDER BY f.rowid LIMIT 1),
+            (SELECT turn FROM usources f WHERE f.utterance = u.id ORDER BY f.rowid LIMIT 1)
         FROM utterances u JOIN usources s ON s.utterance = u.id
         WHERE u.speaker != 'harness' GROUP BY u.id""").fetchall()
     rows = [r for r in rows if r[2] in PROSE_KINDS]
@@ -188,12 +193,16 @@ def main():
         cache.commit()
     sents = {h: json.loads(j) for h, j in cache.execute("SELECT hash, sents FROM s")}
 
-    # every sentence, before caps: (text, speaker, kind, model, split, source, at, utterance, i)
+    # every sentence, before caps: (text, speaker, kind, model, split, source, at, utterance, i, unit, turn)
     allsent = []
-    for h, speaker, kind, model, splits, source, at in rows:
+    for h, speaker, kind, model, splits, source, at, unit, turn in rows:
         split = "train" if "train" in splits.split(",") else "test"
         for i, s in enumerate(sents.get(h, [])):
-            allsent.append((s, speaker, kind, model or None, split, source, at, h, i))
+            allsent.append((s, speaker, kind, model or None, split, source, at, h, i, unit, turn))
+
+    def quoted_back(x, y):
+        """True when y (outside) quotes x (ours): same conversation, x said first."""
+        return x[5] == y[5] and x[9] == y[9] and (x[10], x[8]) < (y[10], y[8])
 
     # exact quotes: normalised text -> earliest occurrence per speaker
     first = {}
@@ -205,13 +214,17 @@ def main():
     quotes = []
     drop = set()
     for k, x in enumerate(allsent):
-        if x[1] not in OURS:
-            continue
+        if x[1] not in OURS or len(x[0].split()) < a.min_quote_words:
+            continue  # short common sentences ("Am I missing something?") match by coincidence
         d = first[norm(x[0])]
         others = [sp for sp in d if sp != x[1]]
         if not others:
             continue
         outside = [sp for sp in others if sp not in OURS]
+        for sp in list(outside):
+            if quoted_back(x, allsent[d[sp]]):  # the other speaker quoted us: theirs is the quote
+                drop.add(d[sp])
+                outside.remove(sp)
         earlier = [sp for sp in others if sp in OURS and allsent[d[sp]][6] and x[6] and allsent[d[sp]][6] < x[6]]
         src = outside[0] if outside else (earlier[0] if earlier else None)
         if src:
@@ -224,7 +237,7 @@ def main():
     ours_sh = {}
     index = collections.defaultdict(list)
     for k, x in enumerate(allsent):
-        if x[1] in OURS and k not in drop:
+        if x[1] in OURS and k not in drop and len(x[0].split()) >= a.min_near_words:
             sh = shingles(norm(x[0]))
             if len(sh) >= 3:
                 ours_sh[k] = sh
@@ -240,7 +253,12 @@ def main():
                 hits[k] += 1
         for k, c in hits.items():
             share = c / len(ours_sh[k])
-            if share >= a.near and share > best.get(k, (0,))[0]:
+            if share < a.near:
+                continue
+            if quoted_back(allsent[k], y):  # they quoted us: drop their sentence, keep ours
+                drop.add(j)
+                continue
+            if share > best.get(k, (0,))[0]:
                 best[k] = (share, j)
     for k, (share, j) in best.items():
         x, m = allsent[k], allsent[j]
@@ -255,7 +273,7 @@ def main():
             groups[(x[1], x[2])].append(x)
     out_dir = os.path.join(a.data, "datasets", a.name)
     os.makedirs(out_dir, exist_ok=True)
-    stats = {"rules": RULES, "seed": a.seed, "cap_other": a.cap_other, "near": a.near, "groups": {},
+    stats = {"rules": RULES, "seed": a.seed, "cap_other": a.cap_other, "near": a.near, "min_quote_words": a.min_quote_words, "min_near_words": a.min_near_words, "groups": {},
              "blacklisted_utterances": len(blacklisted),
              "quotes_dropped": collections.Counter(q["match"].split()[0] + "/" + q["speaker"] for q in quotes)}
     chosen = []

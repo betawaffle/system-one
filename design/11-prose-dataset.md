@@ -63,6 +63,11 @@ L4. Quote detection in build_prose.py (rules r2):
    - exact: a sentence of ours whose normalised text (lowercase, letters and digits) also appears from another source is a quote, dropped from ours; between the two of us, the earlier speaker keeps it.
    - paraphrase: a sentence of ours sharing ≥ 60% of its 4-word shingles with one sentence from outside (web, author, model) is dropped too. Not applied between you and me: I restate your words all the time when recording decisions, and those restatements are mine.
    - every drop goes to datasets/<name>/quotes.jsonl with what it matched, so it can be reviewed on the Samples page.
+L4a. Tuned on prose-v2 (2026-11-14):
+   - short common sentences matched by coincidence (your "Am I missing something?" also appears in a PR): quotes need ≥ 8 words; paraphrases ≥ 10 words and ≥ 75% shared shingles.
+   - direction: in tack, DeepSeek quoted you, and your original was being credited to it. Within one conversation the earlier turn owns a sentence and the later one is the quote (dropped from the other speaker instead).
+   - result: 41 drops, 40 of them me quoting you verbatim; the last one is Qwen repeating a tool description I wrote, in another conversation (left as is).
+L4b. With the blacklist switched off (--ignore-blacklist), quote detection alone catches 14 of the read-aloud reply's 26 sentences (13 exact, 1 paraphrase). The other 12 are my framing, short sentences under the length limits, or lines I reworded for speech. So detection is a backstop, and the blacklist is what removes a whole reproduced text.
 L5. Sentences are cached per utterance hash and rules version (datasets/.cache/sentences-r2.sqlite) and segmented in parallel, so rebuilds only segment new text.
 
 ## Decided
