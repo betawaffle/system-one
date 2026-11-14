@@ -34,7 +34,16 @@ G6. So "weak" is two things: geometry (fixable with statistics) and content (lex
 
 ## Results
 
-R1. (pending: first full run started 2026-11-14 20:36 UTC)
+R1. Run invert-command-20261114-203642: 2,376 steps, 67 min on the 8060S (~1.7 s/step), final training loss 0.65 nats/token (perplexity ~1.9; it started at 4.7). Started from commit e3ec848 with uncommitted changes (recorded in its config).
+R2. Held-out (1,000 each), inverter vs retrieving the nearest training command:
+   - test: exact 6.6% vs 0%; token F1 0.734 vs 0.638; char match 0.711 vs 0.632; re-embedded cosine 0.856 (centred)
+   - local (your Claude Code commands): exact 0% vs 0%; token F1 0.360 vs 0.301; char 0.355 vs 0.286; cosine 0.679
+R3. Not memorising: only 3 of 1,000 test outputs are exactly a training command. It beats retrieval on 683 test commands and loses on 147 (local: 641 vs 270).
+R4. Length decides it (test): under 40 chars 59% exact, F1 0.87; 40–100 chars 11% exact, F1 0.81; over 100 chars 0.2% exact, F1 0.66. One 256-number vector holds a short command almost fully; long ones keep their shape and lose specifics.
+R5. What it keeps: the command's structure, flags, pipes, file types, directory prefixes, many identifiers (e.g. `def parse_timestamp`, `crates/ide/src`). What it loses: rare identifiers, line numbers, exact search terms; it substitutes plausible ones (hallucination with the right shape).
+R6. Local commands show the training prior winning: `cd /home/andy/tack-flaky-headings && …` comes back as `cd /testbed && …`, but the topic survives (browser tests, check scripts, grep for idle/send). Embeddings leak topic and structure even out of distribution: not a privacy boundary.
+R7. Answer to the question: yes, quite a lot. Despite the near-collinear geometry (G1), the 17M pooled embedding carries most of a command's content, and more than its nearest neighbour does. The weakness is in how the information is laid out, not in whether it's there.
+R8. Invert tab: 0.3–1.5 s per command on CPU (greedy, no KV cache).
 
 ## Decided
 
