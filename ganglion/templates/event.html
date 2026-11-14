@@ -1,0 +1,57 @@
+{{define "content"}}{{$d := .Data}}{{$r := $d.Row}}{{$ev := $d.Ev}}
+<div class="page-head">
+  <div class="grow">
+    <div class="eyebrow">Event <span class="mono">{{short $r.Hash}}</span></div>
+    <div class="cmd big">{{$ev.Command}}</div>
+    <div class="meta">
+      {{template "exit" $ev.ExitCode}}
+      <span class="tag">{{$r.Program}}</span>
+      {{if $ev.Truncated}}<span class="tag" data-tip="The harness cut the middle of the output">{{template "icon-cut"}}Truncated</span>{{end}}
+      {{if $ev.Cwd}}<span class="mono">{{$ev.Cwd}}</span>{{end}}
+      <span class="num" data-tip="How rare this exit code is across the corpus">{{bits $r.Surprise}} bits</span>
+      <span class="num">{{bytes $d.RawSize}} stored</span>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn ghost" data-copy="{{$ev.Command}}">Copy Command</button>
+    <a class="btn" href="/ettin?event={{$r.Hash}}&amp;f=command">Command In Ettin</a>
+    <a class="btn primary" href="/ettin?event={{$r.Hash}}&amp;f=output">Output In Ettin</a>
+  </div>
+</div>
+
+<div class="stack">
+{{range $i, $s := $d.Sections}}
+  <section class="card">
+    <div class="card-head">
+      <h3>{{$s.Name}}</h3>
+      <div class="row"><span class="muted label num">{{comma $s.Total}} lines · {{bytes $s.Size}}</span><button class="btn ghost" data-wrap="out-{{$i}}" aria-pressed="false">Wrap</button></div>
+    </div>
+    <div class="card-body">
+      {{if eq $s.Total 0}}<p class="muted">Empty.</p>{{else}}
+      <pre class="out" id="out-{{$i}}">{{range $s.Lines}}<span class="ln">{{.}}
+</span>{{end}}</pre>
+      {{if gt $s.Total (len $s.Lines)}}
+      <div class="fold"><span class="muted label left num">{{comma (sub $s.Total (len $s.Lines))}} more lines</span>
+        <button class="btn ghost" data-more="{{$r.Hash}}" data-field="{{$s.Field}}" data-from="{{len $s.Lines}}" data-target="out-{{$i}}">Show More</button>
+        <button class="btn ghost" data-more="{{$r.Hash}}" data-field="{{$s.Field}}" data-from="{{len $s.Lines}}" data-target="out-{{$i}}" data-all="1">Show All</button>
+      </div>{{end}}{{end}}
+    </div>
+  </section>
+{{end}}
+
+  <section class="card">
+    <div class="card-head"><h3>Seen In</h3><span class="muted label">{{comma $r.Sources}} sighting{{if gt $r.Sources 1}}s{{end}}</span></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Source</th><th>Split</th><th>Unit</th><th class="hide-sm">Detail</th></tr></thead>
+        <tbody>
+        {{range $d.Sources}}
+          <tr><td class="mono">{{.Source}}</td><td><span class="tag {{if eq .Split "train"}}accent{{end}}">{{.Split}}</span></td><td class="mono small">{{short .Unit}}{{if .Turn}} · turn {{.Turn}}{{end}}</td>
+          <td class="hide-sm small ink-2">{{with .Meta.repo}}<span class="mono">{{.}}</span>{{end}}{{with .Meta.model}} · {{.}}{{end}}{{with .Meta.started_at}}<span class="mono">{{.}}</span>{{end}}</td></tr>
+        {{end}}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{{end}}

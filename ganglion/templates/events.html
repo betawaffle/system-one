@@ -1,0 +1,79 @@
+{{define "content"}}{{$d := .Data}}{{$f := $d.F}}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Browse</div>
+    <h1>Events</h1>
+    <p><span class="num">{{comma $d.Count}}</span> matching{{if $d.Rows}} · showing <span class="num">{{comma $d.From}}–{{comma $d.To}}</span>{{end}}</p>
+  </div>
+</div>
+
+<form class="card card-pad filters" method="get" action="/events" data-autosubmit>
+  <div class="row">
+    <input class="input grow" name="q" value="{{$f.Q}}" placeholder="Search commands and output" aria-label="Search">
+    <span class="kbd hide-sm" data-tip="Press / to search">/</span>
+    <select class="input" name="program" aria-label="Program">
+      <option value="">All Programs</option>
+      {{range $d.Programs}}<option value="{{.}}" {{if eq . $f.Program}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+    <select class="input" name="source" aria-label="Source">
+      <option value="">All Sources</option>
+      {{range $d.Sources}}<option value="{{.}}" {{if eq . $f.Source}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+    <button class="btn primary" type="submit">Search</button>
+  </div>
+  <div class="row">
+    <div class="seg" role="group" aria-label="Exit code">
+      <a class="segl" href="{{call $d.Exit ""}}" aria-pressed="{{eq $f.Exit ""}}">Any Exit</a>
+      <a class="segl" href="{{call $d.Exit "ok"}}" aria-pressed="{{eq $f.Exit "ok"}}">Exit 0</a>
+      <a class="segl" href="{{call $d.Exit "fail"}}" aria-pressed="{{eq $f.Exit "fail"}}">Failed</a>
+      <a class="segl" href="{{call $d.Exit "none"}}" aria-pressed="{{eq $f.Exit "none"}}">No Exit</a>
+    </div>
+    <div class="seg" role="group" aria-label="Split">
+      <a class="segl" href="{{call $d.Split ""}}" aria-pressed="{{eq $f.Split ""}}">All Splits</a>
+      <a class="segl" href="{{call $d.Split "train"}}" aria-pressed="{{eq $f.Split "train"}}">Train</a>
+      <a class="segl" href="{{call $d.Split "test"}}" aria-pressed="{{eq $f.Split "test"}}">Test</a>
+      <a class="segl" href="{{call $d.Split "local"}}" aria-pressed="{{eq $f.Split "local"}}">Local</a>
+    </div>
+    <div class="seg" role="group" aria-label="Sort">
+      <a class="segl" href="{{call $d.Sort ""}}" aria-pressed="{{eq $f.Sort ""}}">In Order</a>
+      <a class="segl" href="{{call $d.Sort "surprise"}}" aria-pressed="{{eq $f.Sort "surprise"}}" data-tip="Rarest exit codes first">Unusual</a>
+      <a class="segl" href="{{call $d.Sort "long"}}" aria-pressed="{{eq $f.Sort "long"}}">Longest</a>
+    </div>
+    <label class="check"><input type="checkbox" name="truncated" value="1" {{if $f.Trunc}}checked{{end}}> Truncated</label>
+    <label class="check"><input type="checkbox" name="stderr" value="1" {{if $f.Stderr}}checked{{end}}> Has Stderr</label>
+    {{if $f.Exit}}<input type="hidden" name="exit" value="{{$f.Exit}}">{{end}}
+    {{if $f.Split}}<input type="hidden" name="split" value="{{$f.Split}}">{{end}}
+    {{if $f.Sort}}<input type="hidden" name="sort" value="{{$f.Sort}}">{{end}}
+    {{if or $f.Q $f.Program $f.Source $f.Exit $f.Split $f.Trunc $f.Stderr $f.Sort}}<a class="btn ghost" href="/events">Clear All</a>{{end}}
+  </div>
+</form>
+
+{{if not $d.Rows}}
+<div class="card"><div class="empty"><h3>No Matching Events</h3><p>Try fewer filters or other words.</p></div></div>
+{{else}}
+<section class="card">
+  <div class="table-wrap">
+    <table class="table events">
+      <thead><tr><th>Exit</th><th>Command</th><th class="hide-sm">Program</th><th class="r hide-sm">Lines</th><th class="r hide-sm" data-tip="How rare this exit code is, in bits">Surprise</th><th class="r hide-sm">Seen</th></tr></thead>
+      <tbody>
+      {{range $d.Rows}}
+        <tr class="link" data-href="/events/{{.Hash}}">
+          <td>{{template "exit" .ExitCode}}</td>
+          <td><div class="cmdcell"><span class="cmd one">{{.Cmd}}</span>{{if .Trunc}}<span class="tag mini" data-tip="Output was truncated by the harness">{{template "icon-cut"}}</span>{{end}}</div></td>
+          <td class="hide-sm"><span class="tag">{{.Program}}</span></td>
+          <td class="r num hide-sm">{{comma .OutLines}}</td>
+          <td class="r num hide-sm surprise">{{bits .Surprise}}</td>
+          <td class="r num hide-sm">{{if gt .Sources 1}}×{{.Sources}}{{end}}</td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+  </div>
+</section>
+<div class="row pager">
+  {{if gt $d.Page 0}}<a class="btn" href="{{$d.Prev}}" rel="prev">Previous</a>{{end}}
+  <span class="spacer"></span>
+  {{if $d.More}}<a class="btn" href="{{$d.Next}}" rel="next">Next</a>{{end}}
+</div>
+{{end}}
+{{end}}

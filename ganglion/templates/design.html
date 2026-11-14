@@ -1,0 +1,129 @@
+{{define "head"}}<script type="module" src="{{asset "js/design.js"}}"></script>{{end}}
+{{define "content"}}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Design System</div>
+    <h1>The Look</h1>
+    <p>Warm paper in daylight, warm ink at night. Few colours, each with one meaning: teal for things you can act on, red for failure, amber for surprise and magnitude. Monospace only for commands and output.</p>
+  </div>
+</div>
+
+<div class="stack">
+  <section class="card">
+    <div class="card-head"><h3>Surfaces And Ink</h3><span class="muted label">Switch the theme in the top bar</span></div>
+    <div class="card-body grid">
+      {{range $v := (list "--bg" "--surface" "--surface-2" "--line" "--line-2" "--ink" "--ink-2" "--muted")}}
+      <div class="swatch"><i data-var="{{$v}}"></i><b>{{$v}}</b><code data-hex="{{$v}}"></code></div>
+      {{end}}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h3>Meaning</h3><span class="muted label">Status always comes with an icon and a label</span></div>
+    <div class="card-body grid">
+      {{range $v := (list "--accent" "--ok" "--fail" "--warn" "--series-1" "--series-2" "--series-3")}}
+      <div class="swatch"><i data-var="{{$v}}"></i><b>{{$v}}</b><code data-hex="{{$v}}"></code></div>
+      {{end}}
+    </div>
+    <div class="card-body"><p class="ink-2">Series colours are for comparing models side by side (17M, 32M, later our own). They pass the colour-vision checks for any pair, in both themes, and are always labelled directly, since one of each mode's three sits under 3:1 contrast.</p></div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h3>Scales</h3></div>
+    <div class="card-body stack">
+      <div class="stack">
+        <div class="row"><span class="label">Sequential · surprise in bits, 0 to 12+</span></div>
+        <div class="ramp" data-ramp="seq"></div>
+      </div>
+      <div class="stack">
+        <div class="row"><span class="label">Diverging · signed values, neutral midpoint</span></div>
+        <div class="ramp" data-ramp="div"></div>
+      </div>
+      <div class="stack">
+        <span class="label">Token heatmap</span>
+        <div class="tokens" id="demo-tokens"></div>
+      </div>
+      <div class="stack">
+        <span class="label">Slot matrix (8 slots × 32 dims, made-up values)</span>
+        <div class="slotgrid" id="demo-slots"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h3>Type</h3></div>
+    <div class="card-body stack">
+      <h1>Heading One · IBM Plex Sans</h1>
+      <h2>Heading Two</h2>
+      <h3>Heading Three</h3>
+      <p>Body text at 15px. Prose stays in sentence case; labels, buttons and headings use Title Case. Numbers in tables use tabular figures: <span class="num">1,204 · 98.7% · 3.2 bits</span>.</p>
+      <p class="ink-2">Secondary text for descriptions. <span class="muted">Muted text for metadata.</span></p>
+      <div class="cmd">pytest tests/test_api.py -x -q 2>&amp;1 | tail -20</div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h3>Controls</h3></div>
+    <div class="card-body stack">
+      <div class="row">
+        <button class="btn primary">Build Index</button>
+        <button class="btn">Open In Ettin</button>
+        <button class="btn ghost">Clear</button>
+        <button class="btn" disabled>Disabled</button>
+      </div>
+      <div class="row">
+        <input class="input" placeholder="Search commands and output">
+        <select class="input"><option>All Programs</option><option>grep</option></select>
+        <div class="seg" role="group"><button aria-pressed="true">Any</button><button aria-pressed="false">Exit 0</button><button aria-pressed="false">Failed</button></div>
+        <label class="row label"><input type="range" min="1" max="16" value="8"> Slots</label>
+      </div>
+      <div class="row">
+        <span class="tag ok">{{template "icon-ok"}}Exit 0</span>
+        <span class="tag fail">{{template "icon-fail"}}Exit 1</span>
+        <span class="tag">{{template "icon-none"}}No Exit</span>
+        <span class="tag">{{template "icon-cut"}}Truncated</span>
+        <span class="tag accent">train</span>
+        <span class="tag">grep</span>
+        <span class="kbd">/</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h3>Event Card</h3><span class="tag fail">{{template "icon-fail"}}Exit 1</span></div>
+    <div class="card-body stack">
+      <div class="cmd">cd /testbed &amp;&amp; python -m pytest tests/unit/test_parser.py -x -q</div>
+      <div class="meta"><span>python</span><span>·</span><span class="num">42 lines</span><span>·</span><span class="num">1.9 KB</span><span>·</span><span class="surprise num" data-tip="Exit 1 happens in 3.1% of events">5.0 bits</span></div>
+      <pre class="out"><span class="ln">============================= test session starts ==============================</span><span class="ln">collected 12 items</span><span class="ln"></span><span class="ln">tests/unit/test_parser.py ....F</span><span class="ln"></span><span class="ln">E   AssertionError: assert 'a b' == 'a  b'</span></pre>
+      <div class="fold"><span class="muted label left">36 more lines</span><button class="btn ghost">Show More</button><button class="btn ghost">Show All</button></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h3>Distribution</h3><span class="muted label">Hover a bar</span></div>
+    <div class="card-body bars">
+      {{range (list "grep:0.92" "cat:0.81" "python:0.55" "sed:0.31" "ls:0.27" "git:0.12")}}{{$p := split .}}
+      <div class="bar" data-tip="{{index $p 0}} · {{index $p 1}} of the largest"><span class="name">{{index $p 0}}</span><span class="track"><span class="fill" data-w="{{index $p 1}}"></span></span><span class="val">{{index $p 1}}</span></div>
+      {{end}}
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head"><h3>Table</h3></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Source</th><th>Split</th><th class="r">Events</th><th class="r">Units</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">openswe/minisweagent</td><td><span class="tag accent">train</span></td><td class="r num">140,512</td><td class="r num">2,250</td></tr>
+          <tr><td class="mono">openswe/minisweagent</td><td><span class="tag">test</span></td><td class="r num">15,592</td><td class="r num">250</td></tr>
+          <tr><td class="mono">local/claude-code</td><td><span class="tag">local</span></td><td class="r num">2,447</td><td class="r num">31</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="empty"><h3>Nothing Here Yet</h3><p>Empty states say what's missing and how to fill it.</p></div>
+  </section>
+</div>
+{{end}}

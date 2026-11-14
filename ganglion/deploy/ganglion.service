@@ -1,0 +1,15 @@
+[Unit]
+Description=ganglion workbench (system-one)
+Wants=ganglion-worker.service
+After=ganglion-worker.service
+
+[Service]
+# Local settings such as GANGLION_HOSTS=myhost,myhost.example.ts.net go here.
+EnvironmentFile=-%h/.config/ganglion/env
+ExecStart=%h/.local/bin/ganglion
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target

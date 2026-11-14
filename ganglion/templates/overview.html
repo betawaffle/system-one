@@ -1,0 +1,58 @@
+{{define "content"}}{{$d := .Data}}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Corpus</div>
+    <h1>Command Executions</h1>
+    <p>Every event is one command and what came back, stored once by content hash. The same event seen in several trajectories counts once, with each sighting kept as a source.</p>
+  </div>
+  <div class="row"><a class="btn" href="/fields">Base Rates</a><a class="btn primary" href="/events">Browse Events</a></div>
+</div>
+
+{{if eq $d.Totals.Events 0}}
+<div class="card"><div class="empty"><h3>No Events Yet</h3><p>Import a corpus with <code>ganglion import</code>; see the README.</p></div></div>
+{{else}}
+<div class="stack">
+  <div class="grid">
+    <div class="card card-pad stat"><div class="v">{{comma $d.Totals.Events}}</div><div class="k">Distinct Events</div></div>
+    <div class="card card-pad stat"><div class="v">{{comma $d.Totals.Occurrences}}</div><div class="k">Sightings · {{comma $d.Dup}} duplicates ({{pct $d.Dup $d.Totals.Occurrences}})</div></div>
+    <div class="card card-pad stat"><div class="v">{{comma $d.Totals.Units}}</div><div class="k">Trajectories And Sessions</div></div>
+    <div class="card card-pad stat"><div class="v">{{pct $d.Fails $d.ExitTotal}}</div><div class="k">Non-Zero Exit · {{comma $d.Fails}} events</div></div>
+  </div>
+
+  <section class="card">
+    <div class="card-head"><h3>Sources And Splits</h3><span class="muted label">Held-out split is by task, so near-duplicates stay on one side</span></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Source</th><th>Split</th><th class="r">Sightings</th><th class="r">Events</th><th class="r">Units</th></tr></thead>
+        <tbody>
+        {{range $d.Sources}}
+          <tr class="link" data-href="/events?source={{.Source}}&amp;split={{.Split}}"><td class="mono">{{.Source}}</td><td><span class="tag {{if eq .Split "train"}}accent{{end}}">{{.Split}}</span></td><td class="r num">{{comma .Occ}}</td><td class="r num">{{comma .Events}}</td><td class="r num">{{comma .Units}}</td></tr>
+        {{end}}
+        </tbody>
+      </table>
+    </div>
+    {{if gt $d.Totals.Leaked 0}}<div class="card-body"><span class="tag warn">{{template "icon-fail"}}Overlap</span> <span class="ink-2">{{comma $d.Totals.Leaked}} identical events appear in both train and test (e.g. <code>ls</code> in a fresh repo). Expected for trivial commands; worth watching.</span></div>{{end}}
+  </section>
+
+  <div class="grid two">
+    <section class="card">
+      <div class="card-head"><h3>Top Programs</h3><a class="label" href="/fields">All Fields</a></div>
+      <div class="card-body bars">
+        {{range $d.Programs}}{{$w := frac .Count (index $d.Programs 0).Count}}
+        <a class="bar" href="/events?program={{.Value}}" data-tip="{{.Value}} · {{comma .Count}} events"><span class="name">{{.Value}}</span><span class="track"><span class="fill" data-w="{{$w}}"></span></span><span class="val">{{comma .Count}}</span></a>
+        {{end}}
+      </div>
+    </section>
+    <section class="card">
+      <div class="card-head"><h3>Output Size</h3><span class="muted label">Bytes, log scale</span></div>
+      <div class="card-body">
+        <div class="hist" role="img" aria-label="Histogram of output sizes">
+          {{range $d.Lens}}<span class="col" data-tip="{{if eq .Value "0"}}Empty{{else}}{{pow2 .Value}} and up{{end}} · {{comma .Count}} events"><span class="fill" data-h="{{.W}}"></span></span>{{end}}
+        </div>
+        <div class="hist-axis muted"><span>empty</span><span>1 KB</span><span>1 MB</span></div>
+      </div>
+    </section>
+  </div>
+</div>
+{{end}}
+{{end}}

@@ -1,0 +1,53 @@
+{{define "head"}}<script type="module" src="{{asset "js/ettin.js"}}"></script>{{end}}
+{{define "content"}}{{$d := .Data}}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Playground</div>
+    <h1>Ettin</h1>
+    <p>Ettin's encoders on CPU, as they come from Hugging Face. Type or bring an event's command or output; results update as you type.{{if $d.From}} Loaded from event <a class="mono" href="/events/{{$d.From}}">{{short $d.From}}</a>.{{end}}</p>
+  </div>
+  <div class="row">
+    <div class="seg" role="group" aria-label="Model" id="model">
+      <button data-model="17m" aria-pressed="true">17M</button>
+      <button data-model="32m" aria-pressed="false">32M</button>
+      <button data-model="both" aria-pressed="false">Side By Side</button>
+    </div>
+  </div>
+</div>
+
+<div class="ettin" data-mode="{{$d.Mode}}">
+  <div class="tabs" role="tablist" id="modes">
+    <button role="tab" data-mode="surprise" data-tip="How surprised Ettin is by each token, with that token hidden">Surprise</button>
+    <button role="tab" data-mode="tokens" data-tip="How the text splits into tokens">Tokens</button>
+    <button role="tab" data-mode="fill" data-tip="Ettin's guesses for each [MASK]">Fill Mask</button>
+    <button role="tab" data-mode="similarity" data-tip="Cosine similarity of mean-pooled embeddings, one text per line">Similarity</button>
+    <button role="tab" data-mode="nearest" data-tip="Nearest commands in the corpus">Nearest</button>
+  </div>
+
+  <section class="card">
+    <div class="card-body stack">
+      <textarea class="input" id="text" rows="6" spellcheck="false" placeholder="Type a command, some output, or prose…">{{$d.Text}}</textarea>
+      <div class="row">
+        <span class="label">Try</span>
+        <button class="btn ghost chip" data-sample="Traceback (most recent call last):&#10;  File &quot;/testbed/src/parser.py&quot;, line 88, in parse&#10;    return self.table[key]&#10;KeyError: 'encoding'">Traceback</button>
+        <button class="btn ghost chip" data-sample="find . -name &quot;*.py&quot; | xargs grep -n &quot;def parse&quot; | head -20">Pipeline</button>
+        <button class="btn ghost chip" data-sample="The [MASK] command lists the files in a directory.">Fill: Prose</button>
+        <button class="btn ghost chip" data-sample="git [MASK] origin main">Fill: Git</button>
+        <button class="btn ghost chip" data-sample="ls -la&#10;ls -al&#10;find . -maxdepth 1&#10;pytest -x -q&#10;cat README.md">Similarity Set</button>
+        <span class="spacer"></span>
+        <button class="btn ghost" id="insert-mask" data-tip="Insert [MASK] at the cursor">Insert [MASK]</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="status row" id="status" aria-live="polite"><span class="dot" id="ws-dot"></span><span class="muted small" id="status-text">Connecting…</span></div>
+
+  <div id="index-panel" class="card card-pad stack" hidden>
+    <div class="row"><h3>Command Index</h3><span class="muted small" id="index-info"></span><span class="spacer"></span><button class="btn primary" id="index-build">Build Index</button></div>
+    <div class="progress" hidden id="index-progress"><i></i></div>
+    <p class="muted small">Embeds up to 60,000 distinct commands with the selected model (mean-pooled, 08/C6 baseline). Built once per model snapshot and kept on disk.</p>
+  </div>
+
+  <div class="results" id="results"></div>
+</div>
+{{end}}

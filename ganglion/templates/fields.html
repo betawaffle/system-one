@@ -1,0 +1,58 @@
+{{define "content"}}{{$d := .Data}}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Base Rates</div>
+    <h1>Fields</h1>
+    <p>How often each value occurs, computed by software from counts (05/B1). Surprise is −log₂ of a value's share: the rarer it is, the more bits. Click a value to see its events.</p>
+  </div>
+</div>
+
+<div class="stack">
+  <div class="grid">
+    {{range $k, $v := $d.Flags}}
+    <div class="card card-pad stat"><div class="v">{{pct (index $v 0) (index $v 1)}}</div><div class="k">{{if eq $k "truncated"}}Truncated Output{{else if eq $k "error"}}Harness Error{{else}}Has Stderr{{end}} · {{comma (index $v 0)}} events</div></div>
+    {{end}}
+  </div>
+
+  <div class="grid two">
+    <section class="card">
+      <div class="card-head"><h3>Exit Code</h3><span class="muted label">Mechanical field · {{comma $d.ExitTotal}} events</span></div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>Value</th><th>Share</th><th class="r">Events</th><th class="r" data-tip="−log₂ of the share">Bits</th></tr></thead>
+          <tbody>
+          {{range $d.Exits}}
+            <tr class="link" data-href="{{.Href}}">
+              <td>{{if eq .Value "none"}}<span class="tag">{{template "icon-none"}}No Exit</span>{{else if eq .Value "0"}}<span class="tag ok">{{template "icon-ok"}}Exit 0</span>{{else}}<span class="tag fail">{{template "icon-fail"}}Exit {{.Value}}</span>{{end}}</td>
+              <td class="sharecell"><span class="track"><span class="fill" data-w="{{.W}}"></span></span></td>
+              <td class="r num">{{comma .Count}}</td>
+              <td class="r num surprise">{{bits .Bits}}</td>
+            </tr>
+          {{end}}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h3>Program</h3><span class="muted label">Derived by software from the command</span></div>
+      <div class="card-body bars">
+        {{range $d.Programs}}
+        <a class="bar" href="{{.Href}}" data-tip="{{.Value}} · {{comma .Count}} events · {{bits .Bits}} bits"><span class="name">{{.Value}}</span><span class="track"><span class="fill" data-w="{{.W}}"></span></span><span class="val">{{comma .Count}}</span></a>
+        {{end}}
+      </div>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="card-head"><h3>Output Size</h3><span class="muted label">Bytes, each column doubles</span></div>
+    <div class="card-body">
+      <div class="hist tall" role="img" aria-label="Histogram of output sizes">
+        {{range $d.Lens}}<span class="col" data-tip="{{if eq .Value "0"}}Empty{{else}}{{pow2 .Value}} and up{{end}} · {{comma .Count}} events · {{bits .Bits}} bits"><span class="fill" data-h="{{.W}}"></span></span>{{end}}
+      </div>
+      <div class="hist-axis muted"><span>empty</span><span>32 B</span><span>1 KB</span><span>32 KB</span><span>1 MB</span></div>
+      <p class="muted small">Very long outputs are where 06/T6 (long text fields) will bite.</p>
+    </div>
+  </section>
+</div>
+{{end}}

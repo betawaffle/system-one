@@ -1,0 +1,4 @@
+/ganglion/ganglion
+/ganglion/py/.venv/
+__pycache__/
+*.pyc

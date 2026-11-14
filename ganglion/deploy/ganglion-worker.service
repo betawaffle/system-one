@@ -1,0 +1,14 @@
+[Unit]
+Description=ganglion model worker (Ettin on CPU)
+
+[Service]
+WorkingDirectory=%h/projects/system-one/ganglion/py
+ExecStart=%h/projects/system-one/ganglion/py/.venv/bin/python -I %h/projects/system-one/ganglion/py/worker.py --socket %h/.local/share/ganglion/worker.sock --data %h/.local/share/ganglion
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+# Model work shouldn't starve interactive use of the box.
+Nice=5
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,24 @@
+[project]
+name = "ganglion-worker"
+version = "0.1.0"
+description = "Model worker and importers for ganglion"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "torch==2.*",
+  "transformers>=4.48",
+  "tokenizers",
+  "numpy",
+  "pyarrow",
+  "huggingface_hub",
+]
+
+[tool.uv]
+package = false
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
