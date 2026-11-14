@@ -44,6 +44,7 @@ R5. What it keeps: the command's structure, flags, pipes, file types, directory 
 R6. Local commands show the training prior winning: `cd /home/andy/tack-flaky-headings && …` comes back as `cd /testbed && …`, but the topic survives (browser tests, check scripts, grep for idle/send). Embeddings leak topic and structure even out of distribution: not a privacy boundary.
 R7. Answer to the question: yes, quite a lot. Despite the near-collinear geometry (G1), the 17M pooled embedding carries most of a command's content, and more than its nearest neighbour does. The weakness is in how the information is laid out, not in whether it's there.
 R8. Invert tab: 0.3–1.5 s per command on CPU (greedy, no KV cache).
+R9. Prose (user asked), with the command-trained inverter, 8 sentences: every output is command-shaped; only the gist sometimes survives ("The weather is lovely today." → `ls day-of-week.yml`; "I fixed the bug in the parser." → `sleep 15; git diff`; "…look at the test file to understand the failure." → `go test -race -run …`). The decoder's prior is commands, and the centring statistics are commands' too. Re-embedded cosine is high for some wrong outputs (0.81 for weather → yml), so that metric is unreliable out of distribution.
 
 ## Decided
 

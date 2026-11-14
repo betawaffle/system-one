@@ -1,0 +1,39 @@
+{{define "content"}}{{$d := .Data}}{{$r := $d.Row}}{{$u := $d.U}}
+<div class="page-head">
+  <div class="grow">
+    <div class="eyebrow">Utterance <span class="mono">{{short $r.Hash}}</span></div>
+    <div class="meta">
+      <span class="tag who-{{$u.Speaker}}">{{$u.Speaker}}</span>
+      <span class="tag">{{$u.Kind}}</span>
+      {{with $u.Tag}}<span class="tag" data-tip="What marked this as the harness's">{{.}}</span>{{end}}
+      {{with $u.Model}}<span class="mono">{{.}}</span>{{end}}
+      <span class="num">{{comma $r.Words}} words · {{bytes $r.Chars}}</span>
+    </div>
+  </div>
+  <div class="row">
+    <button class="btn ghost" data-copy="{{$u.Text}}">Copy Text</button>
+    <a class="btn" href="/ettin?text={{$u.Text | urlquery}}&amp;mode=surprise">Open In Ettin</a>
+  </div>
+</div>
+
+<div class="stack">
+  <section class="card">
+    <div class="card-head"><h3>Text</h3><button class="btn ghost" data-wrap="utext" aria-pressed="true">Wrap</button></div>
+    <div class="card-body"><pre class="out wrap prose" id="utext">{{$u.Text}}</pre></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h3>Seen In</h3><span class="muted label">{{len $d.Sources}} sighting{{if ne (len $d.Sources) 1}}s{{end}}</span></div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead><tr><th>Source</th><th>Split</th><th>Unit</th><th class="hide-sm">Detail</th></tr></thead>
+        <tbody>
+        {{range $d.Sources}}
+          <tr><td class="mono">{{.Source}}</td><td><span class="tag {{if eq .Split "train"}}accent{{end}}">{{.Split}}</span></td><td class="mono small">{{short .Unit}}{{if .Turn}} · {{.Turn}}{{end}}</td>
+          <td class="hide-sm small ink-2">{{with .Meta.at}}<span class="mono">{{.}}</span>{{end}}{{with .Meta.path}}<span class="mono">{{.}}</span>{{end}}{{with .Meta.instance}}<span class="mono">{{.}}</span>{{end}}</td></tr>
+        {{end}}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{{end}}

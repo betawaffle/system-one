@@ -130,6 +130,7 @@ p { margin: 0; }
 .page > * { min-width: 0; }
 select.input { max-width: 100%; text-overflow: ellipsis; }
 .filters .row > * { min-width: 0; }
+.filters .seg { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
 .grid { display: grid; gap: var(--s4); grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
 .row { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
 .muted { color: var(--muted); }
@@ -309,6 +310,13 @@ a.bar:hover .name { color: var(--accent); }
 .near .cmd.one { max-width: none; }
 .cmd.plain::before { content: none; }
 .stack.tight { gap: var(--s2); }
+.nowrap { white-space: nowrap; }
+.gap-top { margin-top: var(--s5); }
+.preview { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 90ch; color: var(--ink); }
+.out.prose { font-family: var(--sans); font-size: var(--t-md); line-height: 1.6; color: var(--ink); counter-reset: none; }
+.tag.who-human { color: var(--accent); background: var(--accent-wash); border-color: transparent; }
+.tag.who-claude { color: var(--series-1); }
+.tag.who-harness { color: var(--muted); border-style: dashed; }
 .multiples { display: grid; gap: var(--s5); grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
 .hist.short { height: 90px; }
 .diff .miss { display: none; }

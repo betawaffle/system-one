@@ -19,6 +19,8 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /events/{hash}", s.event)
 	m.HandleFunc("GET /api/events/{hash}/lines", s.lines)
 	m.HandleFunc("GET /fields", s.fields)
+	m.HandleFunc("GET /utterances", s.utterances)
+	m.HandleFunc("GET /utterances/{hash}", s.utterance)
 	m.HandleFunc("GET /ettin", s.ettin)
 	m.HandleFunc("GET /design", s.design)
 	m.HandleFunc("GET /ws", s.ws)
@@ -279,6 +281,55 @@ func (s *Server) fields(w http.ResponseWriter, r *http.Request) {
 	s.render(w, "fields", Page{Title: "Fields", Nav: "fields", Data: map[string]any{
 		"Exits": exits, "ExitTotal": exitTotal, "Programs": progs, "Lens": lens, "Flags": flags, "Totals": tot,
 	}})
+}
+
+func (s *Server) utterances(w http.ResponseWriter, r *http.Request) {
+	v := r.URL.Query()
+	f := store.UFilter{Q: strings.TrimSpace(v.Get("q")), Speaker: v.Get("speaker"), Kind: v.Get("kind"), Source: v.Get("source"), Split: v.Get("split"), Limit: 50}
+	page, _ := strconv.Atoi(v.Get("page"))
+	page = max(0, page)
+	rows, more, total, err := s.cfg.Store.Utterances(f, page*f.Limit)
+	if err != nil {
+		s.fail(w, 400, err.Error())
+		return
+	}
+	who, _ := s.cfg.Store.WhoCounts()
+	srcs, _ := s.cfg.Store.USourceNames()
+	kinds := map[string]bool{}
+	var kindList []string
+	for _, c := range who {
+		if !kinds[c.Kind] {
+			kinds[c.Kind] = true
+			kindList = append(kindList, c.Kind)
+		}
+	}
+	link := func(key, val string) string { return "/utterances" + query(v, key, val) }
+	s.render(w, "utterances", Page{Title: "Utterances", Nav: "utterances", Data: map[string]any{
+		"F": f, "Rows": rows, "Total": total, "Page": page, "More": more, "Who": who, "Sources": srcs, "Kinds": kindList,
+		"From": page*f.Limit + 1, "To": page*f.Limit + len(rows),
+		"Prev": link("page", strconv.Itoa(page-1)), "Next": link("page", strconv.Itoa(page+1)),
+		"Speaker": func(val string) string { return link("speaker", val) },
+	}})
+}
+
+func (s *Server) utterance(w http.ResponseWriter, r *http.Request) {
+	row, u, srcs, err := s.cfg.Store.LookupUtterance(r.PathValue("hash"))
+	if err != nil {
+		s.fail(w, 404, "No utterance has that ID.")
+		return
+	}
+	type srcView struct {
+		Source, Unit, Split string
+		Turn                int
+		Meta                map[string]any
+	}
+	var sv []srcView
+	for _, x := range srcs {
+		m := map[string]any{}
+		json.Unmarshal(x.Meta, &m)
+		sv = append(sv, srcView{x.Source, x.Unit, x.Split, x.Turn, m})
+	}
+	s.render(w, "utterance", Page{Title: "Utterance " + row.Hash[:10], Nav: "utterances", Data: map[string]any{"Row": row, "U": u, "Sources": sv}})
 }
 
 func (s *Server) ettin(w http.ResponseWriter, r *http.Request) {

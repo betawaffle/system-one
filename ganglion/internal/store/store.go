@@ -112,6 +112,9 @@ func Open(dir string) (*Store, error) {
 	if _, err := db.Exec(schema); err != nil {
 		return nil, fmt.Errorf("schema: %w", err)
 	}
+	if _, err := db.Exec(utteranceSchema); err != nil {
+		return nil, fmt.Errorf("utterance schema: %w", err)
+	}
 	blobs, err := open("blobs.db")
 	if err != nil {
 		return nil, err
@@ -248,8 +251,8 @@ func (ev *Event) MainText() string {
 }
 
 type importLine struct {
-	Event *Event `json:"event"`
-	Src   Source `json:"src"`
+	Event json.RawMessage `json:"event"`
+	Src   Source          `json:"src"`
 }
 
 // Import reads NDJSON lines of {"event":…, "src":…} and stores them.
@@ -276,42 +279,20 @@ func (s *Store) Import(r io.Reader, progress func(int)) (int, error) {
 		if err := json.Unmarshal(sc.Bytes(), &line); err != nil {
 			return n, fmt.Errorf("line %d: %w", n+1, err)
 		}
-		if line.Event == nil || line.Event.Type != "command_execution" {
-			return n, fmt.Errorf("line %d: unsupported event", n+1)
+		var head struct {
+			Type string `json:"type"`
 		}
-		data, hash, err := Canonical(line.Event)
+		json.Unmarshal(line.Event, &head)
+		switch head.Type {
+		case "command_execution":
+			err = s.importCommand(tx, btx, line)
+		case "utterance":
+			err = s.importUtterance(tx, btx, line)
+		default:
+			err = fmt.Errorf("unsupported event type %q", head.Type)
+		}
 		if err != nil {
-			return n, err
-		}
-		if err := s.putBlob(btx, hash, data); err != nil {
-			return n, err
-		}
-		ev := line.Event
-		out := ev.MainText()
-		var id int64
-		err = tx.QueryRow(`SELECT id FROM events WHERE hash = ?`, hash).Scan(&id)
-		if errors.Is(err, sql.ErrNoRows) {
-			cmd := truncUTF8(ev.Command, 400)
-			res, err := tx.Exec(`INSERT INTO events(hash, program, cmd, exit_code, out_len, out_lines, err_len, truncated, error) VALUES(?,?,?,?,?,?,?,?,?)`,
-				hash, Program(ev.Command), cmd, ev.ExitCode, len(out), lineCount(out), len(str(ev.Stderr)), ev.Truncated, ev.Error != nil)
-			if err != nil {
-				return n, err
-			}
-			id, _ = res.LastInsertId()
-			ftsOut := truncUTF8(out, 8192)
-			if _, err := tx.Exec(`INSERT INTO events_fts(rowid, cmd, out) VALUES(?,?,?)`, id, ev.Command, ftsOut+"\n"+str(ev.Stderr)); err != nil {
-				return n, err
-			}
-		} else if err != nil {
-			return n, err
-		}
-		meta := string(line.Src.Meta)
-		if meta == "" {
-			meta = "{}"
-		}
-		if _, err := tx.Exec(`INSERT OR IGNORE INTO sources(event, source, unit, split, turn, call, meta) VALUES(?,?,?,?,?,?,?)`,
-			id, line.Src.Source, line.Src.Unit, splitOf(line.Src), line.Src.Turn, line.Src.Call, meta); err != nil {
-			return n, err
+			return n, fmt.Errorf("line %d: %w", n+1, err)
 		}
 		n++
 		if n%5000 == 0 {
@@ -333,6 +314,46 @@ func (s *Store) Import(r io.Reader, progress func(int)) (int, error) {
 		return n, err
 	}
 	return n, commit()
+}
+
+func (s *Store) importCommand(tx, btx *sql.Tx, line importLine) error {
+	var ev Event
+	if err := json.Unmarshal(line.Event, &ev); err != nil {
+		return err
+	}
+	data, hash, err := Canonical(&ev)
+	if err != nil {
+		return err
+	}
+	if err := s.putBlob(btx, hash, data); err != nil {
+		return err
+	}
+	out := ev.MainText()
+	var id int64
+	err = tx.QueryRow(`SELECT id FROM events WHERE hash = ?`, hash).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		res, err := tx.Exec(`INSERT INTO events(hash, program, cmd, exit_code, out_len, out_lines, err_len, truncated, error) VALUES(?,?,?,?,?,?,?,?,?)`,
+			hash, Program(ev.Command), truncUTF8(ev.Command, 400), ev.ExitCode, len(out), lineCount(out), len(str(ev.Stderr)), ev.Truncated, ev.Error != nil)
+		if err != nil {
+			return err
+		}
+		id, _ = res.LastInsertId()
+		if _, err := tx.Exec(`INSERT INTO events_fts(rowid, cmd, out) VALUES(?,?,?)`, id, ev.Command, truncUTF8(out, 8192)+"\n"+str(ev.Stderr)); err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`INSERT OR IGNORE INTO sources(event, source, unit, split, turn, call, meta) VALUES(?,?,?,?,?,?,?)`,
+		id, line.Src.Source, line.Src.Unit, splitOf(line.Src), line.Src.Turn, line.Src.Call, metaOf(line.Src))
+	return err
+}
+
+func metaOf(src Source) string {
+	if len(src.Meta) == 0 {
+		return "{}"
+	}
+	return string(src.Meta)
 }
 
 // truncUTF8 cuts s to at most n bytes without splitting a character.

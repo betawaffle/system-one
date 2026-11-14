@@ -10,6 +10,7 @@ dependencies = [
   "numpy",
   "pyarrow",
   "huggingface_hub",
+  "pysbd>=0.3.4",
 ]
 
 [tool.uv]

@@ -1,0 +1,72 @@
+{{define "content"}}{{$d := .Data}}{{$f := $d.F}}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Who Said What</div>
+    <h1>Utterances</h1>
+    <p>Text with its speaker, decided from structure: what you typed, what you pasted, what the harness injected, my replies and thinking, other models, documents and commits. <span class="num">{{comma $d.Total}}</span> matching{{if $d.Rows}} · showing <span class="num">{{comma $d.From}}–{{comma $d.To}}</span>{{end}}.</p>
+  </div>
+</div>
+
+<form class="card card-pad filters" method="get" action="/utterances" data-autosubmit>
+  <div class="row">
+    <input class="input grow" name="q" value="{{$f.Q}}" placeholder="Search text" aria-label="Search">
+    <select class="input" name="kind" aria-label="Kind">
+      <option value="">All Kinds</option>
+      {{range $d.Kinds}}<option value="{{.}}" {{if eq . $f.Kind}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+    <select class="input" name="source" aria-label="Source">
+      <option value="">All Sources</option>
+      {{range $d.Sources}}<option value="{{.}}" {{if eq . $f.Source}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+    <button class="btn primary" type="submit">Search</button>
+  </div>
+  <div class="row">
+    <div class="seg" role="group" aria-label="Speaker">
+      {{range $s := (list "" "human" "claude" "model" "author" "harness" "subagent" "mixed")}}
+      <a class="segl" href="{{call $d.Speaker $s}}" aria-pressed="{{eq $s $f.Speaker}}">{{if eq $s ""}}Anyone{{else if eq $s "human"}}You{{else if eq $s "claude"}}Claude{{else if eq $s "model"}}Other Models{{else if eq $s "author"}}Authors{{else if eq $s "harness"}}Harness{{else if eq $s "subagent"}}Subagents{{else}}Mixed{{end}}</a>
+      {{end}}
+    </div>
+    {{if $f.Speaker}}<input type="hidden" name="speaker" value="{{$f.Speaker}}">{{end}}
+    {{if or $f.Q $f.Speaker $f.Kind $f.Source}}<a class="btn ghost" href="/utterances">Clear All</a>{{end}}
+  </div>
+</form>
+
+{{if not $d.Rows}}
+<div class="card"><div class="empty"><h3>No Matching Utterances</h3><p>Try fewer filters or other words.</p></div></div>
+{{else}}
+<section class="card">
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Who</th><th>Text</th><th class="r hide-sm">Words</th><th class="hide-sm">When</th></tr></thead>
+      <tbody>
+      {{range $d.Rows}}
+        <tr class="link" data-href="/utterances/{{.Hash}}">
+          <td class="nowrap"><span class="tag who-{{.Speaker}}">{{.Speaker}}</span> <span class="tag">{{.Kind}}{{if .Tag}} · {{.Tag}}{{end}}</span></td>
+          <td><div class="preview">{{.Preview}}</div></td>
+          <td class="r num hide-sm">{{comma .Words}}</td>
+          <td class="hide-sm small muted mono nowrap">{{if .At}}{{slice .At 0 10}}{{end}}</td>
+        </tr>
+      {{end}}
+      </tbody>
+    </table>
+  </div>
+</section>
+<div class="row pager">
+  {{if gt $d.Page 0}}<a class="btn" href="{{$d.Prev}}" rel="prev">Previous</a>{{end}}
+  <span class="spacer"></span>
+  {{if $d.More}}<a class="btn" href="{{$d.Next}}" rel="next">Next</a>{{end}}
+</div>
+{{end}}
+
+<section class="card gap-top">
+  <div class="card-head"><h3>By Speaker And Kind</h3><span class="muted label">distinct texts</span></div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th>Speaker</th><th>Kind</th><th class="r">Texts</th><th class="r">Size</th></tr></thead>
+      <tbody>
+      {{range $d.Who}}<tr class="link" data-href="/utterances?speaker={{.Speaker}}&amp;kind={{.Kind}}"><td><span class="tag who-{{.Speaker}}">{{.Speaker}}</span></td><td>{{.Kind}}</td><td class="r num">{{comma .N}}</td><td class="r num">{{bytes .Chars}}</td></tr>{{end}}
+      </tbody>
+    </table>
+  </div>
+</section>
+{{end}}
