@@ -1,32 +1,45 @@
 """Build a prose sentence dataset from ganglion's utterances (design/11).
 
-Usage: python -I build_prose.py [--data DIR] [--name prose-v1] [--cap-other N]
+Usage: python -I build_prose.py [--data DIR] [--name prose-v2] [--cap-other N] [--jobs N]
 
 Reads utterances (index.db + blobs), keeps the kinds that are someone's own
 prose, strips Markdown structure that isn't prose, splits into sentences and
 filters them with simple, computable rules. The rules only reject what clearly
 isn't a sentence; judging *quality* beyond that is a model's job, later.
 
-Output in <data>/datasets/<name>/: train.jsonl, test.jsonl (one sentence per
-line with provenance: utterance hash, speaker, kind, source, model), and
-stats.json. Splits follow the utterance's sighting split (by session or
-document); a sentence seen in train never appears in test.
+Who a sentence belongs to (11/Q1–Q4):
+  - Blacklisted utterances (<data>/blacklist.jsonl; Claude's own output only)
+    contribute nothing.
+  - A sentence of ours (human, claude, subagent) that also appears, normalised,
+    in another source is a quote, not ours: dropped from ours. Between the two of
+    us, the earlier speaker keeps it.
+  - A sentence of ours that shares most of its 4-word shingles with one sentence
+    from another source is a paraphrased quote: dropped from ours too.
+  Dropped sentences go to quotes.jsonl with what they matched, for review.
 
-Our own text (human, claude, subagent) is kept in full. Other models' and
-third-party text is capped per speaker/kind (--cap-other) so it can't drown ours.
+Output in <data>/datasets/<name>/: train.jsonl, test.jsonl (one sentence per
+line, with provenance), quotes.jsonl, stats.json. Splits follow the utterance's
+sighting split; a sentence seen in train never appears in test. Our own text is
+kept in full; other speakers are capped per speaker/kind (--cap-other).
+
+Sentences are cached per utterance hash and rules version in
+<data>/datasets/.cache/sentences-<RULES>.sqlite, so rebuilds only segment new text.
 """
 import argparse
 import collections
+import hashlib
 import json
+import multiprocessing as mp
 import os
 import random
 import re
 import sqlite3
+import time
 import warnings
 
 warnings.filterwarnings("ignore", category=SyntaxWarning)
-import pysbd  # noqa: E402
 
+RULES = "r2"  # bump when prose_blocks / clean / is_sentence change
 PROSE_KINDS = {"typed", "pasted", "reply", "thinking", "summary", "document", "commit", "issue", "prompt"}
 OURS = {"human", "claude", "subagent"}
 
@@ -37,39 +50,27 @@ LIST = re.compile(r"^\s*(?:[-*+]|\d+[.)]|[A-Z]\d+[a-z]?\.)\s+")
 URL = re.compile(r"https?://\S+")
 
 
-def prose_blocks(text, speaker):
+def prose_blocks(text):
     """Paragraph-ish blocks of prose from Markdown-ish text."""
     text = FENCE.sub("\n", text)
     out = []
     for para in re.split(r"\n\s*\n", text):
-        lines = []
-        for line in para.split("\n"):
-            s = line.strip()
-            if not s:
-                continue
-            if s.startswith(">"):
-                # quoted text is someone else's words (often mine, quoted back to me)
-                continue
-            if s.startswith(("#", "|", "<", "$ ", "    ")) or line.startswith("    ") or line.startswith("\t"):
-                continue
-            s = LIST.sub("", s)
-            lines.append(s)
-        if lines:
-            raw = [l for l in para.split("\n") if l.strip() and not l.strip().startswith(">")]
-            if any(LIST.match(l) for l in raw):
-                # list items are separate units; a wrapped item's continuation lines join it
-                items = []
-                for l in raw:
-                    s = l.strip()
-                    if s.startswith(("#", "|", "<", "$ ")):
-                        continue
-                    if LIST.match(l) or not items:
-                        items.append(LIST.sub("", s))
-                    else:
-                        items[-1] += " " + s
-                out.extend(items)
-            else:
-                out.append(" ".join(lines))
+        raw = [l for l in para.split("\n") if l.strip() and not l.strip().startswith(">")]
+        keep = lambda l: not (l.strip().startswith(("#", "|", "<", "$ ")) or l.startswith(("    ", "\t")))
+        raw = [l for l in raw if keep(l)]
+        if not raw:
+            continue
+        if any(LIST.match(l) for l in raw):
+            # list items are separate units; a wrapped item's continuation lines join it
+            items = []
+            for l in raw:
+                if LIST.match(l) or not items:
+                    items.append(LIST.sub("", l.strip()))
+                else:
+                    items[-1] += " " + l.strip()
+            out.extend(items)
+        else:
+            out.append(" ".join(l.strip() for l in raw))
     return out
 
 
@@ -88,8 +89,7 @@ def is_sentence(s):
     if URL.search(s) and len(URL.sub("", s).split()) < 4:
         return False
     nonspace = [c for c in s if not c.isspace()]
-    letters = sum(c.isalpha() for c in nonspace)
-    if letters / len(nonspace) < 0.65:
+    if sum(c.isalpha() for c in nonspace) / len(nonspace) < 0.65:
         return False
     plain = [w for w in words if re.fullmatch(r"[A-Za-z][a-z']*[,.;:!?]?", w)]
     if len(plain) / len(words) < 0.5:  # mostly identifiers, paths or code
@@ -103,70 +103,186 @@ def is_sentence(s):
     return True
 
 
+_seg = None
+
+
+def sentences_of(text):
+    global _seg
+    if _seg is None:
+        import pysbd
+        _seg = pysbd.Segmenter(language="en", clean=False)
+    out = []
+    for block in prose_blocks(text):
+        for raw in _seg.segment(block):
+            s = clean(raw)
+            if is_sentence(s):
+                out.append(s)
+    return out
+
+
+def _work(item):
+    h, text = item
+    return h, sentences_of(text)
+
+
+def norm(s):
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", s.lower()).split())
+
+
+def shingles(n_text, k=4):
+    w = n_text.split()
+    return {hash(" ".join(w[i:i + k])) for i in range(len(w) - k + 1)}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default=os.path.expanduser("~/.local/share/ganglion"))
-    ap.add_argument("--name", default="prose-v1")
+    ap.add_argument("--name", default="prose-v2")
     ap.add_argument("--cap-other", type=int, default=150000, help="max sentences per other speaker/kind")
+    ap.add_argument("--near", type=float, default=0.6, help="shingle share that makes a paraphrased quote")
+    ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 4) - 4))
     ap.add_argument("--seed", type=int, default=1)
     a = ap.parse_args()
+    t0 = time.time()
     rng = random.Random(a.seed)
-    seg = pysbd.Segmenter(language="en", clean=False)
     db = sqlite3.connect(f"file:{a.data}/index.db?mode=ro", uri=True)
-    blobs = sqlite3.connect(f"file:{a.data}/blobs.db?mode=ro", uri=True)
+    # read from the pool's feeder thread too while segmenting; read-only, one reader at a time
+    blobs = sqlite3.connect(f"file:{a.data}/blobs.db?mode=ro", uri=True, check_same_thread=False)
 
     def blob(h):
         r = blobs.execute("SELECT data FROM blobs WHERE hash = ?", (h,)).fetchone()
-        if r:
-            return r[0]
-        return open(os.path.join(a.data, "blobs", h[:2], h), "rb").read()
+        return r[0] if r else open(os.path.join(a.data, "blobs", h[:2], h), "rb").read()
+
+    black = {}
+    bl_path = os.path.join(a.data, "blacklist.jsonl")
+    if os.path.exists(bl_path):
+        for line in open(bl_path):
+            e = json.loads(line)
+            black[e["hash"]] = e
 
     rows = db.execute("""SELECT u.hash, u.speaker, u.kind, COALESCE(u.model, ''),
-            GROUP_CONCAT(DISTINCT s.split), MIN(s.source)
+            GROUP_CONCAT(DISTINCT s.split), MIN(s.source), COALESCE(MIN(s.at), '')
         FROM utterances u JOIN usources s ON s.utterance = u.id
         WHERE u.speaker != 'harness' GROUP BY u.id""").fetchall()
-    by_group = collections.defaultdict(list)  # (speaker, kind) -> [(sentence, split, prov)]
-    seen_utt = collections.Counter()
-    for h, speaker, kind, model, splits, source in rows:
-        if kind not in PROSE_KINDS:
-            continue
-        u = json.loads(blob(h))
-        split = "train" if "train" in splits.split(",") else "test"
-        n = 0
-        for block in prose_blocks(u["text"], speaker):
-            for raw in seg.segment(block):
-                s = clean(raw)
-                if is_sentence(s):
-                    by_group[(speaker, kind)].append((s, split, {"utterance": h, "speaker": speaker, "kind": kind,
-                                                                  "model": model or None, "source": source, "i": n}))
-                    n += 1
-        seen_utt[(speaker, kind)] += 1
+    rows = [r for r in rows if r[2] in PROSE_KINDS]
+    blacklisted = [r for r in rows if r[0] in black]
+    rows = [r for r in rows if r[0] not in black]
 
+    # sentences, cached by utterance hash
+    cache_dir = os.path.join(a.data, "datasets", ".cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    cache = sqlite3.connect(os.path.join(cache_dir, f"sentences-{RULES}.sqlite"))
+    cache.execute("CREATE TABLE IF NOT EXISTS s (hash TEXT PRIMARY KEY, sents TEXT NOT NULL)")
+    have = {h for (h,) in cache.execute("SELECT hash FROM s")}
+    todo = [r[0] for r in rows if r[0] not in have]
+    print(json.dumps({"utterances": len(rows), "cached": len(rows) - len(todo), "to_segment": len(todo), "jobs": a.jobs}), flush=True)
+    if todo:
+        def items():
+            for h in todo:
+                yield h, json.loads(blob(h))["text"]
+        with mp.Pool(a.jobs) as pool:
+            for n, (h, sents) in enumerate(pool.imap_unordered(_work, items(), chunksize=16)):
+                cache.execute("INSERT OR REPLACE INTO s VALUES (?, ?)", (h, json.dumps(sents, ensure_ascii=False)))
+                if n % 5000 == 0:
+                    cache.commit()
+        cache.commit()
+    sents = {h: json.loads(j) for h, j in cache.execute("SELECT hash, sents FROM s")}
+
+    # every sentence, before caps: (text, speaker, kind, model, split, source, at, utterance, i)
+    allsent = []
+    for h, speaker, kind, model, splits, source, at in rows:
+        split = "train" if "train" in splits.split(",") else "test"
+        for i, s in enumerate(sents.get(h, [])):
+            allsent.append((s, speaker, kind, model or None, split, source, at, h, i))
+
+    # exact quotes: normalised text -> earliest occurrence per speaker
+    first = {}
+    for k, x in enumerate(allsent):
+        key = norm(x[0])
+        d = first.setdefault(key, {})
+        if x[1] not in d or (x[6] and x[6] < allsent[d[x[1]]][6]):
+            d[x[1]] = k
+    quotes = []
+    drop = set()
+    for k, x in enumerate(allsent):
+        if x[1] not in OURS:
+            continue
+        d = first[norm(x[0])]
+        others = [sp for sp in d if sp != x[1]]
+        if not others:
+            continue
+        outside = [sp for sp in others if sp not in OURS]
+        earlier = [sp for sp in others if sp in OURS and allsent[d[sp]][6] and x[6] and allsent[d[sp]][6] < x[6]]
+        src = outside[0] if outside else (earlier[0] if earlier else None)
+        if src:
+            drop.add(k)
+            m = allsent[d[src]]
+            quotes.append({"text": x[0], "speaker": x[1], "kind": x[2], "utterance": x[7], "match": "exact",
+                           "matched_text": m[0], "matched_speaker": m[1], "matched_source": m[5], "matched_utterance": m[7]})
+
+    # paraphrased quotes: ours vs everything outside, by shared 4-word shingles
+    ours_sh = {}
+    index = collections.defaultdict(list)
+    for k, x in enumerate(allsent):
+        if x[1] in OURS and k not in drop:
+            sh = shingles(norm(x[0]))
+            if len(sh) >= 3:
+                ours_sh[k] = sh
+                for g in sh:
+                    index[g].append(k)
+    best = {}
+    for j, y in enumerate(allsent):
+        if y[1] in OURS:
+            continue
+        hits = collections.Counter()
+        for g in shingles(norm(y[0])):
+            for k in index.get(g, ()):
+                hits[k] += 1
+        for k, c in hits.items():
+            share = c / len(ours_sh[k])
+            if share >= a.near and share > best.get(k, (0,))[0]:
+                best[k] = (share, j)
+    for k, (share, j) in best.items():
+        x, m = allsent[k], allsent[j]
+        drop.add(k)
+        quotes.append({"text": x[0], "speaker": x[1], "kind": x[2], "utterance": x[7], "match": f"near {share:.2f}",
+                       "matched_text": m[0], "matched_speaker": m[1], "matched_source": m[5], "matched_utterance": m[7]})
+
+    # caps, duplicates, write
+    groups = collections.defaultdict(list)
+    for k, x in enumerate(allsent):
+        if k not in drop:
+            groups[(x[1], x[2])].append(x)
     out_dir = os.path.join(a.data, "datasets", a.name)
     os.makedirs(out_dir, exist_ok=True)
+    stats = {"rules": RULES, "seed": a.seed, "cap_other": a.cap_other, "near": a.near, "groups": {},
+             "blacklisted_utterances": len(blacklisted),
+             "quotes_dropped": collections.Counter(q["match"].split()[0] + "/" + q["speaker"] for q in quotes)}
     chosen = []
-    stats = {"groups": {}, "rules": "see build_prose.py is_sentence/prose_blocks", "seed": a.seed, "cap_other": a.cap_other}
-    for (speaker, kind), items in sorted(by_group.items()):
+    for (speaker, kind), items in sorted(groups.items()):
         total = len(items)
         if speaker not in OURS and total > a.cap_other:
             items = rng.sample(items, a.cap_other)
         chosen += items
-        stats["groups"][f"{speaker}/{kind}"] = {"utterances": seen_utt[(speaker, kind)], "sentences": total, "kept": len(items)}
-
-    # exact-duplicate sentences: keep one; train wins over test
-    best = {}
-    for s, split, prov in chosen:
-        if s not in best or (split == "train" and best[s][0] == "test"):
-            best[s] = (split, prov)
+        stats["groups"][f"{speaker}/{kind}"] = {"sentences": total, "kept": len(items)}
+    keep = {}
+    for x in chosen:
+        if x[0] not in keep or (x[4] == "train" and keep[x[0]][4] == "test"):
+            keep[x[0]] = x
     counts = collections.Counter()
     with open(os.path.join(out_dir, "train.jsonl"), "w") as tr, open(os.path.join(out_dir, "test.jsonl"), "w") as te:
-        for s, (split, prov) in best.items():
-            (tr if split == "train" else te).write(json.dumps({"text": s, **prov}, ensure_ascii=False) + "\n")
-            counts[(split, prov["speaker"])] += 1
-    stats["written"] = {f"{k[0]}/{k[1]}": v for k, v in sorted(counts.items())}
-    stats["duplicates_dropped"] = len(chosen) - len(best)
+        for s, x in keep.items():
+            rec = {"text": s, "utterance": x[7], "speaker": x[1], "kind": x[2], "model": x[3], "source": x[5], "i": x[8]}
+            (tr if x[4] == "train" else te).write(json.dumps(rec, ensure_ascii=False) + "\n")
+            counts[f"{x[4]}/{x[1]}"] += 1
+    with open(os.path.join(out_dir, "quotes.jsonl"), "w") as qf:
+        for q in quotes:
+            qf.write(json.dumps(q, ensure_ascii=False) + "\n")
+    stats["written"] = dict(sorted(counts.items()))
+    stats["duplicates_dropped"] = len(chosen) - len(keep)
+    stats["seconds"] = round(time.time() - t0)
     json.dump(stats, open(os.path.join(out_dir, "stats.json"), "w"), indent=2)
-    print(json.dumps(stats, indent=2))
+    print(json.dumps(stats), flush=True)
 
 
 if __name__ == "__main__":

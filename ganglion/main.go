@@ -34,6 +34,10 @@ func main() {
 		importCmd(defaultData, os.Args[2:])
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "blacklist" {
+		blacklistCmd(defaultData, os.Args[2:])
+		return
+	}
 
 	addr := flag.String("addr", ":7171", "listen address")
 	data := flag.String("data", defaultData, "data directory")
@@ -78,6 +82,50 @@ func main() {
 	log.Printf("ganglion listening on %s", *addr)
 	if err := hs.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
+	}
+}
+
+// blacklistCmd: ganglion blacklist list | ganglion blacklist add HASH-PREFIX REASON [-by NAME]
+func blacklistCmd(defaultData string, args []string) {
+	fl := flag.NewFlagSet("blacklist", flag.ExitOnError)
+	data := fl.String("data", defaultData, "data directory")
+	by := fl.String("by", "claude", "who is adding the entry")
+	// Go's flag package stops at the first positional argument; let flags go anywhere.
+	var flags, pos []string
+	for i := 0; i < len(args); i++ {
+		if strings.HasPrefix(args[i], "-") && i+1 < len(args) {
+			flags = append(flags, args[i], args[i+1])
+			i++
+		} else {
+			pos = append(pos, args[i])
+		}
+	}
+	fl.Parse(append(flags, pos...))
+	st, err := store.Open(*data)
+	if err != nil {
+		log.Fatalf("open store: %v", err)
+	}
+	defer st.Close()
+	switch fl.Arg(0) {
+	case "list":
+		bl, err := st.Blacklist()
+		if err != nil {
+			log.Fatal(err)
+		}
+		for _, e := range bl {
+			fmt.Printf("%s  %s  %s  (%s)\n", e.Hash[:12], e.Added, e.Reason, e.By)
+		}
+	case "add":
+		if fl.NArg() < 3 {
+			log.Fatal("usage: ganglion blacklist add HASH-PREFIX REASON")
+		}
+		e, row, err := st.AddToBlacklist(fl.Arg(1), strings.Join(fl.Args()[2:], " "), *by)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("blacklisted %s (%s %s, %d words): %s\n", e.Hash[:12], row.Speaker, row.Kind, row.Words, e.Reason)
+	default:
+		log.Fatal("usage: ganglion blacklist list | add HASH-PREFIX REASON")
 	}
 }
 

@@ -389,7 +389,12 @@ func (s *Server) utterance(w http.ResponseWriter, r *http.Request) {
 		json.Unmarshal(x.Meta, &m)
 		sv = append(sv, srcView{x.Source, x.Unit, x.Split, x.Turn, m})
 	}
-	s.render(w, "utterance", Page{Title: "Utterance " + row.Hash[:10], Nav: "utterances", Data: map[string]any{"Row": row, "U": u, "Sources": sv}})
+	bl, _ := s.cfg.Store.Blacklist()
+	var black *store.BlacklistEntry
+	if e, ok := bl[row.Hash]; ok {
+		black = &e
+	}
+	s.render(w, "utterance", Page{Title: "Utterance " + row.Hash[:10], Nav: "utterances", Data: map[string]any{"Row": row, "U": u, "Sources": sv, "Black": black}})
 }
 
 func (s *Server) ettin(w http.ResponseWriter, r *http.Request) {

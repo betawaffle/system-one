@@ -312,6 +312,7 @@ a.bar:hover .name { color: var(--accent); }
 .stack.tight { gap: var(--s2); }
 .nowrap { white-space: nowrap; }
 .gap-top { margin-top: var(--s5); }
+.notice-fail { background: var(--fail-wash); border-color: color-mix(in srgb, var(--fail) 25%, transparent); }
 .prose-text { white-space: pre-wrap; word-break: break-word; line-height: 1.65; max-height: 28em; overflow: auto; max-width: 80ch; }
 .prose-text.sentence { font-size: var(--t-lg); line-height: 1.5; max-height: none; }
 .sample .src { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

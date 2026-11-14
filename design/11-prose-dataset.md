@@ -54,7 +54,20 @@ S1. /samples: random draws from any dataset (utterance sources, command sources,
 S2. The seed is in the address, so a draw can be revisited or shared; "n" draws again. New datasets appear automatically (any datasets/<name>/<split>.jsonl, any new source).
 S3. Possible next: rating samples as you read them (good / bad / not prose), stored as labels with the sample's provenance (07/A4). Not built; behaviour to agree first.
 
+## Laundering: quotes and the blacklist (2026-11-14)
+
+L1. Found by the user: I read a fineweb document aloud on request, so its text sat in a claude/reply and would have entered the dataset as my prose ("now it has been laundered into your output"). I'd also edited it lightly for speech ("Ms. Manners" → "Miss Manners", reflowed list), so exact matching alone misses parts.
+L2. Blacklist: <data>/blacklist.jsonl, append-only, one entry per utterance (hash, reason, when, by); a later entry for the same hash replaces an earlier one. Only Claude's own output (claude, subagent) can be listed. `ganglion blacklist add HASH-PREFIX REASON [-by NAME]`, `ganglion blacklist list`. Blacklisted utterances contribute nothing to derived datasets, and their page says so.
+L3. First entry: d711574bd3 (the read-aloud reply), at the user's request.
+L4. Quote detection in build_prose.py (rules r2):
+   - exact: a sentence of ours whose normalised text (lowercase, letters and digits) also appears from another source is a quote, dropped from ours; between the two of us, the earlier speaker keeps it.
+   - paraphrase: a sentence of ours sharing ≥ 60% of its 4-word shingles with one sentence from outside (web, author, model) is dropped too. Not applied between you and me: I restate your words all the time when recording decisions, and those restatements are mine.
+   - every drop goes to datasets/<name>/quotes.jsonl with what it matched, so it can be reviewed on the Samples page.
+L5. Sentences are cached per utterance hash and rules version (datasets/.cache/sentences-r2.sqlite) and segmented in parallel, so rebuilds only segment new text.
+
 ## Decided
+
+D50. Detect quotes and paraphrases of other sources in our text, and keep a blacklist for Claude's own output; the read-aloud reply is its first entry. (user: "Add it and also implement a blacklist for your own output, then add this to the blacklist.")
 
 D48. fineweb-edu may be used for training, marked as its source; the user validates quality themselves. Answers Q32. (user: "The rule about testing is just for quality purposes. I want to validate quality myself.")
 D49. A page to view random samples from fineweb and future datasets. (user)

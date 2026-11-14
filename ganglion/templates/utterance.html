@@ -17,6 +17,7 @@
 </div>
 
 <div class="stack">
+  {{with $d.Black}}<section class="card card-pad notice-fail"><div class="row"><span class="tag fail">{{template "icon-fail"}}Blacklisted</span><span>Left out of every derived dataset: {{.Reason}}</span><span class="muted small mono">{{.Added}} · {{.By}}</span></div></section>{{end}}
   <section class="card">
     <div class="card-head"><h3>Text</h3><button class="btn ghost" data-wrap="utext" aria-pressed="true">Wrap</button></div>
     <div class="card-body"><pre class="out wrap prose" id="utext">{{$u.Text}}</pre></div>
