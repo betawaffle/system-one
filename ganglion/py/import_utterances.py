@@ -270,6 +270,27 @@ def openswe():
                         emit("model", "thinking", m.get("reasoning_content"), call=1, model=model, **common)
 
 
+FINEWEB = "/data/corpora/fineweb-edu/000_00000.parquet"
+
+
+def fineweb(every=15):
+    """fineweb-edu sample/10BT shard 000_00000 (web pages kept by fineweb's educational
+    quality classifier). Speaker web; a deterministic 1-in-`every` sample by document ID.
+    Never print this text into a Claude session (the corpora README asks for summaries only)."""
+    import hashlib
+    import pyarrow.parquet as pq
+    source = "fineweb-edu/sample-10BT/000_00000"
+    pf = pq.ParquetFile(FINEWEB)
+    for batch in pf.iter_batches(batch_size=2000, columns=["text", "id", "dump", "url", "language_score", "token_count", "score", "int_score"]):
+        for row in batch.to_pylist():
+            if int(hashlib.sha256(row["id"].encode()).hexdigest()[:8], 16) % every:
+                continue
+            emit("web", "document", row["text"], source=source, unit=row["id"], turn=0, call=0,
+                 url=row["url"], dump=row["dump"], score=row["score"], int_score=row["int_score"],
+                 language_score=row["language_score"], token_count=row["token_count"], selection=f"1 in {every} by sha256(id)")
+
+
 if __name__ == "__main__":
     for s in sys.argv[1:]:
-        {"claude-code": claude_code, "tack": tack, "pi": pi, "documents": documents, "commits": commits, "openswe": openswe}[s]()
+        {"claude-code": claude_code, "tack": tack, "pi": pi, "documents": documents, "commits": commits, "openswe": openswe,
+         "fineweb": fineweb}[s]()

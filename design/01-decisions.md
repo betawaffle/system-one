@@ -22,7 +22,7 @@ R5. Action-oriented: output is one action among many (00).
 - 08 workbench design: D32 NDJSON worker protocol, D33 blobs + SQLite index, D34 no login on tailnet, D35 light and dark, D36 public + local data, D37 name ganglion on 7171, D38 Ettin playground, D39 minimise wire data, D40 starting data sources, D41 Ettin playground parts.
 - 09 look: D42 design system (palette, type, components) as built.
 - 10 inversion: D43 GPU work in the ganglion-gpu image built on gpu-run's; D44 Ettin decoder 150M for inversion.
-- 11 prose dataset: D45 include my thinking; D46 include tack and Pi; D47 any other known prose, high quality and realistic.
+- 11 prose dataset: D45 include my thinking; D46 include tack and Pi; D47 any other known prose, high quality and realistic; D48 fineweb-edu usable for training, marked, quality judged by the user; D49 Samples page.
 - 05 training: D13 whatever data we can get, JEPA-style where usable; D14 agentic work first; D15 noise both ways; D16 views scale with data; D18 training order; D19 encoder masking recipe; D20 base-rate residual (grain of salt).
 
 ## Open questions (all)
@@ -33,7 +33,6 @@ R5. Action-oriented: output is one action among many (00).
 - Q5 compute cost for halting (04): unknown; decide at the outcomes stage.
 - Q13 sizes, K_max (06): not yet.
 - Q16 Ettin vocabulary pruning (06): not yet.
-- Q32 public prose sources; does the reader project's test-only rule apply (11): important now.
 
 ## Future topics (all)
 

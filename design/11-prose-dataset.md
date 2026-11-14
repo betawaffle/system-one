@@ -41,6 +41,28 @@ P7. prose-v1 (2026-11-14, 8 minutes, mostly segmenting Qwen's 226 MB of reasonin
    - 10k exact duplicates dropped
 P8. Quality by eye: your sentences and mine read as clean prose; Qwen's reasoning is realistic but choppy (asides, half-thoughts, code-heavy); PR text mixes good prose with API-doc fragments. Ours is small: ~27k sentences, under 15% of the set.
 
+## Public prose: fineweb-edu (2026-11-14)
+
+F1. The reader project's "real text is test-only" rule was about quality: the user wants to validate quality themselves. So fineweb-edu may be training data here, marked as its source. (answers Q32)
+F2. Imported a deterministic 1-in-15 sample by sha256(document ID) of the on-box shard (sample/10BT, 000_00000, 726k documents, ~3.5 GB): 48,191 documents, 231 MB, speaker `web`, kind `document`, source `fineweb-edu/sample-10BT/000_00000`, with URL, crawl dump, fineweb's educational score (2.5–4.6 in this shard), language score and token count. Held out 1 in 10 by document. The rest of the shard can follow if wanted.
+F3. Per the corpora README, fineweb text is never printed into a Claude session: I look at counts and statistics only, and the user judges quality on the Samples page.
+F4. prose-v2 = prose-v1's rules plus fineweb (capped at 150k sentences like other non-ours sources). prose-v1 stays as it was.
+
+## Samples page (built)
+
+S1. /samples: random draws from any dataset (utterance sources, command sources, derived dataset files), filterable by speaker and kind, 5–50 at a time. Each sample shows its source, speaker, kind, model, split, and for fineweb its score and URL; long texts are cut at 6,000 characters with a link to the full one.
+S2. The seed is in the address, so a draw can be revisited or shared; "n" draws again. New datasets appear automatically (any datasets/<name>/<split>.jsonl, any new source).
+S3. Possible next: rating samples as you read them (good / bad / not prose), stored as labels with the sample's provenance (07/A4). Not built; behaviour to agree first.
+
+## Decided
+
+D48. fineweb-edu may be used for training, marked as its source; the user validates quality themselves. Answers Q32. (user: "The rule about testing is just for quality purposes. I want to validate quality myself.")
+D49. A page to view random samples from fineweb and future datasets. (user)
+
 ## Open questions
 
-Q32. Public prose for volume and quality. On the box: one fineweb-edu shard (2.15 GB, educational web text, quality-filtered) in /data/corpora, but its README records your rule from the reader project: "real, dirty text is for TESTING only". Does that rule apply here? Other options: Wikipedia (CC BY-SA), Project Gutenberg (public domain, older style), Ettin's own decay-phase data (textbooks, papers; Ettin has seen it). I lean fineweb-edu as the main public source if the rule doesn't apply, since it's realistic modern prose already filtered for quality, plus a Wikipedia slice.
+(none for this note)
+
+## Superseded
+
+Q32 (answered by D48). Public prose for volume and quality. On the box: one fineweb-edu shard (2.15 GB, educational web text, quality-filtered) in /data/corpora, but its README records your rule from the reader project: "real, dirty text is for TESTING only". Does that rule apply here? Other options: Wikipedia (CC BY-SA), Project Gutenberg (public domain, older style), Ettin's own decay-phase data (textbooks, papers; Ettin has seen it). I lean fineweb-edu as the main public source if the rule doesn't apply, since it's realistic modern prose already filtered for quality, plus a Wikipedia slice.

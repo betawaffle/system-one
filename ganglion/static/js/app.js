@@ -113,6 +113,14 @@ document.addEventListener("click", async e => {
   } catch (err) {}
 });
 
+// keyboard: "n" draws again on the samples page
+document.addEventListener("keydown", e => {
+  if (e.key === "n" && !e.metaKey && !e.ctrlKey && !e.target.closest("input, textarea, select")) {
+    const a = document.getElementById("again");
+    if (a) location.href = a.href;
+  }
+});
+
 // keyboard: "/" focuses search
 document.addEventListener("keydown", e => {
   if (e.key === "/" && !e.target.closest("input, textarea, select")) {

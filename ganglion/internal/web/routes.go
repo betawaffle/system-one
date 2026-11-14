@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"math"
+	"math/rand/v2"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -21,6 +22,7 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /fields", s.fields)
 	m.HandleFunc("GET /utterances", s.utterances)
 	m.HandleFunc("GET /utterances/{hash}", s.utterance)
+	m.HandleFunc("GET /samples", s.samples)
 	m.HandleFunc("GET /ettin", s.ettin)
 	m.HandleFunc("GET /design", s.design)
 	m.HandleFunc("GET /ws", s.ws)
@@ -309,6 +311,64 @@ func (s *Server) utterances(w http.ResponseWriter, r *http.Request) {
 		"From": page*f.Limit + 1, "To": page*f.Limit + len(rows),
 		"Prev": link("page", strconv.Itoa(page-1)), "Next": link("page", strconv.Itoa(page+1)),
 		"Speaker": func(val string) string { return link("speaker", val) },
+	}})
+}
+
+// samples draws random items from any dataset, for judging quality by eye.
+// The seed is in the URL, so a draw can be revisited or shared.
+func (s *Server) samples(w http.ResponseWriter, r *http.Request) {
+	v := r.URL.Query()
+	sets, err := s.cfg.Store.SampleSets()
+	if err != nil {
+		s.fail(w, 500, err.Error())
+		return
+	}
+	set := v.Get("set")
+	if set == "" {
+		for _, x := range sets {
+			if strings.HasPrefix(x.Label, "fineweb") {
+				set = x.ID
+			}
+		}
+		if set == "" && len(sets) > 0 {
+			set = sets[0].ID
+		}
+	}
+	n, _ := strconv.Atoi(v.Get("n"))
+	if n <= 0 || n > 100 {
+		n = 10
+	}
+	seed, err := strconv.ParseUint(v.Get("seed"), 10, 64)
+	if err != nil {
+		seed = rand.Uint64() % 1_000_000
+		q := url.Values{}
+		for k, vs := range v {
+			q[k] = vs
+		}
+		q.Set("set", set)
+		q.Set("seed", strconv.FormatUint(seed, 10))
+		http.Redirect(w, r, "/samples?"+q.Encode(), http.StatusFound)
+		return
+	}
+	items, total, err := s.cfg.Store.Draw(set, v.Get("speaker"), v.Get("kind"), n, seed)
+	if err != nil {
+		s.fail(w, 400, err.Error())
+		return
+	}
+	var cur store.SampleSet
+	for _, x := range sets {
+		if x.ID == set {
+			cur = x
+		}
+	}
+	again := url.Values{}
+	for k, vs := range v {
+		again[k] = vs
+	}
+	again.Set("seed", strconv.FormatUint(rand.Uint64()%1_000_000, 10))
+	s.render(w, "samples", Page{Title: "Samples", Nav: "samples", Data: map[string]any{
+		"Sets": sets, "Set": cur, "SetID": set, "Items": items, "Total": total, "N": n, "Seed": seed,
+		"Speaker": v.Get("speaker"), "Kind": v.Get("kind"), "Again": "/samples?" + again.Encode(),
 	}})
 }
 
