@@ -278,6 +278,26 @@ func (s *Store) Programs() ([]string, error) {
 	return out, rows.Err()
 }
 
+// SampleTexts returns up to n distinct commands, a deterministic sample
+// (ordered by content hash, which is effectively random), for corpus statistics.
+func (s *Store) SampleTexts(field string, n int) ([]string, error) {
+	if field != "command" {
+		return nil, fmt.Errorf("unknown field %q", field)
+	}
+	rows, err := s.db.Query(`SELECT cmd FROM events WHERE length(cmd) BETWEEN 2 AND 300 GROUP BY cmd ORDER BY MIN(hash) LIMIT ?`, n)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []string
+	for rows.Next() {
+		var t string
+		rows.Scan(&t)
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
 // FieldTexts returns up to limit distinct values of a text field (command or
 // first output line) with their event hashes, for the similarity index (08/K1d).
 func (s *Store) FieldTexts(field string, limit int) ([]string, []string, error) {

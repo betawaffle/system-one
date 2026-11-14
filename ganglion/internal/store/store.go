@@ -22,6 +22,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode/utf8"
 
 	_ "modernc.org/sqlite"
 )
@@ -290,20 +291,14 @@ func (s *Store) Import(r io.Reader, progress func(int)) (int, error) {
 		var id int64
 		err = tx.QueryRow(`SELECT id FROM events WHERE hash = ?`, hash).Scan(&id)
 		if errors.Is(err, sql.ErrNoRows) {
-			cmd := ev.Command
-			if len(cmd) > 400 {
-				cmd = cmd[:400]
-			}
+			cmd := truncUTF8(ev.Command, 400)
 			res, err := tx.Exec(`INSERT INTO events(hash, program, cmd, exit_code, out_len, out_lines, err_len, truncated, error) VALUES(?,?,?,?,?,?,?,?,?)`,
 				hash, Program(ev.Command), cmd, ev.ExitCode, len(out), lineCount(out), len(str(ev.Stderr)), ev.Truncated, ev.Error != nil)
 			if err != nil {
 				return n, err
 			}
 			id, _ = res.LastInsertId()
-			ftsOut := out
-			if len(ftsOut) > 8192 {
-				ftsOut = ftsOut[:8192]
-			}
+			ftsOut := truncUTF8(out, 8192)
 			if _, err := tx.Exec(`INSERT INTO events_fts(rowid, cmd, out) VALUES(?,?,?)`, id, ev.Command, ftsOut+"\n"+str(ev.Stderr)); err != nil {
 				return n, err
 			}
@@ -338,6 +333,17 @@ func (s *Store) Import(r io.Reader, progress func(int)) (int, error) {
 		return n, err
 	}
 	return n, commit()
+}
+
+// truncUTF8 cuts s to at most n bytes without splitting a character.
+func truncUTF8(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	for n > 0 && !utf8.RuneStart(s[n]) {
+		n--
+	}
+	return s[:n]
 }
 
 func lineCount(s string) int {

@@ -22,6 +22,7 @@
     <button role="tab" data-mode="fill" data-tip="Ettin's guesses for each [MASK]">Fill Mask</button>
     <button role="tab" data-mode="similarity" data-tip="Cosine similarity of mean-pooled embeddings, one text per line">Similarity</button>
     <button role="tab" data-mode="nearest" data-tip="Nearest commands in the corpus">Nearest</button>
+    <button role="tab" data-mode="invert" data-tip="Rebuild the text from its 17M embedding alone, with a trained Ettin decoder">Invert</button>
   </div>
 
   <section class="card">
@@ -40,6 +41,16 @@
     </div>
   </section>
 
+  <div class="row" id="space-row" hidden>
+    <span class="label">Space</span>
+    <div class="seg" role="group" aria-label="Embedding space" id="space">
+      <button data-space="raw" data-tip="Cosine of the vectors as the model gives them">Raw</button>
+      <button data-space="centred" data-tip="Corpus mean removed first, as Nearest does">Centred</button>
+      <button data-space="whitened" data-tip="Centred, then every direction rescaled to equal variance">Whitened</button>
+    </div>
+    <span class="muted small" id="space-note"></span>
+  </div>
+
   <div class="status row" id="status" aria-live="polite"><span class="dot" id="ws-dot"></span><span class="muted small" id="status-text">Connecting…</span></div>
 
   <div id="index-panel" class="card card-pad stack" hidden>
@@ -49,5 +60,6 @@
   </div>
 
   <div class="results" id="results"></div>
+  <div class="results" id="geometry" hidden></div>
 </div>
 {{end}}

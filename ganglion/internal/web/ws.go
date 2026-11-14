@@ -17,7 +17,7 @@ type indexJob struct {
 	Done, Total  int
 }
 
-var allowedOps = map[string]bool{"tokenize": true, "fill_mask": true, "surprise": true, "similarity": true, "nearest": true, "index_status": true, "load": true}
+var allowedOps = map[string]bool{"tokenize": true, "fill_mask": true, "surprise": true, "similarity": true, "nearest": true, "index_status": true, "load": true, "invert": true}
 
 // ws is the playground socket. Browser messages are {id, op, ...}; replies carry
 // the same id. The server also pushes {"push":"worker", ...} on worker changes and
@@ -82,6 +82,18 @@ func (s *Server) ws(w http.ResponseWriter, r *http.Request) {
 			go s.buildIndex(req, func(v map[string]any) { v["id"] = id; send(v) }, status)
 			continue
 		}
+		if op == "geometry" {
+			go func() {
+				out, err := s.geometry(ctx, req)
+				if err != nil {
+					send(map[string]any{"id": id, "ok": false, "error": err.Error()})
+					return
+				}
+				out["id"] = id
+				send(out)
+			}()
+			continue
+		}
 		if !allowedOps[op] {
 			send(map[string]any{"id": id, "ok": false, "error": "unknown op"})
 			continue
@@ -109,6 +121,37 @@ func orNull(b []byte) []byte {
 		return []byte("null")
 	}
 	return b
+}
+
+// geometry returns a model's corpus statistics panel, asking the worker to build
+// them from a 5,000-command sample when it has none yet.
+func (s *Server) geometry(ctx context.Context, req map[string]any) (map[string]any, error) {
+	ask := func(texts []string) (map[string]any, error) {
+		cctx, cc := context.WithTimeout(ctx, 5*time.Minute)
+		defer cc()
+		r := map[string]any{"op": "geometry", "model": req["model"], "field": "command"}
+		if texts != nil {
+			r["texts"] = texts
+		}
+		rep, err := s.cfg.Worker.Call(cctx, r, nil)
+		if err != nil {
+			return nil, err
+		}
+		var out map[string]any
+		return out, json.Unmarshal(rep, &out)
+	}
+	out, err := ask(nil)
+	if err != nil {
+		return nil, err
+	}
+	if need, _ := out["needs_texts"].(bool); !need {
+		return out, nil
+	}
+	texts, err := s.cfg.Store.SampleTexts("command", 5000)
+	if err != nil {
+		return nil, err
+	}
+	return ask(texts)
 }
 
 // buildIndex embeds distinct commands for nearest-value search (08/K1d).

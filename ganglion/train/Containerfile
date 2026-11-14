@@ -1,0 +1,15 @@
+# ganglion-gpu: the gpu-run image (pinned ROCm PyTorch + git) plus what ganglion's
+# training needs. Same pattern as the marimo image: freeze the base's packages as
+# constraints so nothing here can replace the ROCm torch build.
+# Base: localhost/primer-gpu:git-20261013, built from /data/primer/containers/Containerfile
+# (rocm/pytorch:rocm10.1.0_ubuntu24.04_py3.12_pytorch_release_2.14.0 + git).
+# Build: train/build.sh
+FROM 0076590ab627770f387be3858a3feacc4898a61d4e2ce08093cd0cedbc23a2e5
+RUN pip install --no-cache-dir uv \
+ && pip list --format=freeze | grep -vE '^(uv|fsspec)==' > /etc/base-constraints.txt \
+ && uv pip install --system --no-cache --constraint /etc/base-constraints.txt \
+      transformers==5.23.0 tokenizers==0.23.3 huggingface_hub==2.4.0 safetensors==0.8.0 \
+      peft==0.21.3 pyarrow==26.0.1 \
+ && python3 -c "import torch; assert '+rocm' in torch.__version__, torch.__version__; print('torch', torch.__version__)" \
+ && pip list --format=freeze > /etc/ganglion-gpu-packages.txt
+ENV HF_HOME=/data/hf

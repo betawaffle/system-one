@@ -21,6 +21,7 @@ R5. Action-oriented: output is one action among many (00).
 - 07 workbench: requirements R1–R6 (built before any training), D25 Go server + Python workers, D26 data browser and encoder playground first, D31 design them now (08).
 - 08 workbench design: D32 NDJSON worker protocol, D33 blobs + SQLite index, D34 no login on tailnet, D35 light and dark, D36 public + local data, D37 name ganglion on 7171, D38 Ettin playground, D39 minimise wire data, D40 starting data sources, D41 Ettin playground parts.
 - 09 look: D42 design system (palette, type, components) as built.
+- 10 inversion: D43 GPU work in the ganglion-gpu image built on gpu-run's; D44 Ettin decoder 150M for inversion.
 - 05 training: D13 whatever data we can get, JEPA-style where usable; D14 agentic work first; D15 noise both ways; D16 views scale with data; D18 training order; D19 encoder masking recipe; D20 base-rate residual (grain of salt).
 
 ## Open questions (all)
@@ -39,6 +40,7 @@ T3. Evaluation: calibration, robustness to rewording/reordering, what the desire
 T4. Parameter budget split under 1B: encoders vs stream vs heads vs effectors.
 T5. Learning from outcomes / credit assignment for multi-action steps.
 T6. Very long text fields (06).
+T7. vec2text-style iterative correction (10). T8. Inverting output chunks and our own slots (10).
 
 ## Decided
 

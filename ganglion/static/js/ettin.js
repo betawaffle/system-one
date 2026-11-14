@@ -1,6 +1,6 @@
 // Ettin playground (08/K1, D41): talks to the server over one compressed
 // websocket; the server forwards to the model worker.
-import { seq, bitsScale, paintRamp } from "./heat.js";
+import { seq, div, bitsScale, paintRamp } from "./heat.js";
 import { showTip, hideTip } from "./app.js";
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -63,6 +63,8 @@ function setMode(m) {
   mode = m; save("ettin.mode", m);
   $$("#modes button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.mode === m)));
   $("#index-panel").hidden = m !== "nearest";
+  $("#space-row").hidden = m !== "similarity";
+  $("#geometry").hidden = m !== "similarity";
   results.innerHTML = "";
   if (m === "nearest") refreshIndex();
   run();
@@ -109,11 +111,23 @@ async function run() {
     else if (mode === "fill") outs = await Promise.all(ms.map(m => call("fill_mask", { model: m, text: t, k: 8 })));
     else if (mode === "similarity") {
       const texts = t.split("\n").map(s => s.trim()).filter(Boolean).slice(0, 8);
-      outs = await Promise.all(ms.map(m => call("similarity", { model: m, texts })));
+      const sim = async m => {
+        let r = await call("similarity", { model: m, texts, space });
+        if (r.needs_stats) {
+          statusText.textContent = `Computing corpus statistics for ${m.toUpperCase()} (once)…`;
+          await geometryFor(m);
+          r = await call("similarity", { model: m, texts, space });
+        }
+        return r;
+      };
+      outs = await Promise.all(ms.map(sim));
       outs.texts = texts;
+      renderGeometry(ms);
     } else if (mode === "nearest") outs = await Promise.all(ms.map(m => call("nearest", { model: m, field: "command", text: t, k: 12 })));
+    else if (mode === "invert") { outs = [await call("invert", { model: "17m", text: t })]; }
     if (my !== seqNo) return;
-    render(ms, outs);
+    if (mode === "invert") { renderInvert(outs[0], t); }
+    else render(ms, outs);
     const worker = outs.map(o => o.ms).filter(Boolean);
     statusText.textContent = `${Math.round(performance.now() - t0)} ms round trip · ${worker.map(x => Math.round(x) + " ms").join(" / ")} in the model · ` +
       outs.map(o => `${o.model.split("/")[1]} @ ${o.revision.slice(0, 7)}`).join(", ");
@@ -229,10 +243,12 @@ function renderSim(o, head, body, texts) {
   thead.append(el("th"));
   texts.forEach((t, j) => { const th = el("th", "mono small", String(j + 1)); th.dataset.tip = t; thead.append(th); });
   tbl.append(thead);
-  // scale off-diagonal values so differences show; mean-pooled embeddings are all fairly similar
+  // Raw: every value sits near 1, so stretch the off-diagonal range to show differences.
+  // Centred and whitened cosines are signed, so they use the diverging scale over -1..1.
   const off = [];
   for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (i !== j) off.push(o.sim[i][j]);
   const lo = Math.min(...off), hi = Math.max(...off);
+  const signed = o.space && o.space !== "raw";
   texts.forEach((t, i) => {
     const tr = el("tr");
     const th = el("th", "mono small rowhead", `${i + 1}  ${t.length > 48 ? t.slice(0, 47) + "…" : t}`);
@@ -241,7 +257,10 @@ function renderSim(o, head, body, texts) {
     for (let j = 0; j < n; j++) {
       const v = o.sim[i][j];
       const td = el("td", "num", v.toFixed(2));
-      if (i !== j) {
+      if (i !== j && signed) {
+        td.style.background = div(v);
+        if (Math.abs(v) > 0.55) td.style.color = "#fbf8f3";
+      } else if (i !== j) {
         const c = seq(hi > lo ? (v - lo) / (hi - lo) : 0.5);
         td.style.background = c.bg; td.style.color = c.ink;
       } else td.className = "num diag";
@@ -250,7 +269,7 @@ function renderSim(o, head, body, texts) {
     }
     tbl.append(tr);
   });
-  head.append(el("span", "muted label", `colour spans ${lo.toFixed(2)}–${hi.toFixed(2)}`));
+  head.append(el("span", "muted label", signed ? `${o.space} · colour spans −1 to 1` : `raw · colour spans ${lo.toFixed(2)}–${hi.toFixed(2)}`));
   const wrap = el("div", "table-wrap");
   wrap.append(tbl);
   body.append(wrap);
@@ -270,6 +289,163 @@ function renderNearest(o, head, body) {
     list.append(a);
   }
   body.append(list);
+}
+
+// --- embedding space and geometry ---------------------------------------------------
+let space = load("ettin.space", "raw");
+function setSpace(s) {
+  space = s; save("ettin.space", s);
+  $$("#space button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.space === s)));
+  run();
+}
+$$("#space button").forEach(b => b.addEventListener("click", () => setSpace(b.dataset.space)));
+$$("#space button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.space === space)));
+
+const geomCache = new Map();
+function geometryFor(m) {
+  if (!geomCache.has(m)) {
+    const p = call("geometry", { model: m }).then(r => r.panel);
+    p.catch(() => geomCache.delete(m));
+    geomCache.set(m, p);
+  }
+  return geomCache.get(m);
+}
+
+let geomShown = "";
+async function renderGeometry(ms) {
+  const box = $("#geometry");
+  const key = ms.join(",");
+  if (geomShown === key && box.childElementCount) return;
+  geomShown = key;
+  box.innerHTML = "";
+  box.classList.toggle("split", ms.length > 1);
+  for (const m of ms) {
+    const card = el("section", "card pane");
+    const head = el("div", "card-head");
+    const h = el("h3");
+    h.append(el("span", "series s" + MODELS[m].series), document.createTextNode(` Embedding Geometry · ${MODELS[m].label}`));
+    head.append(h);
+    card.append(head);
+    const body = el("div", "card-body stack");
+    body.append(el("div", "skeleton"));
+    card.append(body);
+    box.append(card);
+    geometryFor(m).then(p => fillGeometry(head, body, p)).catch(e => { body.innerHTML = ""; body.append(el("p", "muted", e.message)); });
+  }
+}
+
+function fillGeometry(head, body, p) {
+  body.innerHTML = "";
+  head.append(el("span", "muted label num", `${p.n.toLocaleString()} commands · ${p.pairs.toLocaleString()} random pairs`));
+  body.append(el("p", "ink-2 small", "Cosine between random pairs of corpus commands. Raw vectors crowd near 1 (a narrow cone); centring and whitening spread them out."));
+  const multiples = el("div", "multiples");
+  for (const sp of ["raw", "centred", "whitened"]) {
+    const hst = p.hist[sp];
+    const total = hst.counts.reduce((a, b) => a + b, 0);
+    const max = Math.max(...hst.counts);
+    const cell = el("div", "stack tight");
+    cell.append(el("div", "label", `${sp[0].toUpperCase() + sp.slice(1)} · mean ${hst.mean.toFixed(2)}`));
+    const hist = el("div", "hist short");
+    hst.counts.forEach((c, b) => {
+      const lo = -1 + (2 * b) / p.bins, hi = lo + 2 / p.bins;
+      const col = el("span", "col");
+      col.dataset.tip = `cosine ${lo.toFixed(2)} to ${hi.toFixed(2)} · ${(100 * c / total).toFixed(1)}% of pairs`;
+      const f = el("span", "fill");
+      f.style.height = (100 * c / max).toFixed(1) + "%";
+      col.append(f);
+      hist.append(col);
+    });
+    const axis = el("div", "hist-axis muted");
+    axis.append(el("span", null, "−1"), el("span", null, "0"), el("span", null, "1"));
+    cell.append(hist, axis, el("div", "muted small num", `middle 90% of pairs: ${hst.p05.toFixed(2)} to ${hst.p95.toFixed(2)}`));
+    multiples.append(cell);
+  }
+  body.append(multiples);
+  const pcs = el("div", "stack tight");
+  pcs.append(el("div", "label", `Variance in the top directions · effective dimensions ${p.participation} of ${p.dims} · |mean vector| ${p.mean_norm.toFixed(2)}`));
+  const bars = el("div", "bars");
+  const top = p.top_var[0];
+  p.top_var.forEach((v, i) => {
+    const b = el("div", "bar");
+    b.dataset.tip = `Direction ${i + 1} holds ${(100 * v).toFixed(1)}% of the centred variance`;
+    const track = el("span", "track");
+    const f = el("span", "fill");
+    f.style.width = (100 * v / top).toFixed(1) + "%";
+    track.append(f);
+    b.append(el("span", "name", `PC ${i + 1}`), track, el("span", "val", (100 * v).toFixed(1) + "%"));
+    bars.append(b);
+  });
+  pcs.append(bars);
+  body.append(pcs);
+}
+
+// word-level diff (LCS) between the original and the reconstruction
+function diffWords(a, b) {
+  const x = a.split(/(\s+)/).filter(Boolean), y = b.split(/(\s+)/).filter(Boolean);
+  const n = x.length, m = y.length;
+  const L = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+  for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--)
+    L[i][j] = x[i] === y[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+  const out = [];
+  let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (x[i] === y[j]) { out.push(["same", x[i]]); i++; j++; }
+    else if (L[i + 1][j] >= L[i][j + 1]) out.push(["miss", x[i++]]);
+    else out.push(["extra", y[j++]]);
+  }
+  while (i < n) out.push(["miss", x[i++]]);
+  while (j < m) out.push(["extra", y[j++]]);
+  return out;
+}
+
+function renderInvert(o, original) {
+  results.innerHTML = "";
+  results.classList.remove("split");
+  const card = el("section", "card pane");
+  const head = el("div", "card-head");
+  head.append(el("h3", null, "Rebuilt From The Embedding"));
+  card.append(head);
+  const body = el("div", "card-body stack");
+  card.append(body);
+  results.append(card);
+  if (!o.ready) { body.append(el("p", "muted", "No trained inverter yet. Run train/invert.py; the newest finished run is picked up automatically.")); return; }
+  head.append(el("span", "muted label num", `re-embedded cosine ${o.cos.toFixed(3)}`));
+  const orig = el("div", "stack");
+  orig.append(el("span", "label", "Original"), el("div", "cmd plain", original));
+  const rec = el("div", "stack");
+  const line = el("div", "cmd plain diff");
+  for (const [kind, w] of diffWords(original, o.hyp)) {
+    const s = el("span", kind === "same" ? null : kind, w);
+    if (kind === "extra") s.dataset.tip = "Not in the original";
+    line.append(s);
+  }
+  const missing = diffWords(original, o.hyp).filter(([k, w]) => k === "miss" && w.trim()).map(([, w]) => w);
+  rec.append(el("span", "label", "Reconstruction"), line);
+  body.append(orig, rec);
+  if (missing.length) {
+    const mrow = el("div", "row");
+    mrow.append(el("span", "label", "Lost"));
+    for (const w of missing.slice(0, 12)) mrow.append(el("span", "tag mono", w));
+    body.append(mrow);
+  }
+  // held-out metrics for this run, against retrieval of the nearest training command
+  const t = o.metrics.test || {};
+  const tbl = el("table", "table");
+  tbl.innerHTML = "<thead><tr><th>Held-Out Test</th><th class='r'>Exact</th><th class='r'>Token F1</th><th class='r'>Char Match</th></tr></thead>";
+  const tb = el("tbody");
+  const row = (name, ex, f, c) => {
+    const tr = el("tr");
+    tr.append(el("td", null, name), el("td", "r num", (ex * 100).toFixed(1) + "%"), el("td", "r num", f.toFixed(3)), el("td", "r num", c.toFixed(3)));
+    tb.append(tr);
+  };
+  if (t.n) {
+    row("Inverter (generates)", t.exact, t.token_f1, t.char_ratio);
+    row("Nearest training command (retrieves)", t.nn_exact, t.nn_token_f1, t.nn_char_ratio);
+  }
+  tbl.append(tb);
+  const wrap = el("div", "table-wrap");
+  wrap.append(tbl);
+  body.append(wrap, el("p", "muted small", `Run ${o.run} · ${t.n || 0} test commands · embeddings from ${o.encoder}`));
 }
 
 // token tooltips (surprise)
@@ -316,5 +492,7 @@ function renderIndexJob() {
 $$("#modes button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.mode === mode)));
 $$("#model button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.model === model)));
 $("#index-panel").hidden = mode !== "nearest";
+$("#space-row").hidden = mode !== "similarity";
+$("#geometry").hidden = mode !== "similarity";
 document.addEventListener("themechange", run);
 connect();

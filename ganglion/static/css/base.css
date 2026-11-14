@@ -307,6 +307,12 @@ a.bar:hover .name { color: var(--accent); }
 .near .track { height: 6px; border-radius: 3px; position: relative; display: block; }
 .near .fill { position: absolute; inset: 0 auto 0 0; background: var(--series-1); border-radius: 3px; }
 .near .cmd.one { max-width: none; }
+.cmd.plain::before { content: none; }
+.stack.tight { gap: var(--s2); }
+.multiples { display: grid; gap: var(--s5); grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); }
+.hist.short { height: 90px; }
+.diff .miss { display: none; }
+.diff .extra { background: var(--fail-wash); color: var(--fail); border-radius: 3px; box-shadow: inset 0 -1.5px 0 var(--fail); }
 
 @media (max-width: 720px) {
   .top { gap: var(--s3); padding: 0 var(--s4); }
