@@ -28,6 +28,8 @@ export async function judge(meaning, line, samples, onDone) {
 }
 
 const icons = { ok: "✓", but: "◐", bad: "✕" };
+// narrow checks (10/J2), for labels
+export const checkTitle = { form: "Word Form", grammar: "Grammar", filler: "Filler", meaning: "Meaning", change: "Change", implies: "Implies", context: "Context" };
 // line renders "Model: …" under a sample; accept(patch) makes it your verdict.
 export function line(h, text, accept) {
   const c = cache.get(text);
@@ -40,9 +42,9 @@ export function line(h, text, accept) {
   return h("div", { class: "model-line small" + (flagged ? " flagged" : "") },
     h("span", { class: "model-who" }, "Model"),
     h("span", {}, icons[v.verdict], " ", what, v.note ? ": " + v.note : ""),
-    h("span", { class: "muted" }, "(", v.confidence, ")"),
+    h("span", { class: "muted" }, "(", v.confidence, v.checks ? (v.decided ? `, ${checkTitle[v.decided] || v.decided} check` : `, all ${v.checks.length} checks pass`) : "", ")"),
     h("button", { class: "btn chip", "data-tip": "Make this your verdict (A)", onclick: () => accept(patchOf(v)) }, "Accept"),
-    v.call ? h("button", { class: "btn chip ghostchip", "data-tip": "See exactly what the model was asked, and its reasoning", onclick: () => showCall(h, v.call) }, "Why?") : null);
+    v.call ? h("button", { class: "btn chip ghostchip", "data-tip": "See exactly what the model was asked, and its reasoning", onclick: () => showCall(h, v.call, v.checks) }, "Why?") : null);
 }
 
 export function patchOf(v) {
@@ -50,8 +52,9 @@ export function patchOf(v) {
 }
 
 // showCall opens a dialog with exactly what was sent to the model and what came
-// back, including its reasoning, from the call log (10/C2).
-export async function showCall(h, id) {
+// back, including its reasoning, from the call log (10/C2). With checks, a row
+// of every check's answer switches between their calls (10/J6).
+export async function showCall(h, id, checks) {
   let d = document.getElementById("call-dialog");
   if (!d) {
     d = h("dialog", { class: "card keys calldlg", id: "call-dialog" });
@@ -67,12 +70,17 @@ export async function showCall(h, id) {
   } catch (e) { d.replaceChildren(h("div", { class: "card-body" }, String(e.message || e))); return; }
   const tok = c.usage ? `${c.usage.prompt_tokens} in, ${c.usage.completion_tokens} out` : "";
   const sec = (title, text) => text ? h("section", { class: "stack tight" }, h("h4", {}, title), h("pre", { class: "out wrap" }, text)) : null;
+  const row = checks && checks.length ? h("div", { class: "row checks small" }, h("span", { class: "muted" }, "Checks:"),
+    checks.map(ch => h("button", { class: "btn chip" + (ch.call === id ? "" : " ghostchip") + (ch.flagged ? " flagged" : ""),
+      "data-tip": ch.error ? ch.error : `${ch.answer}${ch.then ? ", then: " + ch.then : ""}${ch.can_change ? ", can change: " + ch.can_change : ""}${ch.why ? ": " + ch.why : ""} (${ch.confidence})`,
+      onclick: () => showCall(h, ch.call, checks) }, ch.error ? "⚠ " : ch.flagged ? "✕ " : "✓ ", checkTitle[ch.name] || ch.name))) : null;
   d.replaceChildren(
     h("div", { class: "card-head" },
       h("div", { class: "stack tight" }, h("h3", {}, "Model Call ", h("span", { class: "mono small" }, c.id)),
         h("span", { class: "muted small" }, `${c.model}, prompt ${c.prompt}, ${c.effort} effort, temperature ${c.temperature}, seed ${c.seed}. ${tok}`)),
       h("button", { class: "btn ghost", onclick: () => d.close() }, "Close")),
     h("div", { class: "card-body stack" },
+      row,
       (c.messages || []).map(m => sec(m.role === "system" ? "Instructions (system message)" : "The sample (user message)", m.content)),
       sec("The model's reasoning", c.reasoning),
       sec("Its answer", c.answer),

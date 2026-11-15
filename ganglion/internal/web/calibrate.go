@@ -110,6 +110,8 @@ type calStats struct {
 	ByYours  map[string][2]int         `json:"by_yours"` // your verdict -> [agree, n]
 	Matrix   map[string]map[string]int `json:"matrix"`   // yours -> model's -> count
 	Disagree []disagreement            `json:"disagree"`
+	// per narrow check: [fired on your ✓, your ✓, fired on your ◐ or ✕, your ◐ or ✕] (10/J6)
+	Checks map[string][4]int `json:"checks,omitempty"`
 }
 
 // GET /api/model/calibration
@@ -134,6 +136,21 @@ func (s *Server) modelCalibration(w http.ResponseWriter, r *http.Request) {
 			stats[key] = st
 		}
 		st.N++
+		for _, ch := range mv.Checks {
+			if st.Checks == nil {
+				st.Checks = map[string][4]int{}
+			}
+			c := st.Checks[ch.Name]
+			j := 0
+			if v.Verdict != "ok" {
+				j = 2
+			}
+			c[j+1]++
+			if ch.Flagged {
+				c[j]++
+			}
+			st.Checks[ch.Name] = c
+		}
 		b := st.ByYours[v.Verdict]
 		b[1]++
 		if st.Matrix[v.Verdict] == nil {
@@ -171,5 +188,9 @@ func (s *Server) modelCalibration(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	x.mu.RUnlock()
-	jsonOut(w, map[string]any{"stats": out, "job": job, "judged": judged, "prompt": judge.Version, "few_shot": s.cfg.FewShot})
+	var names [][2]string
+	for _, d := range judge.Checks {
+		names = append(names, [2]string{d.Name, d.Title})
+	}
+	jsonOut(w, map[string]any{"check_names": names, "stats": out, "job": job, "judged": judged, "prompt": judge.Version, "few_shot": s.cfg.FewShot})
 }

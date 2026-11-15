@@ -40,6 +40,13 @@ export function mount(el, h) {
             h("td", {}, h("b", {}, pct(s.agree, s.n)), h("span", { class: "muted small" }, ` ${s.agree} of ${s.n}`)),
             ["ok", "but", "bad"].map(k => { const b = s.by_yours[k] || [0, 0]; return h("td", { "data-tip": `Of samples you marked ${names[k]}, the model agreed on ${b[0]} of ${b[1]}` }, b[1] ? `${b[0]}/${b[1]}` : "–"); })))))) :
           h("div", { class: "muted small" }, "No comparison yet. Check Against Mine runs the model over what you've judged."),
+        (cal.stats || []).filter(s => s.current && s.checks).map(s => h("details", { class: "tree" },
+          h("summary", {}, `Each check (${s.effort} effort)`),
+          h("div", { class: "muted small gap-top" }, "How often each narrow question flagged a sample. Flags on your ✓ are false alarms; flags on your ◐ and ✕ are catches, though not always for the right reason."),
+          h("div", { class: "table-wrap" }, h("table", { class: "table" },
+            h("thead", {}, h("tr", {}, ["Check", "Flagged Your ✓", "Flagged Your ◐ or ✕"].map(x => h("th", {}, x)))),
+            h("tbody", {}, (cal.check_names || []).filter(([n]) => s.checks[n]).map(([n, title]) => { const c = s.checks[n];
+              return h("tr", {}, h("td", {}, title), h("td", {}, c[1] ? `${c[0]}/${c[1]}` : "–"), h("td", {}, c[3] ? `${c[2]}/${c[3]}` : "–")); })))))),
         (cal.stats || []).filter(s => s.current && (s.disagree || []).length).map(s => h("details", { class: "tree" },
           h("summary", {}, `Where it disagrees with you (${s.disagree.length}, ${s.effort} effort)`),
           h("div", { class: "stack tight gap-top" }, s.disagree.map(d => h("div", { class: "disagree" },
@@ -47,7 +54,7 @@ export function mount(el, h) {
               h("button", { class: "btn chip", "data-tip": "Make the model's verdict yours", onclick: () => change(d, { verdict: d.model.verdict, but_kind: d.model.but_kind || "", reason: d.model.reason || "", note: d.model.note || "", via: "model", model_call: d.model.call }) }, "Use Model's"),
               h("button", { class: "btn chip", "data-tip": "Mark it fine", onclick: () => change(d, { verdict: "ok" }) }, "✓ Fine"),
               h("button", { class: "btn chip", "data-tip": "Clear your verdict; Coverage will offer this kind again", onclick: () => change(d, { verdict: "" }) }, "Clear Mine"),
-              h("button", { class: "btn chip ghostchip", "data-tip": "See exactly what the model was asked, and its reasoning", onclick: () => showCall(h, d.model.call) }, "Why?")),
+              h("button", { class: "btn chip ghostchip", "data-tip": "See exactly what the model was asked, and its reasoning", onclick: () => showCall(h, d.model.call, d.model.checks) }, "Why?")),
             h("div", {}, d.text),
             h("div", { class: "small" }, h("span", { class: "muted" }, "You: "), d.yours.replace(/^ok$/, "✓ fine").replace(/^but/, "◐").replace(/^bad/, "✕")),
             h("div", { class: "small" }, h("span", { class: "muted" }, "Model: "), icons[d.model.verdict], " ",

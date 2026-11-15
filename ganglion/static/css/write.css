@@ -85,3 +85,6 @@ details.tree[open] summary, details.forms[open] summary { margin-bottom: var(--s
 dialog.calldlg { max-width: min(860px, calc(100vw - 32px)); max-height: calc(100vh - 48px); }
 .calldlg pre { max-height: 40vh; overflow: auto; }
 .btn.chip.ghostchip { border-style: dashed; }
+/* narrow checks in the model call dialog (sd/10/J6) */
+.row.checks { flex-wrap: wrap; }
+.btn.chip.flagged { border-color: var(--warn); }

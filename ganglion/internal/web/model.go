@@ -19,10 +19,11 @@ import (
 // modelVerdict is a stored first-pass answer.
 type modelVerdict struct {
 	judge.Verdict
-	Call   string `json:"call"`
-	Prompt string `json:"prompt"`
-	Effort string `json:"effort"`
-	At     string `json:"at"`
+	Checks []judge.Check `json:"checks,omitempty"` // each narrow check's answer (10/J2)
+	Call   string        `json:"call"`
+	Prompt string        `json:"prompt"`
+	Effort string        `json:"effort"`
+	At     string        `json:"at"`
 }
 
 func mvKey(text, prompt, effort string) string { return text + "\x00" + prompt + "\x00" + effort }
@@ -43,7 +44,7 @@ func (x *writer) noteModelVerdict(at string, d map[string]any) {
 func (x *writer) judgeInput(m author.Meaning, line string, s author.Sample, fewShot bool) judge.Input {
 	w := x.world
 	f := w.Frames[m.Frame]
-	in := judge.Input{Frame: f.Title, Explainer: f.Explainer, Authored: line, Sample: s.Text}
+	in := judge.Input{Frame: f.Title, Explainer: f.Explainer, Kind: f.Kind, Authored: line, Sample: s.Text}
 	for _, ro := range f.Roles {
 		fl := m.Roles[ro.Name]
 		switch {
@@ -127,13 +128,13 @@ func (s *Server) judgeMany(ctx context.Context, x *writer, m author.Meaning, lin
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			v, call, err := judge.Judge(ctx, s.cfg.LLM, in, effort)
+			v, checks, call, err := judge.Judge(ctx, s.cfg.LLM, in, effort)
 			if err != nil {
 				out[i].Error = err.Error()
-				x.g.AddEvent("model-verdict-failed", "model", "ganglion/model", map[string]any{"line": line, "sample": smp, "call": call, "error": err.Error(), "prompt": judge.Version, "effort": effort})
+				x.g.AddEvent("model-verdict-failed", "model", "ganglion/model", map[string]any{"line": line, "sample": smp, "call": call, "checks": checks, "error": err.Error(), "prompt": judge.Version, "effort": effort})
 				return
 			}
-			mv := modelVerdict{Verdict: v, Call: call, Prompt: judge.Version, Effort: effort, At: time.Now().UTC().Format(time.RFC3339Nano)}
+			mv := modelVerdict{Verdict: v, Checks: checks, Call: call, Prompt: judge.Version, Effort: effort, At: time.Now().UTC().Format(time.RFC3339Nano)}
 			x.g.AddEvent("model-verdict", "model", "ganglion/model", map[string]any{"line": line, "meaning": m, "sample": smp, "result": mv, "few_shot": s.cfg.FewShot})
 			x.mu.Lock()
 			x.modelVerdicts[mvKey(smp.Text, judge.Version, effort)] = mv
@@ -181,7 +182,7 @@ func (s *Server) modelStatus(w http.ResponseWriter, r *http.Request) {
 // GET /api/model/prompt: the current judge prompt template (10/D113a).
 func (s *Server) modelPrompt(w http.ResponseWriter, r *http.Request) {
 	jsonOut(w, map[string]any{"version": judge.Version, "text": judge.PromptFile(), "few_shot": s.cfg.FewShot,
-		"file": "ganglion/internal/judge/prompts/judge.md"})
+		"file": "ganglion/internal/judge/prompts/checks.md"})
 }
 
 // GET /api/model/call?id=ID: exactly what was sent and what came back for
