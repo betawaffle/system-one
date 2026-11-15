@@ -9,15 +9,11 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 - sd/03 authoring: D58 word-by-word helper, D62 trees all the way down, D63 flag extra meaning and ask, D64 states and properties first, then transfer, D65 the extra-meaning mechanism (A13), D72 live fast samples while editing (A16), D73 generator in Go inside ganglion.
 - sd/04 template trees: D66 node types and kinds, D67 code-realised verb groups, D68 derived REL templates, D69 reference choice by code, D70 JSON stored / text shown, D71 lemma classes count once but every lemma generates.
 
-- sd/05 inflection: (none yet)
+- sd/05 inflection: D74 rules propose, look up at generation, vet as needed, D75 WordNet + CMUdict, clean licence (no share-alike), D76 explicit pronoun sets (amends sd/02/L2), D77 style features, US default, D78 first verb-group scope.
 
 ## Open questions (all)
 
-- Q47 rules propose forms on adding a word, user vets once, generation looks up (sd/05/P1a). Lean yes.
-- Q48 seed from WordNet and CMUdict, cross-check UniMorph/Wiktionary (sd/05/S1a). Lean yes.
-- Q49 explicit pronoun sets on entities, amending sd/02/L2 (sd/05/L2). Lean yes.
-- Q50 style features and default dialect (sd/05/R1). Lean US.
-- Q51 first verb-group scope (sd/05/V1). Lean yes.
+- Q52 retroactive fixes and doubt flags instead of pre-vetting (sd/05/P1d). Lean yes.
 
 ## Future topics (all)
 

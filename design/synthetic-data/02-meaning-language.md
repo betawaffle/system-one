@@ -17,7 +17,7 @@ entity
 ```
 A slot that asks for `person` accepts Mara; one that asks for `physical` accepts Mara or a book.
 
-L2. Entities: the particular things in one meaning.
+L2. Entities: the particular things in one meaning. "female"/"male" amended by sd/05/D76: entities carry an explicit pronoun set (she/her, he/him, they/them) instead.
 ```
 mara: person, name "Mara", female
 tom:  person, name "Tom", male
