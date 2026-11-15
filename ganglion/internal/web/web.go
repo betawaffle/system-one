@@ -138,6 +138,13 @@ func (s *Server) loadTemplates() error {
 	funcs := template.FuncMap{
 		"asset": func(p string) string { return "/static/" + s.build + "/" + p },
 		"comma": comma,
+		// title capitalises a fixed lowercase vocabulary word for a label ("human" -> "Human").
+		"title": func(s string) string {
+			if s == "" {
+				return s
+			}
+			return strings.ToUpper(s[:1]) + s[1:]
+		},
 		"pct": func(a, b int) string {
 			if b == 0 {
 				return "0%"

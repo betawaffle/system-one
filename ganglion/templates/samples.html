@@ -26,11 +26,11 @@
     </select>
     <select class="input" name="speaker" aria-label="Speaker">
       <option value="">Any Speaker</option>
-      {{range (list "human" "claude" "model" "author" "web" "harness" "mixed" "subagent")}}<option value="{{.}}" {{if eq . $d.Speaker}}selected{{end}}>{{.}}</option>{{end}}
+      {{range (list "human" "claude" "model" "author" "web" "harness" "mixed" "subagent")}}<option value="{{.}}" {{if eq . $d.Speaker}}selected{{end}}>{{title .}}</option>{{end}}
     </select>
     <select class="input" name="kind" aria-label="Kind">
       <option value="">Any Kind</option>
-      {{range (list "typed" "pasted" "reply" "thinking" "summary" "document" "commit" "issue" "prompt" "injected")}}<option value="{{.}}" {{if eq . $d.Kind}}selected{{end}}>{{.}}</option>{{end}}
+      {{range (list "typed" "pasted" "reply" "thinking" "summary" "document" "commit" "issue" "prompt" "injected")}}<option value="{{.}}" {{if eq . $d.Kind}}selected{{end}}>{{title .}}</option>{{end}}
     </select>
     <select class="input" name="n" aria-label="How many">
       {{range (list "5" "10" "25" "50")}}<option value="{{.}}" {{if eq . (printf "%d" $d.N)}}selected{{end}}>{{.}} Samples</option>{{end}}

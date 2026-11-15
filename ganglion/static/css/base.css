@@ -164,8 +164,9 @@ select.input { max-width: 100%; text-overflow: ellipsis; }
   background: var(--surface); color: var(--ink); font: 400 var(--t-sm) var(--sans); min-width: 0;
 }
 select.input {
-  appearance: none; padding-right: 34px; cursor: pointer;
-  background: var(--surface) var(--chevron) no-repeat right 11px center / 14px 14px;
+  appearance: none; padding-right: 30px; cursor: pointer;
+  /* the 14px box has 3.5px of air either side of the stroke: 8.5 + 3.5 = the 12px text inset */
+  background: var(--surface) var(--chevron) no-repeat right 8.5px center / 14px 14px;
 }
 select.input:hover { border-color: var(--muted); }
 textarea.input { height: auto; padding: 10px 12px; line-height: 1.5; resize: vertical; font-family: var(--mono); }
