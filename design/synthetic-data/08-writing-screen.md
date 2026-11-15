@@ -57,6 +57,7 @@ W9a. A value counts as judged once any sample showing it has a verdict (✓ or �
 W9b. Show Me draws 8 samples, each aimed at one unjudged value (tagged as the reason it's shown), the rest random. Verdicts are the same as on Write. Sounds Odd on a saved template makes a new template version that adds a time modifier for that tense.
 W9c. Values are counted one at a time, not every combination: 22 kinds for "Ana gave Lee a chair" rather than hundreds. Pairs (e.g. negative × question × "they") would come later if one-at-a-time misses things.
 W9e. Judged list (user: to make sure they didn't judge one too quickly): a Judged button on each template lists the samples judged so far, newest first, with verdict, reason, note and date, and each verdict can be changed there. Clicking a ✓ value filters the list to samples of that kind.
+W9f. A later sentence with the same shape becomes a new version of the same template (sd/04/I1): "Lee is shorter than Noor" after "Ana is older than Noor". Coverage first matched verdicts by the template's current sentence only, so the user's earlier verdicts stopped counting (user: "I think 'Lee is shorter than Noor' replaced an older template I had already judged everything on?"). Now verdicts on samples of any sentence in the template's history count, and the card shows "also written as …".
 W9d. Later, before any bulk export: a random audit (50 rows judged with none wrong means fewer than about 6% are bad, at 95%), and a model flagging likely-odd samples once one is connected.
 
 ## Save

@@ -81,6 +81,7 @@ function card(it) {
         h("div", { class: "row small muted" },
           h("span", { class: "covbar" }, h("i", { "data-w": pct })),
           `${it.done} of ${it.total} kinds judged`,
+          (it.sources || []).length > 1 ? h("span", { "data-tip": "Sentences with the same shape are one template; verdicts on samples of any of them count" }, "· also written as ", it.sources.filter(x => x !== it.text).map(x => `“${x}”`).join(", ")) : null,
           (it.needs || []).map(n => h("span", { class: "tag warn" }, `${cap(n.tense)}: adds a time`)))),
       h("div", { class: "row" },
         h("button", { class: "btn", onclick: () => review.has(it.id) ? (review.delete(it.id), render(), sizeBars()) : openReview(it), "aria-expanded": String(review.has(it.id)) }, "Judged"),

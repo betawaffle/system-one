@@ -21,10 +21,33 @@ func (x *writer) noteMeaning(id string, d map[string]any) {
 }
 
 // judged lists dimension values with a verdict, for samples of one sentence.
-func (x *writer) judged(line string) map[string]map[string]bool {
+// sources lists every sentence that has produced a template: a later sentence
+// with the same shape becomes a new version of it ("Lee is shorter than Noor"
+// after "Ana is older than Noor"), and verdicts on either count (08/W9f).
+func (x *writer) sources(id string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, v := range x.g.History(id) {
+		if v.Why == "retire" {
+			continue
+		}
+		var t author.Template
+		if b, err := x.g.Object(v.Hash); err == nil && json.Unmarshal(b, &t) == nil && t.Source.Text != "" && !seen[t.Source.Text] {
+			seen[t.Source.Text] = true
+			out = append(out, t.Source.Text)
+		}
+	}
+	return out
+}
+
+func (x *writer) judged(lines []string) map[string]map[string]bool {
+	in := map[string]bool{}
+	for _, l := range lines {
+		in[l] = true
+	}
 	out := map[string]map[string]bool{}
 	for _, v := range x.verdicts {
-		if v.Line != line {
+		if !in[v.Line] {
 			continue
 		}
 		for k, val := range author.ComboOf(v.Sample, x.world) {
@@ -43,6 +66,7 @@ type dimOut struct {
 }
 
 type coverageItem struct {
+	Sources []string       `json:"sources"` // every sentence that has produced this template
 	ID      string         `json:"id"`
 	Frame   string         `json:"frame"`
 	Text    string         `json:"text"`
@@ -63,7 +87,8 @@ func (x *writer) coverageOf(id string) (coverageItem, author.Template, bool) {
 	if !ok {
 		return coverageItem{}, t, false
 	}
-	judged := x.judged(t.Source.Text)
+	srcs := x.sources(id)
+	judged := x.judged(srcs)
 	// the sentence the user wrote is right by definition, so its own kind counts
 	for k, v := range author.AuthoredCombo(t, m, x.world) {
 		if judged[k] == nil {
@@ -71,7 +96,7 @@ func (x *writer) coverageOf(id string) (coverageItem, author.Template, bool) {
 		}
 		judged[k][v] = true
 	}
-	it := coverageItem{ID: id, Frame: x.world.Frames[t.Means.Frame].Title, Text: t.Source.Text, Meaning: m, Needs: t.Needs, Frozen: t.Frozen}
+	it := coverageItem{Sources: srcs, ID: id, Frame: x.world.Frames[t.Means.Frame].Title, Text: t.Source.Text, Meaning: m, Needs: t.Needs, Frozen: t.Frozen}
 	for _, d := range author.Dims(t, m, x.world) {
 		do := dimOut{Dim: d}
 		for _, v := range d.Values {
@@ -212,14 +237,15 @@ func (s *Server) coverageJudged(w http.ResponseWriter, r *http.Request) {
 	}
 	x.mu.RLock()
 	defer x.mu.RUnlock()
-	t, ok := x.world.Templates[r.URL.Query().Get("id")]
-	if !ok {
+	id := r.URL.Query().Get("id")
+	if _, ok := x.world.Templates[id]; !ok {
 		http.Error(w, "unknown template", 404)
 		return
 	}
+	srcs := x.sources(id)
 	out := []sampleOut{}
 	for _, v := range x.verdicts {
-		if v.Line != t.Source.Text {
+		if !inLines(v.Line, srcs) {
 			continue
 		}
 		p := v
@@ -227,4 +253,13 @@ func (s *Server) coverageJudged(w http.ResponseWriter, r *http.Request) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Prior.At > out[j].Prior.At })
 	jsonOut(w, map[string]any{"samples": out})
+}
+
+func inLines(l string, lines []string) bool {
+	for _, x := range lines {
+		if x == l {
+			return true
+		}
+	}
+	return false
 }
