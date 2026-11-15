@@ -78,3 +78,7 @@ details.tree[open] summary, details.forms[open] summary { margin-bottom: var(--s
 .tag.implies { border-style: dotted; color: var(--series-3); }
 .seg.rate button[data-rate="but"][aria-pressed="true"] { color: var(--warn); }
 .pastnotes { gap: 6px; }
+.model-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; padding: 4px 8px; border-radius: var(--r-sm); border: 1px dotted var(--line-2); color: var(--ink-2); }
+.model-line.flagged { border-color: var(--warn); }
+.model-who { font: 600 var(--t-xs) var(--sans); color: var(--series-1); text-transform: uppercase; letter-spacing: 0.06em; }
+.disagree { display: grid; gap: 2px; padding: var(--s2) var(--s3); border: 1px solid var(--line); border-radius: var(--r-md); }

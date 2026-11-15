@@ -20,13 +20,14 @@ import (
 // and samples are plain code (03/D73); model features aren't connected yet.
 
 type writer struct {
-	mu       sync.RWMutex
-	g        *grammar.Store
-	lex      *lexicon.Lexicon
-	world    *author.World
-	verdicts map[string]priorVerdict   // sample text -> latest verdict (08/D104)
-	meanings map[string]author.Meaning // sentence event id -> the meaning it was written for
-	notes    map[string]map[string]int // Fine, But kind -> note -> times used (08/D107)
+	mu            sync.RWMutex
+	g             *grammar.Store
+	lex           *lexicon.Lexicon
+	world         *author.World
+	verdicts      map[string]priorVerdict   // sample text -> latest verdict (08/D104)
+	meanings      map[string]author.Meaning // sentence event id -> the meaning it was written for
+	notes         map[string]map[string]int // Fine, But kind -> note -> times used (08/D107)
+	modelVerdicts map[string]modelVerdict   // sample text + prompt + effort -> the model\'s first pass (10/M1)
 }
 
 // priorVerdict is the latest verdict on a sentence, from the event log.
@@ -40,6 +41,7 @@ type priorVerdict struct {
 	Features realize.Features `json:"-"`
 	Fillers  string           `json:"-"`
 	Line     string           `json:"-"` // the sentence the sample came from
+	Meaning  author.Meaning   `json:"-"`
 	Sample   author.Sample    `json:"-"`
 }
 
@@ -56,13 +58,14 @@ func fillersKey(f map[string]string) string {
 func (x *writer) noteVerdict(at string, d map[string]any) {
 	b, _ := json.Marshal(d)
 	var v struct {
-		Sample  author.Sample `json:"sample"`
-		Line    string        `json:"line"`
-		Verdict string        `json:"verdict"`
-		ButKind string        `json:"but_kind"`
-		Reason  string        `json:"reason"`
-		Note    string        `json:"note"`
-		Star    bool          `json:"star"`
+		Sample  author.Sample  `json:"sample"`
+		Meaning author.Meaning `json:"meaning"`
+		Line    string         `json:"line"`
+		Verdict string         `json:"verdict"`
+		ButKind string         `json:"but_kind"`
+		Reason  string         `json:"reason"`
+		Note    string         `json:"note"`
+		Star    bool           `json:"star"`
 	}
 	if json.Unmarshal(b, &v) != nil || v.Sample.Text == "" {
 		return
@@ -78,7 +81,7 @@ func (x *writer) noteVerdict(at string, d map[string]any) {
 		return
 	}
 	x.verdicts[v.Sample.Text] = priorVerdict{Verdict: v.Verdict, ButKind: v.ButKind, Reason: v.Reason, Note: v.Note, Star: v.Star, At: at,
-		Features: v.Sample.Features, Fillers: fillersKey(v.Sample.Fillers), Line: v.Line, Sample: v.Sample}
+		Features: v.Sample.Features, Fillers: fillersKey(v.Sample.Fillers), Line: v.Line, Sample: v.Sample, Meaning: v.Meaning}
 }
 
 // prior returns the verdict to show on a sample, if any. A "Means Something
@@ -109,13 +112,15 @@ func newWriter(g *grammar.Store, lex *lexicon.Lexicon) (*writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	x := &writer{g: g, lex: lex, world: w, verdicts: map[string]priorVerdict{}, meanings: map[string]author.Meaning{}, notes: map[string]map[string]int{}}
+	x := &writer{g: g, lex: lex, world: w, verdicts: map[string]priorVerdict{}, meanings: map[string]author.Meaning{}, notes: map[string]map[string]int{}, modelVerdicts: map[string]modelVerdict{}}
 	err = g.Events(func(ev grammar.Event) {
 		switch ev.Type {
 		case "verdict":
 			x.noteVerdict(ev.At, ev.Data)
 		case "sentence":
 			x.noteMeaning(ev.ID, ev.Data)
+		case "model-verdict":
+			x.noteModelVerdict(ev.At, ev.Data)
 		}
 	})
 	return x, err

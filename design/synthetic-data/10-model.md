@@ -50,6 +50,17 @@ M5. **Notes into rules.** On demand, not per sample.
   - Shown: a Rule Ideas list on Coverage. The user picks which to make real; implementing one is a code change (with me) until rules can be edited in the UI (sd/06/T18).
 M6. Later: the random audit before an export (sd/08/W9d), where the model judges the drawn rows and the user reviews disagreements; and proposing new realisations of a meaning for the user to vet (sd/03/A5).
 
+## Build status (2026-11-15)
+
+B1. Built: llm-server enabled at boot (D115); the logged call path (`internal/llm`, records in `<data>/model-calls/`, chat template stored by hash, model file sha256 cached in `model-files.json`); the first pass on Write and Coverage (M1) with Accept (key A), accepted verdicts recorded with `via: model` and the call id; calibration on Coverage (M2) per prompt version and effort, with the disagreements listed. Few-shot examples are built and off (`-few-shot` / `GANGLION_FEW_SHOT=1`).
+B2. Not built yet: span suggestions (M3), the word helper's table (M4), rule ideas (M5), flagged-first sorting (M1 shows a highlighted border on flagged and low-confidence suggestions instead, so the list doesn't jump while you review).
+B3. Measured: 8 samples judged in 11–16 s in parallel at low effort; a cold start adds ~20 s.
+
+## Prompt versions
+
+P1. `453f8cdca93e`: first version. Marked correct negative samples ("This ladder wasn't old.") as Means Something Else: it read the role line "age = old" as asserted and didn't understand that tags can deny it.
+P2. `1b5ecc4381a3`: adds how to read a sample (the meaning says what it's about; tags set tense, affirm or deny, statement or question), with that example. Still flags some negatives with low confidence; needs real calibration data before more changes.
+
 ## Guardrails
 
 G1. Model output is never a verdict, a choice or a rule until the user accepts it; everywhere it appears it says it's the model's.
@@ -61,10 +72,21 @@ G3. Timeouts and the cold start: the first call after idle takes ~10 s; pages sa
 D110. The model does the first pass over samples and the user reviews it; only the user's verdicts count. (user: "A first pair of eyes that I review (as the second).")
 D111. Use the user's llm-server with gpt-oss-120b, configured from ~/work/llm. (user: "Yes.")
 
+D112. One call per sample, in parallel (M1). Answers Q73. (user: "Yes, with caveats.")
+D113. Few-shot examples from the user's verdicts: built, but **off to start**, behind a switch, because the prompt will need several rounds of iteration first. Answers Q74. (user: "Be prepared to turn this off, or maybe start with it off? I think we'll need to iterate a few times on the prompt.")
+D113a. So prompts are versioned: each prompt lives in a file in the repo, its hash goes into every call record and model verdict, and calibration (M2) reports agreement per prompt version, so iterations can be compared.
+D114. Accept one sample at a time; no accept-all until calibration shows high agreement. Answers Q75. (user: yes)
+D115. Enable llm-server at boot. Answers Q76. (user: yes)
+D116. Low reasoning effort for the first pass, compared against medium during calibration. Answers Q77. (user: yes)
+
 ## Open questions
 
-Q73. One call per sample, in parallel (M1), rather than one call per batch? I lean per sample: no anchoring, and the server's parallel slots make it about as fast.
-Q74. Few-shot examples from the user's own verdicts (a handful of recent ✕ and ◐ with notes, and some ✓, from the same frame)? I lean yes: it's how the model learns this user's taste rather than generic taste.
-Q75. Accept only one sample at a time (key A), with no "accept all", until calibration (M2) shows high agreement? I lean yes.
-Q76. Enable llm-server so it starts at boot (it still sleeps after 15 idle minutes and frees its memory), or start it only while working on this? I lean enable.
-Q77. Low reasoning effort for M1, checked against medium on the calibration set? I lean yes: start low, measure.
+(none for this note)
+
+## Superseded
+
+Q73 (answered by D112). One call per sample?
+Q74 (answered by D113). Few-shot from the user's verdicts?
+Q75 (answered by D114). Accept one at a time?
+Q76 (answered by D115). Enable llm-server at boot?
+Q77 (answered by D116). Low reasoning effort first?

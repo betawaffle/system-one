@@ -23,6 +23,7 @@ import (
 	"ganglion/internal/author"
 	"ganglion/internal/grammar"
 	"ganglion/internal/lexicon"
+	"ganglion/internal/llm"
 	"ganglion/internal/store"
 	"ganglion/internal/web"
 	"ganglion/internal/worker"
@@ -61,6 +62,9 @@ func main() {
 	hosts := flag.String("hosts", os.Getenv("GANGLION_HOSTS"), "comma-separated hostnames to accept besides IPs and localhost (default $GANGLION_HOSTS)")
 	sock := flag.String("worker", "", "worker socket (default <data>/worker.sock)")
 	user := flag.String("user", envOr("GANGLION_USER", "user"), "name labels are recorded under (a claim, not a login; default $GANGLION_USER)")
+	llmURL := flag.String("llm", envOr("GANGLION_LLM", "http://localhost:8081"), "llama.cpp server for model features, or \"none\" (default $GANGLION_LLM)")
+	llmModel := flag.String("llm-model", envOr("GANGLION_LLM_MODEL", "gpt-oss-120b"), "model id on that server")
+	fewShot := flag.Bool("few-shot", os.Getenv("GANGLION_FEW_SHOT") == "1", "include the user's verdicts as examples in the judge prompt (off to start: design/synthetic-data/10/D113)")
 	flag.Parse()
 	if *sock == "" {
 		*sock = filepath.Join(*data, "worker.sock")
@@ -107,6 +111,8 @@ func main() {
 		User:      *user,
 		Grammar:   gram,
 		Lexicon:   lex,
+		LLM:       llmClient(*llmURL, *llmModel, *data),
+		FewShot:   *fewShot,
 	})
 	if err != nil {
 		log.Fatalf("web: %v", err)
@@ -310,4 +316,11 @@ func importCmd(defaultData string, args []string) {
 	if err := st.Analyze(); err != nil {
 		log.Fatalf("stats: %v", err)
 	}
+}
+
+func llmClient(url, model, data string) *llm.Client {
+	if url == "" || url == "none" {
+		return nil
+	}
+	return llm.New(url, model, filepath.Join(data, "model-calls"))
 }

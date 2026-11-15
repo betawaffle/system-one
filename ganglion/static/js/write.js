@@ -1,3 +1,4 @@
+import * as model from "./model.js";
 import * as fineBut from "./fine-but.js";
 
 // The writing screen (design/synthetic-data/08). Alignment, templates and
@@ -269,6 +270,10 @@ function renderSamples() {
       l.samples.map(s => sampleRow(l, s)),
       l.compact ? h("details", { class: "tree" }, h("summary", {}, "Template"), h("pre", { class: "out" }, l.compact)) : null);
   })));
+  for (const l of ready) {
+    const todo = l.samples.filter(s => !verdicts.has(l.text + "\u0000" + s.text) && !s.prior);
+    if (todo.length) model.judge(card.meaning, l.text, todo, () => renderSamples());
+  }
   const rows = $$(".sample-row", box);
   if (curSample >= rows.length) curSample = rows.length - 1;
   rows.forEach((r, i) => r.classList.toggle("current", i === curSample));
@@ -282,8 +287,9 @@ function sampleRow(l, s) {
   const v = verdicts.get(key) || fromPrior(s.prior);
   const send = patch => {
     const nv = { ...v, ...patch, prior: null };
+    delete nv.via; delete nv.call;
     verdicts.set(key, nv);
-    api("/api/write/verdict", { meaning: card.meaning, line: l.text, sample: s, verdict: nv.v || "", but_kind: nv.v === "but" ? nv.but_kind || "" : "", reason: nv.reason || "", note: nv.note || "", star: !!nv.star })
+    api("/api/write/verdict", { meaning: card.meaning, line: l.text, sample: s, verdict: nv.v || "", but_kind: nv.v === "but" ? nv.but_kind || "" : "", reason: nv.reason || "", note: nv.note || "", star: !!nv.star, via: patch.via || "", model_call: patch.call || "" })
       .then(() => { if (nv.v === "but" && nv.note) fineBut.loadNotes(); }).catch(fail);
     if (patch.reason === "Sounds Odd") {
       const cur = needs.get(l.text) || [];
@@ -303,7 +309,8 @@ function sampleRow(l, s) {
     h("div", { class: "sample-main" },
       h("div", { class: "sample-text" }, s.text,
         v.prior ? h("span", { class: "tag mini", "data-tip": `Your verdict from ${new Date(v.prior).toLocaleString()}. Change it any time.` }, "Judged Before") : null),
-      h("div", { class: "row sample-tags" }, tags.map(([t, c]) => h("span", { class: "tag mini" + (c ? " accent" : "") }, t)), implies)),
+      h("div", { class: "row sample-tags" }, tags.map(([t, c]) => h("span", { class: "tag mini" + (c ? " accent" : "") }, t)), implies),
+      v.v ? null : model.line(h, s.text, p => send(p))),
     h("div", { class: "row" },
       h("div", { class: "seg rate", role: "group", "aria-label": "Verdict" },
         h("button", { "aria-pressed": String(v.v === "ok"), "data-rate": "good", onclick: () => send({ v: v.v === "ok" ? null : "ok", reason: null }), "data-tip": "Right (Y)" }, "✓"),
@@ -414,9 +421,10 @@ document.addEventListener("keydown", e => {
   else if (e.key === "y") { e.preventDefault(); judge("ok"); }
   else if (e.key === "x") { e.preventDefault(); judge("bad"); }
   else if (e.key === "b") { e.preventDefault(); judge("but"); }
+  else if (e.key === "a") { e.preventDefault(); const b = $$(".sample-row")[curSample]?.querySelector(".model-line .btn"); if (b) b.click(); }
   else if (e.key === "r") { e.preventDefault(); freshDraw(); }
   else if (e.key === "?") { e.preventDefault(); $("#keys").showModal(); }
 });
 $("#keys [data-close]").addEventListener("click", () => $("#keys").close());
 
-if (!$("#write-error")) { renderMeaning(); load(); loadSaved(); fineBut.loadNotes(); }
+if (!$("#write-error")) { renderMeaning(); load(); loadSaved(); fineBut.loadNotes(); model.loadStatus(); }

@@ -1,3 +1,5 @@
+import * as calibration from "./calibration.js";
+import * as model from "./model.js";
 import * as fineBut from "./fine-but.js";
 
 // The coverage view (design/synthetic-data/08/W9): which kinds of sample each
@@ -98,6 +100,8 @@ async function show(it) {
   try {
     const j = await api("/api/coverage/show", { id: it.id, seed });
     shown.set(it.id, j.samples || []);
+    const todo = (j.samples || []).filter(s => !s.prior);
+    if (todo.length) model.judge(it.meaning, it.text, todo, () => { render(); sizeBars(); });
   } catch (e) { return alert(e.message); }
   render(); sizeBars();
 }
@@ -107,9 +111,10 @@ function sampleRow(it, s) {
   const v = verdicts.get(key) || (p ? { v: p.verdict || null, but_kind: p.but_kind || null, reason: p.reason || null, note: p.note || "", star: !!p.star, prior: p.at } : {});
   const send = async patch => {
     const nv = { ...v, ...patch, prior: null };
+    delete nv.via; delete nv.call;
     verdicts.set(key, nv);
     try {
-      await api("/api/write/verdict", { meaning: it.meaning, line: it.text, sample: s, verdict: nv.v || "", but_kind: nv.v === "but" ? nv.but_kind || "" : "", reason: nv.reason || "", note: nv.note || "", star: !!nv.star });
+      await api("/api/write/verdict", { meaning: it.meaning, line: it.text, sample: s, verdict: nv.v || "", but_kind: nv.v === "but" ? nv.but_kind || "" : "", reason: nv.reason || "", note: nv.note || "", star: !!nv.star, via: patch.via || "", model_call: patch.call || "" });
       if (nv.v === "but" && nv.note) await fineBut.loadNotes();
       if (patch.reason === "Sounds Odd") await api("/api/template/need", { id: it.id, tense: s.features.tense });
     } catch (e) { alert(e.message); }
@@ -131,7 +136,8 @@ function sampleRow(it, s) {
     h("div", { class: "sample-main" },
       h("div", { class: "sample-text" }, s.text, v.prior ? h("span", { class: "tag mini", "data-tip": `Judged ${new Date(v.prior).toLocaleString()}` }, "Judged ", new Date(v.prior).toLocaleDateString()) : null),
       h("div", { class: "row sample-tags" }, tags, s.time ? h("span", { class: "tag mini" }, "time: ", s.time) : null,
-        (s.implies || []).map(x => h("span", { class: "tag mini implies" }, "implies: ", x)))),
+        (s.implies || []).map(x => h("span", { class: "tag mini implies" }, "implies: ", x))),
+      v.v ? null : model.line(h, s.text, p => send(p))),
     h("div", { class: "row" },
       h("div", { class: "seg rate", role: "group", "aria-label": "Verdict" },
         h("button", { "aria-pressed": String(v.v === "ok"), "data-rate": "good", onclick: () => send({ v: v.v === "ok" ? null : "ok", reason: null }), "data-tip": "Right" }, "✓"),
@@ -152,4 +158,4 @@ function sampleRow(it, s) {
 function sizeBars() {
   document.querySelectorAll("[data-w]").forEach(el => { el.style.width = (Math.max(0, Math.min(1, +el.dataset.w)) * 100).toFixed(1) + "%"; });
 }
-if (!$("#cov-error")) { fineBut.loadNotes(); load().then(sizeBars); }
+if (!$("#cov-error")) { fineBut.loadNotes(); model.loadStatus(); load().then(sizeBars); calibration.mount($("#model-cal"), h); }

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"ganglion/internal/grammar"
 	"ganglion/internal/lexicon"
+	"ganglion/internal/llm"
 	"html/template"
 	"io"
 	"io/fs"
@@ -38,6 +39,8 @@ type Config struct {
 	User      string // who labels come from: a name claim, no logins yet
 	Grammar   *grammar.Store
 	Lexicon   *lexicon.Lexicon
+	LLM       *llm.Client // nil: no model features (10/R2)
+	FewShot   bool        // judge prompt includes the user's verdicts (10/D113: off to start)
 }
 
 type Server struct {

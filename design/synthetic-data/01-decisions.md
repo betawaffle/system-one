@@ -18,15 +18,10 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 
 - sd/09 data shapes: (none yet)
 
-- sd/10 model: D110 model first pass, user reviews, D111 llm-server with gpt-oss-120b.
+- sd/10 model: D110 model first pass, user reviews, D111 llm-server with gpt-oss-120b, D112 one call per sample, D113 few-shot off to start, prompts versioned, D114 accept one at a time, D115 llm-server at boot, D116 low effort first.
 
 ## Open questions (all)
 
-- Q73 one model call per sample, in parallel (sd/10/M1). Lean yes.
-- Q74 few-shot examples from the user's own verdicts (sd/10/M1). Lean yes.
-- Q75 accept one at a time, no accept-all until calibration (sd/10/M2). Lean yes.
-- Q76 enable llm-server at boot (sd/10/R2). Lean yes.
-- Q77 low reasoning effort for the first pass, checked against medium (sd/10/R3). Lean yes.
 - Q71 data shapes for the first build (sd/09). Comment on anything off; cheap to change for now.
 
 ## Future topics (all)
