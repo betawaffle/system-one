@@ -101,6 +101,7 @@ P6a. The user found that Jev knows "the relative age of two things doesn't chang
 J15. Jev does the first pass on Write and Coverage when its key is configured (`~/.config/ganglion/jev.key`: key, then endpoint; `-jev-key`); without it, the local model as before. Only samples you haven't judged are sent, as before.
 J15a. Never the same request twice: each answer is stored as a `jev-verdict` event under the sha256 of the exact request body and replayed at start, and a request already in flight is waited on, not repeated. Measured: the 49-sample set sent 49 calls, then 0 on a second run and 0 after a restart.
 J15b. Why? shows the exact JSON sent and received, and each check's value. Coverage's calibration panel stays, relabelled as the local model's, with a note that its run takes ~25 minutes.
+J15d. The local model's calibration is turned off, panel and endpoint (`calibrationOff`), since a run takes ~25 minutes. (user: "We can't do this lol. Disable it for now.") Supersedes the relabelling in J15b.
 J15c. Cost: a request is ~750 bytes (~200 tokens); at the site's $42 per billion input tokens that's ~$0.00001 each, so the user's free $5 a month (user: "I think") covers hundreds of thousands.
 
 ## Plan before the next run

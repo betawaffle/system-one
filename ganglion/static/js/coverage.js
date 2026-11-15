@@ -159,4 +159,4 @@ function sampleRow(it, s) {
 function sizeBars() {
   document.querySelectorAll("[data-w]").forEach(el => { el.style.width = (Math.max(0, Math.min(1, +el.dataset.w)) * 100).toFixed(1) + "%"; });
 }
-if (!$("#cov-error")) { fineBut.loadNotes(); model.loadStatus(); load().then(sizeBars); calibration.mount($("#model-cal"), h); }
+if (!$("#cov-error")) { fineBut.loadNotes(); model.loadStatus(); load().then(sizeBars); if ($("#model-cal")) calibration.mount($("#model-cal"), h); }

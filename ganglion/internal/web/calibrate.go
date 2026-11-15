@@ -26,8 +26,16 @@ type calJob struct {
 
 var cal calJob
 
+// calibrationOff: a run of the local model takes ~25 minutes, so it's off
+// for now (user: "We can't do this lol. Disable it for now."; sd/10/J15d).
+var calibrationOff = true
+
 // POST /api/model/calibrate {effort}
 func (s *Server) modelCalibrate(w http.ResponseWriter, r *http.Request) {
+	if calibrationOff {
+		http.Error(w, "calibration of the local model is turned off", 410)
+		return
+	}
 	x, err := s.wr()
 	if err != nil || s.cfg.LLM == nil {
 		http.Error(w, "no model configured", 503)
