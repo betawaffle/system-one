@@ -63,6 +63,9 @@ B3. Measured: 8 samples judged in 11–16 s in parallel at low effort; a cold st
 P1. `453f8cdca93e`: first version. Marked correct negative samples ("This ladder wasn't old.") as Means Something Else: it read the role line "age = old" as asserted and didn't understand that tags can deny it.
 P2. `1b5ecc4381a3`: adds how to read a sample (the meaning says what it's about; tags set tense, affirm or deny, statement or question), with that example. Still flags some negatives with low confidence; needs real calibration data before more changes.
 
+P3. `26eece049f8f`: adds a list of what tense and wording imply (facts that don't change, habit, refusal, this/that, other meanings). Much worse: 26 of 44 against v2's 40 of 44 at low effort. It said "implies refusal" for nearly everything ("That apple isn't old."), probably the list combined with "use the person's earlier notes word for word" and "implies refusal" being one of those notes; and it still passed the age ✕. Reverted to v2 the same day; v3's results stay in the log.
+P3a. Lessons for the next try: change one thing at a time; don't push it to reuse notes word for word (offer them as wording to borrow only when they describe exactly the same thing); and add guidance aimed at the one gap (facts that can't change across tenses) rather than a list of everything.
+
 ## Guardrails
 
 G1. Model output is never a verdict, a choice or a rule until the user accepts it; everywhere it appears it says it's the model's.
