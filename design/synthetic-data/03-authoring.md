@@ -96,17 +96,20 @@ A16e. I'd build the generator in Go inside the ganglion server, so a preview is 
 ## Decided
 
 D58. A word-by-word helper as in A8. (user)
-D72. Live samples while editing a template, and fast generation (A16). (user)
 D62. Templates are trees, all the way down. Answers Q36. (user: "Fine with me. It's trees all the way down, my friend.")
 D63. Flag extra meaning and ask what was added. Answers Q37. (user: "Yes, but how?" Mechanism proposed in A13; Q39.)
 D64. First frames: states and properties, then transfer (A14a). Answers Q38. (user: "Sounds good.")
 D65. The A13 mechanism, including the A13d choices. Answers Q39. (user: "Yep, sounds good.")
+D72. Live samples while editing a template, and fast generation (A16). (user)
+D73. The generator is Go inside the ganglion server, one code path for previews and bulk generation; target a sample batch well under 100 ms (A16e). Answers Q46. (user: "Yes, please.")
 
 ## Open questions
 
-Q46. Generator in Go inside the ganglion server (A16e)? I lean yes.
+(none for this note)
 
 ## Superseded
+
+Q46 (answered by D73). Generator in Go inside the ganglion server?
 
 Q38 (answered by D64). First frame family (A14)?
 Q39 (answered by D65). Does the A13 mechanism look right?
