@@ -95,11 +95,15 @@ D77. Contractions, spelling dialect and collective agreement are style features,
 D78. First verb-group scope as in V1. Answers Q51. (user: "Fine.")
 D79. Retroactive fixes through provenance plus doubt flags, no pre-vetting; no dataset leaves ganglion in a form that can't be regenerated (P1d, P1e). Answers Q52. (user: "Yup.") Bulk import and automatic adding (S1c) confirmed: "Good."
 
+D80. Sentences using unsupported verb groups are saved frozen and usable, tagged with what they wait on (V3). Answers Q53. (user: "frozen and usable sounds good.")
+
 ## Open questions
 
-Q53. Sentences using unsupported verb groups are saved frozen and usable, tagged with what they wait on, rather than parked (V3c, V3f)? I lean frozen.
+(none for this note)
 
 ## Superseded
+
+Q53 (answered by D80). Frozen and usable, or parked?
 
 Q52 (answered by D79). Retroactive fixes and doubt flags instead of pre-vetting?
 
