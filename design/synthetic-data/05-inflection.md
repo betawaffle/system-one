@@ -1,4 +1,4 @@
-# Inflection and agreement (draft 2, 2026-11-15)
+# Inflection and agreement (draft 3, 2026-11-15)
 
 What the Go generator (sd/03/D73) needs in order to turn lemmas and features into correct English words, and where the data comes from.
 
@@ -65,6 +65,14 @@ V2a. Is V2 harder? (user) The word forms are barely harder: a few more rules eac
   - passive ("The book was given to Tom"): the forms are easy (be + past participle). The template side is harder: the "thing" becomes the subject, the giver becomes optional ("by Mara"), and not every verb allows it ("A book was had"). It's a derivation, like REL templates (sd/04/D68).
 V2b. So V2 waits on meaning and template work, not on inflection.
 
+V3. What happens if the user writes a sentence that uses V2 before it exists? (user) Nothing breaks, and the sentence is never lost:
+V3a. Alignment (sd/03/A13) still finds the roles. The verb-group code recognises the V2 shape even though it can't build it: a modal ("could have given"), a passive ("was given … by Mara"), or a tag ("…, didn't she?").
+V3b. The tool says what it found and that it isn't supported yet, e.g. "'could' is a modal; modality isn't in the meaning language yet". For a modal or a tag, it treats the extra word as extra meaning (sd/03/A13d choice 4), which the user can name now (possibility, asking for agreement).
+V3c. The template is saved **frozen**: the verb group stays as literal words, and `supports` lists only the one combination it was written in (sd/04/C1a). It's usable right away: samples still vary fillers, references and optional parts, just not tense, polarity or mood.
+V3d. A passive is a viewpoint template, like "Tom got … from Mara" (sd/03/A13e): the thing is the subject and the giver is optional. Only its verb group is frozen.
+V3e. Each frozen template is tagged with what it waits on (modals, passive, tags). The count per tag says which V2 item to build next, from what the user actually writes. When that item lands, code converts its frozen templates to feature-generic ones, and the user checks a few samples (sd/03/A16).
+V3f. The alternative is parking: saved but unusable until support exists. Frozen loses nothing compared to parking, and the templates count and produce data in the meantime. (Q53)
+
 ## Register
 
 R1. Some choices are style, not meaning: contractions ("didn't"), US vs UK spelling ("color/colour"), collective agreement ("the team is/are"). I'd make these generation features. They vary in samples and bulk output like tense does, but they don't count as meaning.
@@ -81,16 +89,19 @@ T12. Coordination agreement: "Mara and Tom are", "Mara or the boys are" (nearest
 ## Decided
 
 D74. Rules propose forms, entries store them, generation only looks up; vetting is as needed, with "hey wait a minute" anywhere a word shows (P1a, P1c). Answers Q47. (user: "I like P1a, except that the vetting can be as-needed. Like start by assuming the rules are correct, but give me the ability to go 'hey wait a minute'.")
-D75. Seed from WordNet and CMUdict, and keep the licence clean (S1b). Answers Q48. (user: "S1a is fine, but let's do our best to keep our license clean.") Read as: no share-alike data at all, cross-check included; see S1b.
+D75. Seed from WordNet and CMUdict, and keep the licence clean (S1b). Answers Q48. (user: "S1a is fine, but let's do our best to keep our license clean.") Read as: no share-alike data at all, cross-check included; see S1b. The user confirmed that reading: "Yeah, just want to be safe for now."
 D76. Entities and names carry an explicit pronoun set (L2). Answers Q49. (user: "Fine with me.") Amends sd/02/L2.
 D77. Contractions, spelling dialect and collective agreement are style features, not meaning (R1); the default dialect is US. Answers Q50. (user: "R1: Agreed." "Q50: US.")
 D78. First verb-group scope as in V1. Answers Q51. (user: "Fine.")
+D79. Retroactive fixes through provenance plus doubt flags, no pre-vetting; no dataset leaves ganglion in a form that can't be regenerated (P1d, P1e). Answers Q52. (user: "Yup.") Bulk import and automatic adding (S1c) confirmed: "Good."
 
 ## Open questions
 
-Q52. Retroactive fixes through provenance plus doubt flags, instead of pre-vetting (P1d, P1e)? I lean yes. The one condition: no dataset leaves ganglion in a form that can't be regenerated.
+Q53. Sentences using unsupported verb groups are saved frozen and usable, tagged with what they wait on, rather than parked (V3c, V3f)? I lean frozen.
 
 ## Superseded
+
+Q52 (answered by D79). Retroactive fixes and doubt flags instead of pre-vetting?
 
 Q47 (answered by D74). Rules propose, user vets once, generation looks up?
 Q48 (answered by D75). Seed from WordNet and CMUdict, cross-check UniMorph/Wiktionary?
