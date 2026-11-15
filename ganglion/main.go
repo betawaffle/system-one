@@ -43,6 +43,10 @@ func main() {
 		blacklistCmd(defaultData, os.Args[2:])
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "grammar" {
+		grammarCmd(defaultData, os.Args[2:])
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "lexicon" {
 		lexiconCmd(defaultData, os.Args[2:])
 		return
@@ -128,6 +132,45 @@ func envOr(k, def string) string {
 		return v
 	}
 	return def
+}
+
+// grammarCmd: ganglion grammar retire ID REASON [-by NAME]
+// Retiring keeps every version (design/synthetic-data/07/V3); the reason is an
+// authoring event linked from the retire record. Restart the service afterwards:
+// it reads the grammar at start.
+func grammarCmd(defaultData string, args []string) {
+	fl := flag.NewFlagSet("grammar", flag.ExitOnError)
+	data := fl.String("data", defaultData, "data directory")
+	by := fl.String("by", "claude", "who is retiring it")
+	var flags, pos []string
+	for i := 0; i < len(args); i++ {
+		if strings.HasPrefix(args[i], "-") && i+1 < len(args) {
+			flags = append(flags, args[i], args[i+1])
+			i++
+		} else {
+			pos = append(pos, args[i])
+		}
+	}
+	fl.Parse(append(flags, pos...))
+	if fl.Arg(0) != "retire" || fl.NArg() < 3 {
+		log.Fatal("usage: ganglion grammar retire ID REASON [-by NAME]")
+	}
+	g, err := grammar.Open(filepath.Join(*data, "grammar"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	id, reason := fl.Arg(1), strings.Join(fl.Args()[2:], " ")
+	if _, ok := g.Head(id); !ok {
+		log.Fatalf("%s has no current version", id)
+	}
+	ev, err := g.AddEvent("retire", *by, "ganglion/cli", map[string]any{"id": id, "reason": reason})
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := g.Retire(id, grammar.Meta{By: *by, Client: "ganglion/cli", Event: ev}); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("retired %s (event %s): %s\n", id, ev, reason)
 }
 
 // lexiconCmd: ganglion lexicon import [-data DIR] [-wordnet DIR] [-cmudict FILE]

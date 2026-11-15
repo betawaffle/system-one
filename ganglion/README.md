@@ -40,6 +40,15 @@ GANGLION_HOSTS=myhost,myhost.example.ts.net
 
 `deploy/install.sh` builds to `~/.local/bin/ganglion`, installs the two systemd user units from `deploy/`, and restarts them.
 
+## Grammar
+
+The synthetic-data grammar lives in `<data>/grammar` (design/synthetic-data/07, 09): content blobs plus append-only `versions.jsonl` and `events.jsonl`. `ganglion lexicon import` builds the word list from the raw WordNet and CMUdict downloads. To retire a template or other object, keeping its history and logging why:
+
+```
+ganglion grammar retire template:give-ee2862db "why it's retired" [-by NAME]
+systemctl --user restart ganglion.service   # the server reads the grammar at start
+```
+
 ## Backups
 
 A plain file copy of a live SQLite database (and its `-wal` file) can be inconsistent, so don't back up or restore `index.db` and `blobs.db` directly. `ganglion snapshot-db` writes consistent copies (`VACUUM INTO`, safe while the server runs) to `<data>/snapshot/`. Restore from those. `blobs.db` can't be rebuilt, since it holds the small blobs themselves.
