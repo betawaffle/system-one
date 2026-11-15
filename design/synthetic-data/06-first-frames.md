@@ -46,6 +46,10 @@ P9. The user asked whether the age rule should apply to "this apple is old". Not
 P9a. An attribute can say `direction: increasing` (age). Those combinations are skipped by the generator until the world model can state existence, as in P8b. The rule sits on the attribute and applies at generation time, so templates saved before or after it are the same.
 
 P10. "Umbrellas aren't tall, they are long." (user, from a meaning card offering "umbrella, height = tall"). Which dimension a thing has depends on its shape, finer than "artifact". Fix: a new type `rod` (long, thin made things: umbrella, pencil) under artifact; attributes can list types they don't apply to (`except`), so height skips rods; a new attribute `length` (short/long) covers them. Also: age = young is "fresh" for food, now that Next offers both ends of a scale.
+F6a. Built (2026-11-15; user: "Let's do F9", the chat's name for this frame): `located(thing, place, relation)`, title Located, a state with the verb be. The relation is an attribute of a new kind, `relation` (`position`: in, on, under, near), held by the place: its word depends on the place's type the way property words depend on the holder's (P4), and a value fits a place only where it has a word for it. In: containers and places. On: surfaces. Under: surfaces and containers. Near: anything placeable.
+F6b. New types under artifact: `container` (box, cup, bottle) and `surface` (table, chair); and `place` under physical (park, kitchen, garden, house). Samples and New Fillers used to swap a filler only for one of exactly the same type, which after this retyping would have stopped a box swapping with a chair. They now swap within the same kind (person, animal, artifact, food, place…), still only where the attribute or relation fits.
+F6c. Next picks a thing that isn't a person or a place, a place some relation fits, and a relation with a word for that place.
+F6d. Found at once: sizes. Next offers "the chair is in the bottle". Containing and supporting depend on relative size, which nothing records yet. (Q81)
 P10a. This is the type system growing from what the user notices (sd/02/D60). Doing it by hand for now; editing types and attributes in the UI is T18.
 
 ## Starting types
@@ -91,6 +95,8 @@ D84. Adjective order applied by code (R3). Answers Q57. (user: "I guess so, not 
 D85. Starting types and attributes as in Y1 and P7, grown as the user writes. Answers Q58. (user: "Yup, sounds good.")
 
 ## Open questions
+
+Q81. Sizes for Located (F6d). I lean a rough size class per entity (small: pencil, cup, apple, book; medium: chair, box, dog, lamp, umbrella; large: table, ladder, person; places are larger than all), with in and under needing the thing smaller than the place, and on needing it no bigger. Alternatives: let verdicts mark them Sounds Odd until the world model, or drop "in" for cups and bottles.
 
 (none for this note)
 

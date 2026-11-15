@@ -287,12 +287,12 @@ func Samples(t Template, m Meaning, w *World, lex *lexicon.Lexicon, seed uint64,
 					continue
 				}
 				pool := w.EntitiesOf(ro.Type)
-				if ro.Name == "holder" || ro.Name == "a" || ro.Name == "b" {
-					pool = fitting(pool, m, w) // the attribute must apply (06/P2)
+				if Bears(ro.Name) {
+					pool = Fitting(pool, m, w) // the attribute must apply (06/P2)
 				}
 				var free []string
 				for _, id := range pool {
-					if !used[id] && w.Entities[id].Type == w.Entities[fl.Entity].Type {
+					if !used[id] && w.KindOf(w.Entities[id].Type) == w.KindOf(w.Entities[fl.Entity].Type) {
 						free = append(free, id)
 					}
 				}
@@ -360,7 +360,8 @@ func Samples(t Template, m Meaning, w *World, lex *lexicon.Lexicon, seed uint64,
 	return out
 }
 
-func fitting(pool []string, m Meaning, w *World) []string {
+// Fitting keeps the entities the meaning's attribute value applies to.
+func Fitting(pool []string, m Meaning, w *World) []string {
 	for _, fl := range m.Roles {
 		if fl.Value == nil {
 			continue
@@ -368,7 +369,8 @@ func fitting(pool []string, m Meaning, w *World) []string {
 		a := w.Attributes["attribute:"+fl.Value.Attribute]
 		var out []string
 		for _, id := range pool {
-			if a.Applies(w.Entities[id].Type, w) {
+			t := w.Entities[id].Type
+			if a.Applies(t, w) && (fl.Value.Value == "" || a.HasWord(fl.Value.Value, t, w)) {
 				out = append(out, id)
 			}
 		}

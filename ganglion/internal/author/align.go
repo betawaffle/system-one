@@ -25,8 +25,9 @@ type Token struct {
 	Converse bool   `json:"converse,omitempty"`
 	Modal    bool   `json:"modal,omitempty"`
 	Bang     bool   `json:"bang,omitempty"`
-	Det      string `json:"det,omitempty"`  // on a noun: the determiner written before it
-	Poss     bool   `json:"poss,omitempty"` // a possessive before another role's noun: extra meaning (an owner)
+	Expand   string `json:"expand,omitempty"` // a clitic's full word: "'s" -> "is", "'ll" -> "will"
+	Det      string `json:"det,omitempty"`    // on a noun: the determiner written before it
+	Poss     bool   `json:"poss,omitempty"`   // a possessive before another role's noun: extra meaning (an owner)
 	Span     string `json:"span,omitempty"`
 }
 
@@ -81,6 +82,65 @@ func set(ws ...string) map[string]bool {
 	return m
 }
 
+// clitics are the contracted words, other than "n't" (negBase handles that).
+var clitics = map[string]string{"'re": "are", "'m": "am", "'ll": "will", "'ve": "have", "'d": "would"}
+
+// splitClitics splits "that's" into "that" and "'s" (user: "it gets confused
+// by \"that's\""). "'s" is "is" unless a noun follows, when it's a
+// possessive ("the dog's bone") and stays on its word.
+func splitClitics(toks []Token, lex *lexicon.Lexicon) []Token {
+	var out []Token
+	for i, t := range toks {
+		lt := strings.ToLower(t.Text)
+		k := strings.LastIndex(lt, "'")
+		if k <= 0 || strings.HasSuffix(lt, "n't") {
+			out = append(out, t)
+			continue
+		}
+		cl, exp := lt[k:], clitics[lt[k:]]
+		if cl == "'s" {
+			next := ""
+			if i+1 < len(toks) {
+				next = strings.ToLower(toks[i+1].Text)
+			}
+			if !isLinkingS(lt[:k], next, lex) {
+				out = append(out, t)
+				continue
+			}
+			exp = "is"
+		}
+		if exp == "" {
+			out = append(out, t)
+			continue
+		}
+		out = append(out, Token{Text: t.Text[:k], At: t.At}, Token{Text: t.Text[k:], At: t.At + k, Expand: exp})
+	}
+	return out
+}
+
+// isLinkingS says whether "'s" after word is "is": always after pronouns and
+// "that", "there" and the like; after a noun or name, when what follows
+// isn't a noun ("the dog's old", not "the dog's bone").
+func isLinkingS(word, next string, lex *lexicon.Lexicon) bool {
+	switch word {
+	case "it", "that", "this", "he", "she", "there", "here", "what", "who", "where", "how", "when", "why":
+		return true
+	}
+	if next == "" || !wordRE.MatchString(next) || grammarWords[next] || next == "not" {
+		return true
+	}
+	noun, adj := false, false
+	for _, f := range lex.Lookup(next) {
+		switch f.POS {
+		case "noun":
+			noun = true
+		case "adj":
+			adj = true
+		}
+	}
+	return adj || !noun
+}
+
 // negBase splits a contracted negative: "didn't" -> "did", "won't" -> "will".
 func negBase(w string) (string, bool) {
 	switch w {
@@ -102,9 +162,13 @@ func Align(text string, m Meaning, w *World, lex *lexicon.Lexicon) Line {
 	for _, loc := range tokenRE.FindAllStringIndex(text, -1) {
 		toks = append(toks, Token{Text: text[loc[0]:loc[1]], At: loc[0]})
 	}
+	toks = splitClitics(toks, lex)
 	lw := make([]string, len(toks))
 	for i, t := range toks {
 		lw[i] = strings.ToLower(t.Text)
+		if t.Expand != "" {
+			lw[i] = t.Expand
+		}
 	}
 	roleType := map[string]string{}
 	for _, r := range f.Roles {
@@ -195,7 +259,7 @@ func Align(text string, m Meaning, w *World, lex *lexicon.Lexicon) Line {
 }
 
 func holderType(m Meaning, w *World) string {
-	for _, r := range []string{"holder", "a"} {
+	for _, r := range []string{"holder", "a", "place"} {
 		if f, ok := m.Roles[r]; ok && f.Entity != "" {
 			return w.Entities[f.Entity].Type
 		}

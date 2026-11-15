@@ -27,6 +27,13 @@ var seedFrames = []Frame{
 			{Name: "b", Type: "physical", Generic: "standard", Explainer: "What it's compared against."},
 			{Name: "attribute", Type: "property", Generic: "attribute", Explainer: "What they're compared on, and which way."},
 		}, Verbs: []string{"be"}, Kind: "state"},
+	// 06/F6: where something is; the relation is a value of the place (06/F6a)
+	{Name: "located", Title: "Located", Explainer: "Something is somewhere: in, on, under or near a place or thing.",
+		Roles: []Role{
+			{Name: "thing", Type: "physical", Generic: "theme", Explainer: "What or who is somewhere."},
+			{Name: "place", Type: "physical", Generic: "location", Explainer: "Where it is: a place, or a thing it's in, on, under or near."},
+			{Name: "relation", Type: "relation", Generic: "relation", Explainer: "How it's placed relative to the place: in, on, under, near."},
+		}, Verbs: []string{"be"}, Kind: "state"},
 }
 
 var seedTypes = []Type{
@@ -38,12 +45,20 @@ var seedTypes = []Type{
 	{"artifact", "physical", "A made thing."},
 	{"food", "physical", "Something to eat or drink."},
 	{"rod", "artifact", "A long, thin made thing: an umbrella, a pencil. Long or short, not tall."},
+	{"container", "artifact", "A made thing other things go in: a box, a cup, a bottle."},
+	{"surface", "artifact", "A made thing other things go on: a table, a chair."},
+	{"place", "physical", "Somewhere you can be: a park, a kitchen."},
 	{"idea", "abstract", "A thought or plan."},
 	{"feeling", "abstract", "Something felt."},
 }
 
 var seedAttrs = []Attribute{
 	ageAttr,
+	// 06/F6a: a relation is a value of the place; a value fits a place type only
+	// where it has a word for it ("in" a box or a park, "on" a table)
+	{Name: "position", Kind: "relation", AppliesTo: []string{"container", "surface", "place"}, Scale: []string{"in", "on", "under", "near"},
+		Words: map[string]map[string]string{"in": {"container": "in", "place": "in"}, "on": {"surface": "on"},
+			"under": {"surface": "under", "container": "under"}, "near": {"*": "near"}}},
 	// umbrellas aren't tall, they're long (user, 2026-11-15): height skips rods, length covers them
 	{Name: "height", AppliesTo: []string{"person", "animal", "artifact"}, Except: []string{"rod"}, Scale: []string{"short", "tall"},
 		Words: map[string]map[string]string{"short": {"*": "short"}, "tall": {"*": "tall"}}},
@@ -59,19 +74,21 @@ var seedEntities = map[string]Entity{
 	"mara": {Type: "person", Name: "Mara", Pronouns: "she"}, "tom": {Type: "person", Name: "Tom", Pronouns: "he"},
 	"sam": {Type: "person", Name: "Sam", Pronouns: "they"}, "ana": {Type: "person", Name: "Ana", Pronouns: "she"},
 	"lee": {Type: "person", Name: "Lee", Pronouns: "he"}, "noor": {Type: "person", Name: "Noor", Pronouns: "she"},
-	"book": {Type: "artifact", Noun: "book", Pronouns: "it"}, "cup": {Type: "artifact", Noun: "cup", Pronouns: "it"},
-	"box": {Type: "artifact", Noun: "box", Pronouns: "it"}, "lamp": {Type: "artifact", Noun: "lamp", Pronouns: "it"},
-	"umbrella": {Type: "rod", Noun: "umbrella", Pronouns: "it"}, "chair": {Type: "artifact", Noun: "chair", Pronouns: "it"},
+	"book": {Type: "artifact", Noun: "book", Pronouns: "it"}, "cup": {Type: "container", Noun: "cup", Pronouns: "it"},
+	"box": {Type: "container", Noun: "box", Pronouns: "it"}, "lamp": {Type: "artifact", Noun: "lamp", Pronouns: "it"},
+	"umbrella": {Type: "rod", Noun: "umbrella", Pronouns: "it"}, "chair": {Type: "surface", Noun: "chair", Pronouns: "it"},
 	"dog": {Type: "animal", Noun: "dog", Pronouns: "it"}, "apple": {Type: "food", Noun: "apple", Pronouns: "it"},
 	"kai": {Type: "person", Name: "Kai", Pronouns: "they"}, "omar": {Type: "person", Name: "Omar", Pronouns: "he"},
 	"lin":    {Type: "person", Name: "Lin", Pronouns: "she"},
 	"pencil": {Type: "rod", Noun: "pencil", Pronouns: "it"}, "ladder": {Type: "artifact", Noun: "ladder", Pronouns: "it"},
-	"bottle": {Type: "artifact", Noun: "bottle", Pronouns: "it"}, "table": {Type: "artifact", Noun: "table", Pronouns: "it"},
+	"bottle": {Type: "container", Noun: "bottle", Pronouns: "it"}, "table": {Type: "surface", Noun: "table", Pronouns: "it"},
+	"park": {Type: "place", Noun: "park", Pronouns: "it"}, "kitchen": {Type: "place", Noun: "kitchen", Pronouns: "it"},
+	"garden": {Type: "place", Noun: "garden", Pronouns: "it"}, "house": {Type: "place", Noun: "house", Pronouns: "it"},
 	"doom": {Type: "feeling", Noun: "sense of impending doom", Pronouns: "it", Coerced: "physical"},
 }
 
 var ageAttr = Attribute{Name: "age", AppliesTo: []string{"physical"}, Scale: []string{"young", "old"},
-	Words: map[string]map[string]string{"young": {"*": "young", "artifact": "new", "food": "fresh"}, "old": {"*": "old"}}, StableOrder: true, Direction: "increasing"}
+	Words: map[string]map[string]string{"young": {"*": "young", "artifact": "new", "food": "fresh", "place": "new"}, "old": {"*": "old"}}, StableOrder: true, Direction: "increasing"}
 
 func Seed(g *grammar.Store) (bool, error) {
 	if len(g.Heads("frame")) > 0 {

@@ -183,7 +183,9 @@ function renderReview() {
 function spanRow(s) {
   const m = memory.get(s.key);
   const setChoice = c => {
-    memory.set(s.key, { choice: c, suggested: false, confirmed: true, detail: m && m.choice === c ? m.detail : "" });
+    // clicking the confirmed choice again clears it (user: couldn't uncheck)
+    if (m && m.confirmed && m.choice === c) memory.delete(s.key);
+    else memory.set(s.key, { choice: c, suggested: false, confirmed: true, detail: m && m.choice === c ? m.detail : "" });
     rerenderKeepFocus(s.key);
   };
   const upd = v => { m.detail = v; clearTimeout(window.__d); window.__d = setTimeout(refresh, 300); };
@@ -202,7 +204,7 @@ function spanRow(s) {
   return h("div", { class: "span-row" + (m?.confirmed ? " done" : ""), tabindex: "0", "data-span": s.key },
     h("span", { class: "span-text" }, "“", s.text, "”"),
     h("div", { class: "seg", role: "group", "aria-label": "What this span is" },
-      choices.map((c, i) => h("button", { tabindex: "-1", "aria-pressed": String(!!m && m.choice === i), onclick: () => setChoice(i), "data-tip": `${i + 1}` }, c))),
+      choices.map((c, i) => h("button", { tabindex: "-1", "aria-pressed": String(!!m && m.choice === i), onclick: () => setChoice(i), "data-tip": m && m.confirmed && m.choice === i ? `${i + 1} · click again to clear` : `${i + 1}` }, c))),
     m?.suggested ? h("span", { class: "tag accent", "data-tip": "A keyword guess, not a model: no model is connected yet. Pick it, or another, to confirm." }, "Guess") : null,
     m?.confirmed ? h("span", { class: "tag ok" }, "✓") : null,
     detail());

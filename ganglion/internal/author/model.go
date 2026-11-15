@@ -36,6 +36,46 @@ type Attribute struct {
 	// tense and polarity combinations then imply the holder stops existing
 	// ("this apple was old": it's gone), so they wait for the world model (06/D102).
 	Direction string `json:"direction,omitempty"`
+	// Kind "relation": where something is relative to the place that holds it
+	// (06/F6a), filling a role of type "relation"; "" is a property.
+	Kind string `json:"kind,omitempty"`
+}
+
+// ValueRole reports whether a role type takes an attribute value.
+func ValueRole(t string) bool { return t == "property" || t == "relation" }
+
+// KindFor is the attribute kind a value role takes.
+func KindFor(roleType string) string {
+	if roleType == "relation" {
+		return "relation"
+	}
+	return ""
+}
+
+// HasWord reports whether a value has a word for a holder type: a relation
+// value fits only the places it has a word for (06/F6a).
+func (a Attribute) HasWord(value, holderType string, w *World) bool {
+	return a.Word(value, holderType, w) != ""
+}
+
+// Bears reports whether a role holds the meaning's attribute value, so its
+// filler must be something the attribute applies to.
+func Bears(role string) bool {
+	return role == "holder" || role == "a" || role == "b" || role == "place"
+}
+
+// KindOf is a type's kind: its ancestor just under physical or abstract
+// (person, animal, artifact, place…). Samples swap fillers within a kind
+// (06/F6b).
+func (w *World) KindOf(t string) string {
+	for t != "" {
+		p := w.Types["type:"+t].Parent
+		if p == "physical" || p == "abstract" || p == "entity" || p == "" {
+			return t
+		}
+		t = p
+	}
+	return t
 }
 
 // Allowed reports whether a meaning's features make sense without a world

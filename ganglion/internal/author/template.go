@@ -83,6 +83,7 @@ func Build(l Line, m Meaning, w *World, res map[string]Resolution, needs []Need)
 	if !l.Traced(res) {
 		return Template{}, fmt.Errorf("not fully traced")
 	}
+	l = declarative(l)
 	f := w.Frames[m.Frame]
 	t := Template{Kind: "S", Means: Means{Frame: m.Frame, Vars: map[string]string{}, Adds: []Add{}}, Needs: needs, Frozen: l.Waits, Source: Source{Text: l.Text}}
 	if t.Needs == nil {
@@ -190,6 +191,49 @@ func Build(l Line, m Meaning, w *World, res map[string]Resolution, needs []Need)
 		}
 	}
 	return t, nil
+}
+
+// declarative puts a question's subject back before its verb group ("Is the
+// apple old?" -> "the apple Is old"; "Did Mara give…" -> "Mara Did give…"),
+// so the tree is in statement order and the generator does the inversion for
+// every mood, as it does for lines written as statements. Lines with a span
+// in the moved part are left as written.
+func declarative(l Line) Line {
+	if l.Said.Mood != "question" {
+		return l
+	}
+	toks := l.Tokens
+	lead := 0
+	for lead < len(toks) && toks[lead].Span == "" && (toks[lead].Cls == "frame" || (toks[lead].Cls == "grammar" && isAux(toks[lead].Text))) {
+		lead++
+	}
+	subj := lead
+	for subj < len(toks) && toks[subj].Span == "" && toks[subj].Cls == "role" && !toks[subj].Prop {
+		subj++
+	}
+	if lead == 0 || subj == lead {
+		return l
+	}
+	out := append([]Token{}, toks[lead:subj]...)
+	out = append(out, toks[:lead]...)
+	out = append(out, toks[subj:]...)
+	if r := []rune(out[0].Text); len(r) > 0 && out[0].Form != "name" && out[0].Form != "possname" && out[0].Text != "I" {
+		out[0].Text = strings.ToUpper(string(r[0])) + string(r[1:])
+	}
+	for i := subj - lead; i < subj; i++ { // the moved auxiliary is no longer first
+		if out[i].Text != "I" {
+			out[i].Text = strings.ToLower(out[i].Text)
+		}
+	}
+	l.Tokens = out
+	l.VG = -1
+	for i, t := range out {
+		if t.Cls == "frame" {
+			l.VG = i
+			break
+		}
+	}
+	return l
 }
 
 func isAux(w string) bool { b, _ := negBase(strings.ToLower(w)); return auxes[b] }

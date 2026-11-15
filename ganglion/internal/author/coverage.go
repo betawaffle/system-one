@@ -111,13 +111,13 @@ func Draw(t Template, m Meaning, w *World, lex *lexicon.Lexicon, r *rand.Rand, w
 		if fl.Entity != "" && w.Entities[fl.Entity].Coerced == "" {
 			cur := w.Entities[fl.Entity]
 			pool := w.EntitiesOf(ro.Type)
-			if ro.Name == "holder" || ro.Name == "a" || ro.Name == "b" {
-				pool = fitting(pool, m, w)
+			if Bears(ro.Name) {
+				pool = Fitting(pool, m, w)
 			}
 			var free []string
 			for _, id := range pool {
 				e := w.Entities[id]
-				if used[id] || e.Type != cur.Type {
+				if used[id] || w.KindOf(e.Type) != w.KindOf(cur.Type) {
 					continue
 				}
 				if p, ok := want["who:"+ro.Name]; ok && e.Pronouns != p {

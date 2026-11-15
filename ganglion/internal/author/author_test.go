@@ -495,3 +495,107 @@ func TestUpgradeAddsSeedObjects(t *testing.T) {
 		t.Fatal("new seed types should be added")
 	}
 }
+
+func TestContractions(t *testing.T) {
+	w, lex := setup(t)
+	hp := Meaning{Frame: "frame:has-property", Features: realize.Features{Tense: "present", Polarity: "positive", Mood: "statement"},
+		Roles: map[string]Filler{"holder": {Entity: "entity:dog"}, "property": {Value: &Value{Attribute: "age", Value: "old"}}}}
+	full, _ := Build(Align("The dog is old.", hp, w, lex), hp, w, nil, nil)
+	for _, s := range []string{"The dog's old.", "That's an old dog.", "It's old."} {
+		l := Align(s, hp, w, lex)
+		if len(l.Spans) != 0 || l.VG < 0 || l.Tokens[l.VG].Text != "'s" {
+			t.Errorf("%s: %s, spans %v", s, classes(l), l.Spans)
+		}
+	}
+	short, _ := Build(Align("The dog's old.", hp, w, lex), hp, w, nil, nil)
+	if Signature(hp) == "" || Compact("x", short) != Compact("x", full) {
+		t.Errorf("a contraction is a style, not a new template:\n%s\n%s", Compact("x", short), Compact("x", full))
+	}
+	// a noun after 's: a possessive, left alone
+	m := give(pastStatement)
+	for _, tok := range Align("Mara gave Tom's book.", m, w, lex).Tokens {
+		if tok.Text == "'s" {
+			t.Errorf("possessive split: %+v", tok)
+		}
+	}
+}
+
+func TestLocated(t *testing.T) {
+	w, lex := setup(t)
+	pos := w.Attributes["attribute:position"]
+	// Next: a thing (not a person or a place), somewhere a relation fits
+	used := map[string]bool{}
+	for i := 0; i < 30; i++ {
+		m, err := Next(w, i, "frame:located", used)
+		if err != nil {
+			t.Fatal(err)
+		}
+		th, pl, rel := w.Entities[m.Roles["thing"].Entity], w.Entities[m.Roles["place"].Entity], m.Roles["relation"].Value
+		if th.Name != "" || w.IsA(th.Type, "place") || rel == nil || !pos.HasWord(rel.Value, pl.Type, w) {
+			t.Fatalf("next %d: %+v", i, m.Roles)
+		}
+	}
+	m := Meaning{Frame: "frame:located", Features: realize.Features{Tense: "present", Polarity: "positive", Mood: "statement"},
+		Roles: map[string]Filler{"thing": {Entity: "entity:cup"}, "place": {Entity: "entity:table"}, "relation": {Value: &Value{Attribute: "position", Value: "on"}}}}
+	l := Align("The cup is on the table.", m, w, lex)
+	if len(l.Spans) != 0 || len(l.Warnings) != 0 {
+		t.Fatalf("%s %v %v", classes(l), l.Spans, l.Warnings)
+	}
+	tpl, err := Build(l, m, w, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	places := map[string]bool{}
+	for seed := uint64(0); seed < 10; seed++ {
+		for _, s := range Samples(tpl, m, w, lex, seed, 8) {
+			pl := s.Fillers["place"]
+			places[pl] = true
+			if !strings.Contains(s.Text, " on ") || strings.HasSuffix(pl, "cup") || strings.HasSuffix(pl, "park") {
+				t.Fatalf("on goes on surfaces only: %q (%v)", s.Text, s.Fillers)
+			}
+		}
+	}
+	if len(places) < 2 {
+		t.Errorf("places should vary: %v", places)
+	}
+	// "in" fits containers and places, never surfaces
+	m.Roles["place"], m.Roles["relation"] = Filler{Entity: "entity:park"}, Filler{Value: &Value{Attribute: "position", Value: "in"}}
+	m.Roles["thing"] = Filler{Entity: "entity:dog"}
+	tpl, err = Build(Align("Is the dog in the park?", m, w, lex), m, w, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range Samples(tpl, m, w, lex, 4, 8) {
+		if p := s.Fillers["place"]; strings.HasSuffix(p, "table") || strings.HasSuffix(p, "chair") {
+			t.Fatalf("in a surface: %q", s.Text)
+		}
+	}
+}
+
+// a line written as a question builds the same tree as its statement, so
+// samples in every mood come out right (they were "Did Mara gives Noor a book.")
+func TestQuestionLines(t *testing.T) {
+	w, lex := setup(t)
+	q := realize.Features{Tense: "past", Polarity: "positive", Mood: "question"}
+	st := pastStatement
+	cases := []struct{ q, s string }{{"Did Mara give Tom the book?", "Mara gave Tom the book."}, {"Didn't Mara give Tom the book?", "Mara didn't give Tom the book."}}
+	for _, c := range cases {
+		mq, ms := give(q), give(st)
+		if c.q[:6] == "Didn't" {
+			mq.Features.Polarity, ms.Features.Polarity = "negative", "negative"
+		}
+		a, err := Build(Align(c.q, mq, w, lex), mq, w, nil, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		b, _ := Build(Align(c.s, ms, w, lex), ms, w, nil, nil)
+		if Compact("x", a) != Compact("x", b) {
+			t.Errorf("%s:\n%s\nwant\n%s", c.q, Compact("x", a), Compact("x", b))
+		}
+		for _, s := range Samples(a, mq, w, lex, 5, 8) {
+			if (s.Features.Mood == "question") != strings.HasSuffix(s.Text, "?") || strings.Contains(s.Text, "Did ") && s.Features.Mood != "question" {
+				t.Errorf("%q (%+v)", s.Text, s.Features)
+			}
+		}
+	}
+}

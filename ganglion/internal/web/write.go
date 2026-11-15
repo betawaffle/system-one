@@ -257,9 +257,13 @@ func (s *Server) writeFillers(w http.ResponseWriter, r *http.Request) {
 		if fl.Entity != "" && x.world.Entities[fl.Entity].Coerced == "" {
 			cur := x.world.Entities[fl.Entity]
 			var pool []string
-			for _, id := range x.world.EntitiesOf(ro.Type) {
+			cands := x.world.EntitiesOf(ro.Type)
+			if author.Bears(ro.Name) {
+				cands = author.Fitting(cands, m, x.world) // the attribute, or relation, must fit (06/F6a)
+			}
+			for _, id := range cands {
 				e := x.world.Entities[id]
-				if id != fl.Entity && !used[id] && e.Type == cur.Type && (e.Name == "") == (cur.Name == "") {
+				if id != fl.Entity && !used[id] && x.world.KindOf(e.Type) == x.world.KindOf(cur.Type) && (e.Name == "") == (cur.Name == "") {
 					pool = append(pool, id)
 				}
 			}

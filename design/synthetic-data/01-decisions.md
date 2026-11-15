@@ -23,6 +23,7 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 ## Open questions (all)
 
 - Q71 data shapes for the first build (sd/09). Comment on anything off; cheap to change for now.
+- Q81 sizes for Located: a rough size class per entity (sd/06/F6d)?
 ## Future topics (all)
 
 T10 world model (sd/00). T11 modals, passive, more aspects (sd/05). T12 coordination agreement (sd/05). T13 superlatives, T14 generics, T15 existentials, T16 numbers and quantities, T18 editing types and entities in the UI (sd/06). T17 publishing the grammar (sd/07).

@@ -91,7 +91,7 @@ func nextAt(w *World, n int, frameID string) (Meaning, error) {
 	// the first: step through all combinations by a large prime
 	total := 8 // attribute choices times scale ends, at most
 	for _, r := range f.Roles {
-		if r.Type != "property" {
+		if !ValueRole(r.Type) {
 			total *= max(1, len(w.EntitiesOf(r.Type)))
 		}
 	}
@@ -101,10 +101,13 @@ func nextAt(w *World, n int, frameID string) (Meaning, error) {
 	}
 	n = (n*step + 1) % total
 	for _, r := range f.Roles {
-		if r.Type == "property" {
+		if ValueRole(r.Type) {
 			continue
 		}
 		pool := w.EntitiesOf(r.Type)
+		if r.Name == "place" { // somewhere a relation fits (06/F6a)
+			pool = placeable(pool, w)
+		}
 		// people when the frame allows them, so names make alignment exact (03/A1)
 		var people []string
 		for _, e := range pool {
@@ -112,12 +115,13 @@ func nextAt(w *World, n int, frameID string) (Meaning, error) {
 				people = append(people, e)
 			}
 		}
-		if r.Name != "thing" && r.Name != "holder" && len(people) > 0 {
+		if r.Name != "thing" && r.Name != "holder" && r.Name != "place" && len(people) > 0 {
 			pool = people
 		} else if r.Name == "thing" || r.Name == "holder" {
 			var things []string
 			for _, e := range pool {
-				if w.Entities[e].Name == "" {
+				// things, not people; and not places, which aren't in or on anything
+				if w.Entities[e].Name == "" && !w.IsA(w.Entities[e].Type, "place") {
 					things = append(things, e)
 				}
 			}
@@ -139,13 +143,13 @@ func nextAt(w *World, n int, frameID string) (Meaning, error) {
 		}
 	}
 	for _, r := range f.Roles {
-		if r.Type != "property" {
+		if !ValueRole(r.Type) {
 			continue
 		}
 		holder := holderType(m, w)
 		var attrs []string
 		for aid, a := range w.Attributes {
-			if a.Applies(holder, w) {
+			if a.Kind == KindFor(r.Type) && a.Applies(holder, w) {
 				attrs = append(attrs, aid)
 			}
 		}
@@ -157,7 +161,15 @@ func nextAt(w *World, n int, frameID string) (Meaning, error) {
 		stride *= len(attrs)
 		end := (n / stride) % 2 // both ends of the scale: old and new, tall and short
 		stride *= 2
-		if id == "frame:compare" {
+		if r.Type == "relation" { // any value with a word for this place (06/F6a)
+			var vals []string
+			for _, v := range a.Scale {
+				if a.HasWord(v, holder, w) {
+					vals = append(vals, v)
+				}
+			}
+			m.Roles[r.Name] = Filler{Value: &Value{Attribute: a.Name, Value: vals[((n/stride)*2+end)%len(vals)]}}
+		} else if id == "frame:compare" {
 			m.Roles[r.Name] = Filler{Value: &Value{Attribute: a.Name, Dir: []string{"more", "less"}[end]}}
 		} else {
 			m.Roles[r.Name] = Filler{Value: &Value{Attribute: a.Name, Value: a.Scale[[]int{len(a.Scale) - 1, 0}[end]]}}
@@ -184,4 +196,19 @@ func gcd(a, b int) int {
 		a, b = b, a%b
 	}
 	return a
+}
+
+// placeable keeps entities some relation fits: places, containers, surfaces.
+func placeable(pool []string, w *World) []string {
+	var out []string
+	for _, id := range pool {
+		t := w.Entities[id].Type
+		for _, a := range w.Attributes {
+			if a.Kind == "relation" && a.Applies(t, w) {
+				out = append(out, id)
+				break
+			}
+		}
+	}
+	return out
 }
