@@ -157,6 +157,7 @@ function renderLines() {
     return h("div", { class: "traced" },
       h("div", { class: "traced-text" }, segs),
       h("div", { class: "row" },
+        l.traced && !savable(l) ? h("span", { class: "tag warn", "data-tip": blockers(l).join(" ") }, "Held Back") : null,
         l.traced ? h("span", { class: "tag ok" }, "✓ Fully Traced") : open ? h("span", { class: "tag warn" }, "? ", `${open} to resolve`) : h("span", { class: "tag warn" }, "? No verb found"),
         l.waits.map(w => h("span", { class: "tag", "data-tip": "Saved frozen: usable now, tense and mood fixed (sd/05/D80)" }, "Frozen · Waits On ", cap(w))),
         l.warnings.map(w => h("span", { class: "tag warn", "data-tip": "What the sentence says differs from the meaning card. Fix the sentence or change the meaning." }, "⚠ ", w))));
@@ -282,7 +283,7 @@ function sampleRow(l, s) {
       refresh();
       return;
     }
-    renderSamples();
+    renderSamples(); renderSave();
   };
   const tags = [
     ...["tense", "polarity", "mood"].map(k => [cap(s.features[k]), s.changed.includes(k)]),
@@ -330,22 +331,44 @@ async function loadSaved() {
   try { savedList = (await api("/api/write/saved")).templates || []; } catch (e) { savedList = []; }
   renderSave();
 }
+// Save holds back lines that would make a broken template (08/D101): ones whose
+// sentence disagrees with the meaning (⚠), or with a sample marked Ungrammatical
+// or Means Something Else. Save as Draft still keeps them.
+const blocking = new Set(["Ungrammatical", "Means Something Else"]);
+function blockers(l) {
+  const out = l.warnings.map(w => "⚠ " + w);
+  const seen = new Set();
+  for (const [k, v] of verdicts) {
+    if (k.startsWith(l.text + "\u0000") && v.v === "bad" && blocking.has(v.reason) && !seen.has(v.reason)) {
+      seen.add(v.reason);
+      out.push(`A sample is marked ${v.reason}: reword the sentence, or clear that ✕ if it was a slip.`);
+    }
+  }
+  return out;
+}
+const savable = l => l.traced && !blockers(l).length;
 async function save(draft) {
   if (!card) return;
-  const texts = $("#text").value.split("\n").filter(t => t.trim());
+  const want = new Set(lines.filter(l => draft ? !savable(l) : savable(l)).map(l => l.text));
+  const texts = $("#text").value.split("\n").filter(t => t.trim() && want.has(t));
+  if (!texts.length) return;
   try {
     await api("/api/write/save", { meaning: card.meaning, draft, lines: texts.map(t => ({ text: t, res: resOf(t), needs: needs.get(t) || [], how: pasted.has(t) ? "pasted" : "typed" })) });
   } catch (e) { return fail(e); }
   loadSaved();
 }
 function renderSave() {
-  const ok = lines.filter(l => l.traced).length, drafts = lines.length - ok;
+  const ok = lines.filter(savable).length, drafts = lines.length - ok;
+  const held = lines.filter(l => l.traced && !savable(l));
   $("#saved").replaceChildren(
     h("div", { class: "card-head" }, h("h3", {}, "Save"),
       h("div", { class: "row" },
         h("button", { class: "btn", disabled: !drafts || !card, onclick: () => save(true) }, "Save as Draft"),
         h("button", { class: "btn primary", disabled: !ok || !card, onclick: () => save(false), "data-tip": "Ctrl+Enter" }, ok > 1 ? `Save Templates (${ok})` : "Save Template"))),
     h("div", { class: "card-body stack tight" },
+      held.map(l => h("div", { class: "held" },
+        h("div", { class: "row" }, h("span", { class: "tag warn" }, "Held Back"), h("span", {}, "Line ", l.n + 1, ": ", l.text)),
+        h("ul", { class: "small" }, blockers(l).map(b => h("li", {}, b))))),
       h("div", { class: "muted small" }, savedList.length, " template", savedList.length === 1 ? "" : "s", " saved in the grammar."),
       savedList.slice(0, 20).map(s => h("div", { class: "saved-row" },
         h("div", { class: "row" }, h("span", { class: "tag ok" }, "✓ Template"), h("span", { class: "tag" }, s.Frame),

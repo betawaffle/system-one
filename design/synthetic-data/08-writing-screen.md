@@ -52,6 +52,8 @@ W6b. A sample can also be saved as a ★ favourite: a good example to show later
 
 W7. **Save Template** saves each fully traced sentence as a template version (sd/07/D87). The compact text form (sd/04/S1) is shown folded under each one for when the user wants to see the tree.
 W7a. A sentence can't be saved with unresolved spans, but it can be **Saved as Draft**: kept with its meaning, to finish later. Nothing the user writes is lost.
+W7c. When to save (user asked): fully traced, no ⚠ (the sentence says what the meaning says), and the samples read right at a glance; ✓ on every sample isn't needed. A ✕ for Ungrammatical or Means Something Else means the pattern itself is wrong, so reword instead. Word Form and Wrong Kind of Filler are fixed elsewhere (lexicon, slot type), so the template can still be saved. Same-shape sentences update one template, so saving twice doesn't inflate the count.
+W7d. Save holds back lines with a ⚠ or a sample marked Ungrammatical or Means Something Else, and says why under Save; Save as Draft still keeps them. The server holds back ⚠ lines too.
 W7b. Sentences using unsupported verb groups save frozen (sd/05/D80) with a tag saying what they wait on.
 
 ## What to write next
@@ -85,6 +87,7 @@ D95. Span suggestions automatic, word helper on request (W4, W5). Answers Q67. (
 D96. Keyboard keys as in K1. Answers Q68. (user: "Yes.")
 D97. Next step: a working mock-up of this page in ganglion with hard-coded data, before any generator code. Answers Q69. (user: "Yes.")
 
+D101. Save holds back lines with a ⚠ or a blocking verdict (W7d). (user: "Yes.")
 D99. "!" is extra meaning, resolved like an untraced span (W3c). (user: "Yes.")
 D98. "Sounds Odd" marks the template's feature combination as needing a modifier, and the generator adds one ("By next year, this book will be old."); it skips the combination only when no suitable modifier template exists (W6a3). Answers Q70. (user: "Yes, add one")
 

@@ -61,3 +61,5 @@ details.tree summary, details.forms summary { cursor: pointer; color: var(--ink-
 details.tree[open] summary, details.forms[open] summary { margin-bottom: var(--s2); }
 .reason-why { flex-basis: 100%; display: grid; gap: 4px; color: var(--ink-2); }
 .reason-why .input { max-width: 40ch; }
+.held { display: grid; gap: 4px; padding: var(--s2) var(--s3); border: 1px dashed var(--warn); border-radius: var(--r-md); }
+.held ul { margin: 0; padding-left: 1.2em; color: var(--ink-2); }

@@ -259,6 +259,7 @@ func (s *Server) writeSave(w http.ResponseWriter, r *http.Request) {
 		Draft             bool
 	}
 	var out []saved
+	var held []string
 	x.mu.RLock()
 	world := x.world
 	x.mu.RUnlock()
@@ -268,8 +269,11 @@ func (s *Server) writeSave(w http.ResponseWriter, r *http.Request) {
 		}
 		l := author.Align(lr.Text, req.Meaning, world, x.lex)
 		traced := l.Traced(lr.Res)
-		if traced == req.Draft {
-			continue // Save takes traced lines, Save as Draft takes the rest
+		if !req.Draft && (!traced || len(l.Warnings) > 0) {
+			// held back (08/D101): untraced, or the sentence disagrees with the meaning;
+			// the page also holds back lines with a blocking verdict
+			held = append(held, lr.Text)
+			continue
 		}
 		how := lr.How
 		if how != "pasted" {
@@ -303,7 +307,7 @@ func (s *Server) writeSave(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	jsonOut(w, map[string]any{"saved": out})
+	jsonOut(w, map[string]any{"saved": out, "held": held})
 }
 
 // POST /api/write/verdict: a sample judged right or wrong, with a reason (08/W6a).
