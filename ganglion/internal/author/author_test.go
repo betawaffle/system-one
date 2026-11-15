@@ -267,7 +267,7 @@ func TestUpgradeSeededAge(t *testing.T) {
 	}
 	var a Attribute
 	g.Get("attribute:age", &a)
-	if !a.StableOrder || len(g.History("attribute:age")) != 2 {
+	if !a.StableOrder || a.Direction != "increasing" || len(g.History("attribute:age")) != 2 {
 		t.Fatal("an unedited seeded age should be upgraded")
 	}
 	// once someone has edited it, upgrade leaves it alone
@@ -277,5 +277,39 @@ func TestUpgradeSeededAge(t *testing.T) {
 	g.Get("attribute:age", &a)
 	if a.StableOrder {
 		t.Fatal("upgrade must not overwrite an edit")
+	}
+}
+
+func TestOnlyIncreasing(t *testing.T) {
+	w, lex := setup(t)
+	m := Meaning{Frame: "frame:has-property", Features: realize.Features{Tense: "present", Polarity: "positive", Mood: "statement"},
+		Roles: map[string]Filler{"holder": {Entity: "entity:apple"}, "property": {Value: &Value{Attribute: "age", Value: "old"}}}}
+	l := Align("this apple is old", m, w, lex)
+	tpl, err := Build(l, m, w, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	n := 0
+	for seed := uint64(0); seed < 20; seed++ {
+		for _, s := range Samples(tpl, m, w, lex, seed, 8) {
+			f := s.Features
+			if (f.Tense == "past" && f.Polarity == "positive") || (f.Tense == "future" && f.Polarity == "negative") {
+				t.Fatalf("implies the apple is gone: %q", s.Text)
+			}
+			n++
+		}
+	}
+	if n == 0 {
+		t.Fatal("no samples")
+	}
+	young := m
+	young.Roles = map[string]Filler{"holder": m.Roles["holder"], "property": {Value: &Value{Attribute: "age", Value: "young"}}}
+	young.Features.Tense = "future"
+	if w.Allowed(young) {
+		t.Fatal("will be new can't happen")
+	}
+	young.Features.Tense = "past"
+	if !w.Allowed(young) {
+		t.Fatal("was new is fine")
 	}
 }

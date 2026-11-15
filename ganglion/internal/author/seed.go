@@ -10,7 +10,7 @@ import (
 // tree (06/Y1), a few attributes (06/P7), the first frames, and entities to
 // fill them. Everything after this grows from what the user writes (02/D60).
 var ageAttr = Attribute{Name: "age", AppliesTo: []string{"physical"}, Scale: []string{"young", "old"},
-	Words: map[string]map[string]string{"young": {"*": "young", "artifact": "new"}, "old": {"*": "old"}}, StableOrder: true}
+	Words: map[string]map[string]string{"young": {"*": "young", "artifact": "new"}, "old": {"*": "old"}}, StableOrder: true, Direction: "increasing"}
 
 func Seed(g *grammar.Store) (bool, error) {
 	if len(g.Heads("frame")) > 0 {
@@ -96,7 +96,11 @@ func Seed(g *grammar.Store) (bool, error) {
 func upgrade(g *grammar.Store) error {
 	for id, want := range map[string]any{"attribute:age": ageAttr} {
 		h := g.History(id)
-		if len(h) != 1 || h[0].By != "ganglion" || h[0].Client != "ganglion/seed" {
+		untouched := len(h) > 0
+		for _, v := range h {
+			untouched = untouched && v.By == "ganglion" && v.Client == "ganglion/seed"
+		}
+		if !untouched {
 			continue
 		}
 		kind := id[:strings.IndexByte(id, ':')]

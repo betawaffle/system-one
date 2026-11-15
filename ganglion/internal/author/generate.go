@@ -258,6 +258,9 @@ func Samples(t Template, m Meaning, w *World, lex *lexicon.Lexicon, seed uint64,
 		} else if len(t.Frozen) > 0 {
 			mm.Features.Tense, mm.Features.Polarity, mm.Features.Mood = t.Supports.Tense[0], t.Supports.Polarity[0], t.Supports.Mood[0]
 		}
+		if !w.Allowed(mm) {
+			continue
+		}
 		text, time, err := Generate(t, mm, w, lex, realize.Style{Contract: true}, r)
 		if err != nil || seen[text] {
 			continue

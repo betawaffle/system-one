@@ -31,6 +31,38 @@ type Attribute struct {
 	// people). Comparisons on it stay in the present until the world model can
 	// say who exists when (06/D100).
 	StableOrder bool `json:"stable_order,omitempty"`
+	// Direction "increasing": the value only ever goes up the scale (age). Some
+	// tense and polarity combinations then imply the holder stops existing
+	// ("this apple was old": it's gone), so they wait for the world model (06/D102).
+	Direction string `json:"direction,omitempty"`
+}
+
+// Allowed reports whether a meaning's features make sense without a world
+// model: an only-increasing attribute rules out combinations that imply the
+// holder stops existing, or that can't happen (06/D102).
+func (w *World) Allowed(m Meaning) bool {
+	for _, fl := range m.Roles {
+		v := fl.Value
+		if v == nil || v.Value == "" {
+			continue
+		}
+		a := w.Attributes["attribute:"+v.Attribute]
+		if a.Direction != "increasing" || len(a.Scale) < 2 {
+			continue
+		}
+		t, pos := m.Features.Tense, m.Features.Polarity == "positive"
+		switch v.Value {
+		case a.Scale[len(a.Scale)-1]: // old: "was old" and "won't be old" imply it's gone
+			if (t == "past" && pos) || (t == "future" && !pos) {
+				return false
+			}
+		case a.Scale[0]: // young/new: "will be new" can't happen
+			if t == "future" && pos {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // Stable reports whether a meaning compares on a stable-order attribute.

@@ -42,6 +42,9 @@ P8. The user's note on "In a few years, Ana will be older than Lee." (an Other v
 P8a. Proposal: an attribute can say its order between two holders is stable (`stable_order: true` for age). Comparisons on a stable attribute are generated in the present only (or the tense of the authored sentence), and Sounds Odd doesn't offer a time modifier for them. Height, size and weight can change, so they keep all tenses. (Q72)
 P8b. The user's nuance: "X will be younger than Y" is fine if X isn't born yet, and the past tense is generally fine too, but it implies the person has died. So other tenses aren't wrong, they carry extra meaning about existence: future implies X doesn't exist yet, past implies X (or Y) no longer does. Those need entities with an existence state, which is the world model (sd/00/T10). Until then, stable-order comparisons are generated in the present only.
 
+P9. The user asked whether the age rule should apply to "this apple is old". Not the stable-order one (P8): one holder's age does change, so "wasn't old" and "will be old" are real meanings. But age only goes up, which gives a neighbouring rule. For the high value, "was old" implies the holder is gone (it's older now), and "won't be old" implies it won't last. For the low value, "will be new" can't happen. Other combinations are fine.
+P9a. An attribute can say `direction: increasing` (age). Those combinations are skipped by the generator until the world model can state existence, as in P8b. The rule sits on the attribute and applies at generation time, so templates saved before or after it are the same.
+
 ## Starting types
 
 Y1. A small tree, grown as the user writes (sd/02/D60):
@@ -73,6 +76,7 @@ T16. Numbers and quantities ("four legs", "two books"), and numeric values for a
 
 ## Decided
 
+D102. Age only increases; the generator skips "was old", "won't be old" and "will be new" (and their questions) until the world model (P9, P9a). (user: "Yes")
 D100. Age has a stable order; its comparisons are generated in the present only for now, and Sounds Odd adds no time modifier to them (P8a). Past and future come back with the world model, carrying their implied meaning: not born yet, or no longer alive (P8b). Answers Q72. (user: "Proposal sounds fine. Slight nuance: "X will be younger than Y" would be _ok_ if X is a baby that isn't born yet. And past tense is generally fine too, but kinda implies the person died.")
 D81. First frames F1–F6; kinship and has-attribute later (F7). Answers Q54. (user: "Yes.")
 D82. Properties as attribute + value, with per-type domains and ordered scales seeded from WordNet (P1–P6). Answers Q55. (user: "Yes.")
