@@ -1,4 +1,4 @@
-# Authoring templates (draft 2, 2026-11-15)
+# Authoring templates (draft 3, 2026-11-15)
 
 ## Loop
 
@@ -79,9 +79,24 @@ A15. With no frames yet, writing starts from a frame, not a meaning:
   3. Code makes the first meaning with distinctive fillers (A1), and the loop runs from A2.
   4. Each untraced span resolved as option 3 in A13d offers to create that frame on the spot, the same way.
 
+## Live samples while editing
+
+A16. While the user works on a template, the UI generates samples to look at, to make sure they seem right, and generation is fast. (user: "it should be able to generate samples for me to look at to make sure they seem right. The generation should be fast.")
+A16a. Samples regenerate on every edit and spread across what can vary, so one glance covers it:
+  - fillers (different entities, plural vs singular, he/she/they)
+  - feature values in `supports` (past, negated, question, …; sd/04/C1)
+  - each lemma in a `lex` class (sd/04/D71)
+  - optional parts present and absent (sd/04/N1c)
+  - reference choices, and slots filled by nested templates (sd/04/F4, sd/03/A9)
+A16b. Each sample shows its meaning beside it, so the user checks the text against what it should mean, not just whether it reads well.
+A16c. A sample marked wrong is vetting data, like the refill check (A4): it points at the slot type, feature or lemma that caused it.
+A16d. Fast means no model calls: generation is plain code over the tree, type tree and lexicon. A fixed seed per view keeps samples stable between edits so changes are easy to see, with a button for a fresh draw.
+A16e. I'd build the generator in Go inside the ganglion server, so a preview is one request with no worker round trip; the same code does bulk generation later. Target: a batch of samples well under 100 ms. (Q46)
+
 ## Decided
 
 D58. A word-by-word helper as in A8. (user)
+D72. Live samples while editing a template, and fast generation (A16). (user)
 D62. Templates are trees, all the way down. Answers Q36. (user: "Fine with me. It's trees all the way down, my friend.")
 D63. Flag extra meaning and ask what was added. Answers Q37. (user: "Yes, but how?" Mechanism proposed in A13; Q39.)
 D64. First frames: states and properties, then transfer (A14a). Answers Q38. (user: "Sounds good.")
@@ -89,7 +104,7 @@ D65. The A13 mechanism, including the A13d choices. Answers Q39. (user: "Yep, so
 
 ## Open questions
 
-(none for this note)
+Q46. Generator in Go inside the ganglion server (A16e)? I lean yes.
 
 ## Superseded
 

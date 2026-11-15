@@ -1,4 +1,4 @@
-# Template tree format (draft 1, 2026-11-15)
+# Template tree format (draft 2, 2026-11-15)
 
 Trees all the way down (sd/03/D62). This note proposes what a template is, what its nodes are, how features flow, and how the tree carries its meaning.
 
@@ -112,13 +112,22 @@ S1. Stored as JSON (the canonical form); shown and edited in a compact text form
 
 ## Decided
 
-(none yet)
+D66. Node types N2 and starting kinds N3. Answers Q40. (user: "I think so.")
+D67. Verb groups realised by code from features (C1). Answers Q41. (user: "If that's possible, sure.") It is: SimpleNLG (sd/00/K6) does this for English, and it's a small rule set (auxiliary choice, "do" insertion, "not" placement, inversion, C1b exceptions).
+D68. REL templates derived from CLAUSE templates by marking a gap, with the user vetting results (C2). Answers Q42. (user: "I guess so.")
+D69. Reference choice by code from context; templates can pin it (F4). Answers Q43. (user: "Fine with me.")
+D70. JSON stored, compact text shown (S1). Answers Q44. (user: "Sounds good.")
+D71. Same-meaning lemma classes count as one template, on condition that every lemma in the class can still be generated (I2). Answers Q45. (user: "As long as both versions can be generated.") So a `lex` class picks among its lemmas at generation time; the class is one template for counting, not one wording.
 
 ## Open questions
 
-Q40. The node types (N2) and starting kinds (N3)? I lean yes as listed, adding kinds as frames need them.
-Q41. Verb groups realised by code from features (C1), rather than templates spelling out auxiliaries? I lean code.
-Q42. REL templates: written by the user, or derived from CLAUSE templates by marking a gap (C2)? I lean derived, with the user vetting the result, since otherwise every frame needs a second set.
-Q43. Reference choice by code from context, with templates able to pin it (F4)? I lean yes.
-Q44. JSON stored, compact text shown (S1)? I lean yes.
-Q45. Same-meaning lemma classes count as one template (I2)? I lean yes.
+(none for this note)
+
+## Superseded
+
+Q40 (answered by D66). The node types and starting kinds?
+Q41 (answered by D67). Verb groups realised by code from features?
+Q42 (answered by D68). REL templates written or derived?
+Q43 (answered by D69). Reference choice by code from context?
+Q44 (answered by D70). JSON stored, compact text shown?
+Q45 (answered by D71). Same-meaning lemma classes count as one template?

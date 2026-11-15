@@ -1,4 +1,4 @@
-# Synthetic data: decisions (draft 2, 2026-11-15)
+# Synthetic data: decisions (draft 3, 2026-11-15)
 
 Index; detail lives in the topic notes. Numbers continue the global series in `design/`.
 
@@ -6,18 +6,12 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 
 - sd/00 idea: D52 meaning first, D53 user writes text from meaning, D54 templates are the dataset (count distinct templates), D55 tooling in ganglion.
 - sd/02 meaning language: D56 our own small typed language, D57 UI explains roles, D59 plain role names plus generic names with explainers, D60 grow frames from scratch, D61 humour and boundary tests on purpose.
-- sd/03 authoring: D58 word-by-word helper, D62 trees all the way down, D63 flag extra meaning and ask, D64 states and properties first, then transfer, D65 the extra-meaning mechanism (A13).
-
-- sd/04 template trees: (none yet)
+- sd/03 authoring: D58 word-by-word helper, D62 trees all the way down, D63 flag extra meaning and ask, D64 states and properties first, then transfer, D65 the extra-meaning mechanism (A13), D72 live fast samples while editing (A16).
+- sd/04 template trees: D66 node types and kinds, D67 code-realised verb groups, D68 derived REL templates, D69 reference choice by code, D70 JSON stored / text shown, D71 lemma classes count once but every lemma generates.
 
 ## Open questions (all)
 
-- Q40 node types and starting kinds (sd/04/N2, N3). Lean yes.
-- Q41 verb groups realised by code (sd/04/C1). Lean code.
-- Q42 REL templates derived from CLAUSE templates (sd/04/C2). Lean derived, user vets.
-- Q43 reference choice by code from context (sd/04/F4). Lean yes.
-- Q44 JSON stored, compact text shown (sd/04/S1). Lean yes.
-- Q45 same-meaning lemma classes count as one template (sd/04/I2). Lean yes.
+- Q46 generator in Go inside ganglion (sd/03/A16e). Lean yes.
 
 ## Future topics (all)
 
