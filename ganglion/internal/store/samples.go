@@ -92,7 +92,7 @@ type DocFeatures struct {
 }
 
 var (
-	joinedRe   = regexp.MustCompile(`[a-z]{2}[.!?][A-Z][a-z]`)
+	joinedRe   = regexp.MustCompile(`(?:[a-z]{2}|[)\]"”’])[.!?]["”’)\]]?[A-Z][a-z]`) // "word.Next", "Day).The"
 	sentEndRe  = regexp.MustCompile(`[.!?]["'”’)\]]*\s*$`)
 	wordTrimRe = regexp.MustCompile(`^[^A-Za-z0-9]+|[^A-Za-z0-9]+$`)
 )

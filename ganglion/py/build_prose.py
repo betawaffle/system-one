@@ -39,7 +39,7 @@ import warnings
 
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 
-RULES = "r3"  # bump when prose_blocks / clean / is_sentence change (r3: reject missing-space joins)
+RULES = "r4"  # bump when prose_blocks / clean / is_sentence change (r3: reject missing-space joins; r4: also after ) ] or quotes)
 PROSE_KINDS = {"typed", "pasted", "reply", "thinking", "summary", "document", "commit", "issue", "prompt"}
 OURS = {"human", "claude", "subagent"}
 
@@ -48,7 +48,8 @@ LINK = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 EMPH = re.compile(r"(\*\*|__)(.+?)\1")
 LIST = re.compile(r"^\s*(?:[-*+]|\d+[.)]|[A-Z]\d+[a-z]?\.)\s+")
 URL = re.compile(r"https?://\S+")
-JOINED = re.compile(r"[a-z]{2}[.!?][A-Z][a-z]")
+# sentences run together: "word.Next", and with a closing bracket or quote first, "Day).The" (user's example)
+JOINED = re.compile(r"(?:[a-z]{2}|[)\]\"”’])[.!?][\"”’)\]]?[A-Z][a-z]")
 
 
 def prose_blocks(text):
