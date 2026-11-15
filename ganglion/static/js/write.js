@@ -420,7 +420,7 @@ function renderSave() {
       h("div", { class: "muted small" }, savedList.length, " template", savedList.length === 1 ? "" : "s", " saved in the grammar."),
       savedList.slice(0, 20).map(s => h("div", { class: "saved-row" },
         h("div", { class: "row" }, h("span", { class: "tag ok" }, "✓ Template"), h("span", { class: "tag" }, s.Frame),
-          (s.Frozen || []).length ? h("span", { class: "tag" }, "Frozen") : null, h("span", {}, s.Text)),
+          (s.Frozen || []).length ? h("span", { class: "tag" }, "Frozen") : null, h("span", { "data-tip": "Shown capitalised; saved as you typed it" }, cap(s.Text))),
         h("details", { class: "tree" }, h("summary", {}, "Tree"), h("pre", { class: "out" }, s.Compact))))));
 }
 
