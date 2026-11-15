@@ -92,6 +92,9 @@ async function load(q = {}) {
   } catch (e) { return fail(e); }
   $("#text").value = "";
   helperFor = null;
+  // a new meaning starts clean: no span choices, context marks or paste
+  // flags carried over from the last one (user: look for orphans)
+  memory.clear(); needs.clear(); pasted.clear();
   renderMeaning(); refresh();
 }
 function next() { n++; load(); }
@@ -117,13 +120,21 @@ async function refresh() {
   try { out = await api("/api/write/preview", req); } catch (e) { return fail(e); }
   if (my !== inflight) return; // a newer request is on its way
   lines = out.lines.map((l, i) => ({ ...l, n: i }));
+  // drop what belongs to text that's gone, so it can't come back confirmed
+  const keys = new Set(lines.flatMap(l => l.spans.map(s => s.key))), now = new Set(texts);
+  for (const k of [...memory.keys()]) if (!keys.has(k)) memory.delete(k);
+  for (const t of [...needs.keys()]) if (!now.has(t)) needs.delete(t);
+  for (const t of [...pasted]) if (!now.has(t)) pasted.delete(t);
   for (const l of lines) for (const s of l.spans) suggest(s);
   renderLines(); renderReview(); renderSamples(); renderSave();
 }
 function resOf(text) {
   const out = {};
-  // spans are keyed by their text; send confirmed answers for spans in this line
-  for (const [k, m] of memory) if (m.confirmed && text.toLowerCase().includes(k)) out[k] = { choice: choices[m.choice], detail: m.detail || "" };
+  // confirmed answers for this line's own spans; before its first preview,
+  // any span key that appears in it
+  const l = lines.find(x => x.text === text);
+  const mine = l ? new Set(l.spans.map(s => s.key)) : null;
+  for (const [k, m] of memory) if (m.confirmed && (mine ? mine.has(k) : text.toLowerCase().includes(k))) out[k] = { choice: choices[m.choice], detail: m.detail || "" };
   return out;
 }
 function suggest(span) {

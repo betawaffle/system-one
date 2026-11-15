@@ -50,6 +50,7 @@ F6a. Built (2026-11-15; user: "Let's do F9", the chat's name for this frame): `l
 F6b. New types under artifact: `container` (box, cup, bottle) and `surface` (table, chair); and `place` under physical (park, kitchen, garden, house). Samples and New Fillers used to swap a filler only for one of exactly the same type, which after this retyping would have stopped a box swapping with a chair. They now swap within the same kind (person, animal, artifact, food, place…), still only where the attribute or relation fits.
 F6c. Next picks a thing that isn't a person or a place, a place some relation fits, and a relation with a word for that place.
 F6d. Found at once: sizes. Next offers "the chair is in the bottle". Containing and supporting depend on relative size, which nothing records yet. (Q81)
+F6e. Sizes: each entity has a rough class, small (book, cup, bottle, apple, pencil), medium (box, lamp, umbrella, chair, dog) or large (table, ladder, people), and places rank above everything. In and under need the thing smaller than the place; on needs it no bigger; near always fits. The rule sits with the age rules (`Allowed`), so samples, coverage and aimed draws all obey it, and Next only picks a relation that fits. Cups and bottles hold nothing we have yet, since everything small is the same class as they are. The user's "the table's under the bottle" (saved before this) keeps its template, a fine shape, and its samples now fit.
 P10a. This is the type system growing from what the user notices (sd/02/D60). Doing it by hand for now; editing types and attributes in the UI is T18.
 
 ## Starting types
@@ -85,6 +86,7 @@ T16. Numbers and quantities ("four legs", "two books"), and numeric values for a
 
 ## Decided
 
+D119. Rough size classes for Located (F6e). Answers Q81. (user: "Yep.")
 D109. Rods (umbrella, pencil) have length, not height; attributes can have exceptions (P10). (user: "Umbrellas aren't tall, they are long.")
 D102. Age only increases; the generator skips "was old", "won't be old" and "will be new" (and their questions) until the world model (P9, P9a). (user: "Yes")
 D100. Age has a stable order; its comparisons are generated in the present only for now, and Sounds Odd adds no time modifier to them (P8a). Past and future come back with the world model, carrying their implied meaning: not born yet, or no longer alive (P8b). Answers Q72. (user: "Proposal sounds fine. Slight nuance: "X will be younger than Y" would be _ok_ if X is a baby that isn't born yet. And past tense is generally fine too, but kinda implies the person died.")
@@ -96,7 +98,7 @@ D85. Starting types and attributes as in Y1 and P7, grown as the user writes. An
 
 ## Open questions
 
-Q81. Sizes for Located (F6d). I lean a rough size class per entity (small: pencil, cup, apple, book; medium: chair, box, dog, lamp, umbrella; large: table, ladder, person; places are larger than all), with in and under needing the thing smaller than the place, and on needing it no bigger. Alternatives: let verdicts mark them Sounds Odd until the world model, or drop "in" for cups and bottles.
+(none for this note)
 
 (none for this note)
 

@@ -531,7 +531,7 @@ func TestLocated(t *testing.T) {
 			t.Fatal(err)
 		}
 		th, pl, rel := w.Entities[m.Roles["thing"].Entity], w.Entities[m.Roles["place"].Entity], m.Roles["relation"].Value
-		if th.Name != "" || w.IsA(th.Type, "place") || rel == nil || !pos.HasWord(rel.Value, pl.Type, w) {
+		if th.Name != "" || w.IsA(th.Type, "place") || rel == nil || !pos.HasWord(rel.Value, pl.Type, w) || !w.FitsIn(th, pl, rel.Value) {
 			t.Fatalf("next %d: %+v", i, m.Roles)
 		}
 	}
@@ -595,6 +595,42 @@ func TestQuestionLines(t *testing.T) {
 		for _, s := range Samples(a, mq, w, lex, 5, 8) {
 			if (s.Features.Mood == "question") != strings.HasSuffix(s.Text, "?") || strings.Contains(s.Text, "Did ") && s.Features.Mood != "question" {
 				t.Errorf("%q (%+v)", s.Text, s.Features)
+			}
+		}
+	}
+}
+
+func TestSizes(t *testing.T) {
+	w, lex := setup(t)
+	e := func(id string) Entity { return w.Entities["entity:"+id] }
+	for _, c := range []struct {
+		th, pl, rel string
+		ok          bool
+	}{{"chair", "bottle", "in", false}, {"book", "box", "in", true}, {"box", "table", "on", true}, {"table", "chair", "on", false},
+		{"ladder", "cup", "near", true}, {"dog", "park", "in", true}, {"apple", "cup", "in", false}, {"book", "table", "under", true}} {
+		if got := w.FitsIn(e(c.th), e(c.pl), c.rel); got != c.ok {
+			t.Errorf("%s %s %s: %v", c.th, c.rel, c.pl, got)
+		}
+	}
+	m := Meaning{Frame: "frame:located", Features: realize.Features{Tense: "present", Polarity: "positive", Mood: "statement"},
+		Roles: map[string]Filler{"thing": {Entity: "entity:book"}, "place": {Entity: "entity:box"}, "relation": {Value: &Value{Attribute: "position", Value: "in"}}}}
+	tpl, err := Build(Align("The book is in the box.", m, w, lex), m, w, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for seed := uint64(0); seed < 20; seed++ {
+		for _, s := range Samples(tpl, m, w, lex, seed, 8) {
+			var th, pl Entity
+			for _, x := range w.Entities {
+				if x.Noun != "" && strings.HasSuffix(s.Fillers["thing"], " "+x.Noun) {
+					th = x
+				}
+				if x.Noun != "" && strings.HasSuffix(s.Fillers["place"], " "+x.Noun) {
+					pl = x
+				}
+			}
+			if !w.FitsIn(th, pl, "in") {
+				t.Fatalf("doesn't fit: %q", s.Text)
 			}
 		}
 	}

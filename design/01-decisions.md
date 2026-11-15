@@ -23,7 +23,7 @@ R5. Action-oriented: output is one action among many (00).
 - 09 look: D42 design system (palette, type, components) as built.
 - 10 inversion: D43 GPU work in the ganglion-gpu image built on gpu-run's; D44 Ettin decoder 150M for inversion.
 - 11 prose dataset: D45 include my thinking; D46 include tack and Pi; D47 any other known prose, high quality and realistic; D48 fineweb-edu usable for training, marked, quality judged by the user; D49 Samples page; D50 quote detection and a blacklist for Claude's output; D51 ratings saved as labels.
-- synthetic-data/ (own index in synthetic-data/01): D52–D118, Q71 Q81 open, T10–T18.
+- synthetic-data/ (own index in synthetic-data/01): D52–D119, Q71 open, T10–T18.
 - 05 training: D13 whatever data we can get, JEPA-style where usable; D14 agentic work first; D15 noise both ways; D16 views scale with data; D18 training order; D19 encoder masking recipe; D20 base-rate residual (grain of salt).
 
 ## Open questions (all)

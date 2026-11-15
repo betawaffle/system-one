@@ -163,8 +163,9 @@ func nextAt(w *World, n int, frameID string) (Meaning, error) {
 		stride *= 2
 		if r.Type == "relation" { // any value with a word for this place (06/F6a)
 			var vals []string
+			th, pl := w.Entities[m.Roles["thing"].Entity], w.Entities[m.Roles["place"].Entity]
 			for _, v := range a.Scale {
-				if a.HasWord(v, holder, w) {
+				if a.HasWord(v, holder, w) && w.FitsIn(th, pl, v) {
 					vals = append(vals, v)
 				}
 			}

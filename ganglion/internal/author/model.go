@@ -82,6 +82,11 @@ func (w *World) KindOf(t string) string {
 // model: an only-increasing attribute rules out combinations that imply the
 // holder stops existing, or that can't happen (06/D102).
 func (w *World) Allowed(m Meaning) bool {
+	if rel, ok := m.Roles["relation"]; ok && rel.Value != nil && m.Roles["thing"].Entity != "" && m.Roles["place"].Entity != "" {
+		if !w.FitsIn(w.Entities[m.Roles["thing"].Entity], w.Entities[m.Roles["place"].Entity], rel.Value.Value) {
+			return false // the chair isn't in the bottle (06/F6e)
+		}
+	}
 	for _, fl := range m.Roles {
 		v := fl.Value
 		if v == nil || v.Value == "" {
@@ -144,6 +149,36 @@ type Entity struct {
 	Noun     string `json:"noun,omitempty"`
 	Pronouns string `json:"pronouns"`
 	Coerced  string `json:"coerced,omitempty"` // treated as this type on purpose (02/L6c)
+	// Size is a rough class, small, medium or large, so Located doesn't put a
+	// chair in a bottle (06/F6e). Places are bigger than anything.
+	Size string `json:"size,omitempty"`
+}
+
+var sizeRank = map[string]int{"small": 1, "medium": 2, "large": 3}
+
+// SizeRank orders entities by size: places above everything, 0 if unknown.
+func (w *World) SizeRank(e Entity) int {
+	if w.IsA(e.Type, "place") {
+		return 4
+	}
+	return sizeRank[e.Size]
+}
+
+// FitsIn reports whether a thing can be in, on, under or near a place by size
+// (06/F6e): in and under need it smaller, on needs it no bigger; near always
+// fits, and so does anything without a size.
+func (w *World) FitsIn(thing, place Entity, relation string) bool {
+	a, b := w.SizeRank(thing), w.SizeRank(place)
+	if a == 0 || b == 0 {
+		return true
+	}
+	switch relation {
+	case "in", "under":
+		return a < b
+	case "on":
+		return a <= b
+	}
+	return true
 }
 
 // Display is how an entity is written in tags and the meaning card.
