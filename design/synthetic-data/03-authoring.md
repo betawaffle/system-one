@@ -1,4 +1,4 @@
-# Authoring templates (draft 1, 2026-11-15)
+# Authoring templates (draft 2, 2026-11-15)
 
 ## Loop
 
@@ -44,12 +44,53 @@ A10. Coverage map: frame × features (past, negated, question, …) → number o
 A11. Template metrics: distinct templates per frame and per kind (00/P5).
 A12. Feature-generic templates: a verb marked as a lemma slot lets one template cover every tense and polarity; code inflects.
 
+## Finding extra meaning (how, for Q37)
+
+A13. Steps:
+A13a. Trace: code knows every value in the meaning and the forms each can take (names, lemmas and inflections, pronouns, wordings from existing templates and the A8 "same meaning" lists). It marks every word that one of those explains.
+A13b. Grammar words: determiners and prepositions that a traced part needs ("a" for an indefinite thing, "to" in "gave a book to Tom") count as traced too.
+A13c. Leftovers: whatever is left is untraced. The UI highlights those spans. In E2: "as a gift", "on his birthday", the title. In E3: "finally", "sent … in the mail", "received".
+A13d. For each span, a model proposes one of these and the user confirms or changes it:
+  1. an existing modifier fits (occasion, purpose, means, time)
+  2. a new modifier: the user names it, picks its type, writes a one-line explainer
+  3. a separate event: "sent … in the mail" is send, so the template realises two events (send, then arrive)
+  4. an attitude or expectation: "finally" (expected, late). Probably a modifier kind of its own.
+  5. drop it: cut the span from the template
+A13e. A different viewpoint ("Tom got … from Mara") isn't extra meaning. The first time, the helper proposes it as the converse of give; after the user confirms, it's a traced form.
+A13f. When nothing is left untraced, the template's meaning is exactly the meaning plus the confirmed additions, and the refill check (A4) runs.
+
+## First frames (options for Q38)
+
+A14. Families to start from:
+  a. Transfer: give, lend, send, receive, sell. Clear roles, word-order alternations ("gave Tom a book" / "gave a book to Tom"), converses (A13e).
+  b. States and properties: X is Y, X has Y, comparisons ("taller than"). The simplest frames, and they make the descriptions other frames need ("the tall man", the PERSON-REF slots of A9).
+  c. Motion and placement: go, come, put, move. Places and paths, lots of prepositions; leads toward a world model (sd/00/T10).
+  d. Communication: say, tell, ask. Quotes, embedded questions, mood (sd/02/L4).
+  e. Perception and belief: see, know, think, believe. Embedded clauses, so templates fill templates early (A9).
+  f. Feelings: scare, please, cause-feel (sd/02/L6). Abstract types; good ground for coercion humour (sd/02/L8a).
+  g. Everyday scripts: eat, buy, cook. Lots of world knowledge, so the strongest test of types (eat needs food).
+A14a. I lean b then a: descriptions are needed inside every other frame, and transfer is the clearest frame family to grow from E1–E3.
+
+## Bootstrapping in the UI (sketch for D60)
+
+A15. With no frames yet, writing starts from a frame, not a meaning:
+  1. New frame: the user types a word ("give"). The tool shows VerbNet/FrameNet candidates for that sense, with their roles and explainers, to borrow names from (sd/02/D59, D60), or the user starts blank.
+  2. The user sets roles (name, type, one-line explainer). Types come from a picker over the type tree, or a new type gets added there.
+  3. Code makes the first meaning with distinctive fillers (A1), and the loop runs from A2.
+  4. Each untraced span resolved as option 3 in A13d offers to create that frame on the spot, the same way.
+
 ## Decided
 
 D58. A word-by-word helper as in A8. (user)
+D62. Templates are trees, all the way down. Answers Q36. (user: "Fine with me. It's trees all the way down, my friend.")
+D63. Flag extra meaning and ask what was added. Answers Q37. (user: "Yes, but how?" Mechanism proposed in A13; Q39.)
 
 ## Open questions
 
-Q36. Templates as small trees with feature-carrying slots, or flat strings? I lean trees from the start (flat strings are a one-node tree), since flat madlibs break on agreement and can't nest (A9).
-Q37. Sentences with extra meaning (E2, E3): flag and ask what was added (A7)? I lean yes.
-Q38. First frames to build: give, plus its neighbours from A8 (lend, send, receive) and cause-feel (sd/02/L6)? I lean give family first.
+Q38. First frame family (A14)? I lean states and properties, then transfer. (user: "Maybe? What other options could we choose from?")
+Q39. Does the A13 mechanism look right, especially the A13d choices?
+
+## Superseded
+
+Q36 (answered by D62). Templates as small trees or flat strings?
+Q37 (answered by D63). Sentences with extra meaning: flag and ask what was added?

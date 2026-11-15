@@ -1,4 +1,4 @@
-# Meaning language (draft 1, 2026-11-15)
+# Meaning language (draft 2, 2026-11-15)
 
 A small typed language for meanings. "Typed": code checks every slot against a type, and that check is what keeps sentences meaningful rather than only grammatical. "Small": a type, frame or modifier is added only when a sentence the user wrote needs it.
 
@@ -58,6 +58,13 @@ cause-feel
 ```
 Templates attach to frames, and a word can appear in templates of many frames ("gave Tom a headache / an idea / a scare"). The type check on `thing` is what tells the two senses apart.
 L6a. "as a birthday gift" still works on cause-feel (purpose=gift, occasion=birthday). The joke comes from combining an abstract feeling with a gift purpose. Allowed as long as the types allow it; whether to generate such combinations on purpose is Q35.
+L6b. The user's intended reading is different: the doom is a physical object. She hands it to him ("here you go"; "oh thanks, just what I wanted"). L6 is the normal reading, the one most people would take without that context. (user)
+L6c. So the same text has two meanings, and meaning-first means code always knows which one it generated. The joke reading is plain `give` with a deliberate type coercion:
+```
+d1: feeling "a sense of impending doom", treated as physical
+e1: give(giver=mara, thing=d1, recipient=tom), purpose=gift, occasion=birthday(of=tom)
+```
+The coercion is explicit in the meaning, so the joke is computable: code knows exactly which type rule it broke. A sentence whose text has more than one reading gets that recorded with its template, so a reader-side task can ask for the reading.
 
 ## Role names
 
@@ -68,13 +75,27 @@ L7a. Proposal: plain per-frame role names (giver, thing, recipient), so most nee
   − two names per role to maintain
 L7b. I lean L7a.
 
+## Humour and boundaries
+
+L8. Humour is vital, and so is testing the boundaries (user, Q35). Both are generated on purpose:
+L8a. Humour as deliberate coercion (L6c): code picks a type rule to break, marks it in the meaning, and realises it.
+L8b. Boundary tests: code generates combinations just inside and just outside a slot's types for the user to judge. Each answer tightens or loosens a type, or becomes a "breaks it" entry (sd/03/A8b).
+L8c. Coerced and boundary meanings stay marked as such, so they can be included or excluded by set.
+
 ## Decided
 
 D56. Our own small typed language (L1–L5). (user: "Fine with me, but you'll have to explain.")
 D57. The UI explains what each role means (L7). (user)
+D59. Plain per-frame role names, with the generic names kept; generic names showing in the UI with small explainers is fine too. Answers Q33. (user: "Fine with this, but I'd also be fine with the generic names having little explainers in the UI.")
+D60. Start with no frames and grow them from what the user writes, borrowing names when a frame is added. Answers Q34. (user: "Fine with me. Curious to see what that process will look like in the UI." Sketch in sd/03/A15.)
+D61. Generate humour and boundary tests on purpose (L8). Answers Q35. (user: "Yes, humor is vital. Also, testing the boundaries is important.")
 
 ## Open questions
 
-Q33. Role names: plain per-frame names with generic names kept hidden (L7a)? I lean yes.
-Q34. Borrow frames and role names from VerbNet/FrameNet to seed, or start empty and grow from what the user writes? I lean start empty, borrowing names when a frame is added.
-Q35. Figurative and odd-but-typed combinations (L6a): generate them on purpose, allow them only when the user wrote one, or keep them out? Not urgent; decide when generation runs at volume.
+(none for this note)
+
+## Superseded
+
+Q33 (answered by D59). Role names: plain per-frame names with generic names kept hidden (L7a)?
+Q34 (answered by D60). Borrow frames and role names from VerbNet/FrameNet to seed, or start empty and grow?
+Q35 (answered by D61). Figurative and odd-but-typed combinations: generate on purpose, allow only when written, or keep out?
