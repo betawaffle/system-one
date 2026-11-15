@@ -14,7 +14,7 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 - sd/06 first frames: D81 frames F1–F6, D82 properties as attribute + value, D83 "not old" ≠ "new", D84 adjective order by code, D85 starting types and attributes.
 - sd/07 storage: D86 authoring events and model calls logged per the capture requirements, D87 content-addressed versions (id outside the hash), heads, snapshots, D88 datasets as recipes plus derivations, D89 authored sentences as utterances, D90 one logged model-call path, D91 append-only source of truth plus a snapshot step in the backup (done).
 
-- sd/08 writing screen: D92 one page, D93 Next from coverage gaps, D94 align while typing, D95 suggestions automatic / helper on request, D96 keys as K1, D97 mock-up first, D98 Sounds Odd makes the generator add a modifier.
+- sd/08 writing screen: D92 one page, D93 Next from coverage gaps, D94 align while typing, D95 suggestions automatic / helper on request, D96 keys as K1, D97 mock-up first, D98 Sounds Odd makes the generator add a modifier, D99 "!" is extra meaning.
 
 ## Open questions (all)
 

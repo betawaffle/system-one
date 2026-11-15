@@ -112,6 +112,7 @@ export const spanHints = [
   [/birthday|christmas|anniversary/, 0, "occasion"],
   [/gift|present\b/, 0, "purpose"],
   [/finally|at last|eventually/, 3, "expected and late"],
+  [/^!$/, 3, "emphatic"],
   [/mail|post|sent|send|ship/, 2, "send"],
   [/yesterday|today|monday|morning|night/, 0, "time"],
 ];

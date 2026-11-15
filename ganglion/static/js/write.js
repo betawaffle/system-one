@@ -129,6 +129,7 @@ function classify(toks) {
     const t = toks[i];
     if (t.cls) continue;
     const w = lw[i], neg = negBase(w), base = neg || w;
+    if (w === "!") { t.cls = "untraced"; t.bang = true; continue; } // "!" is extra meaning (sd/08/D99)
     if (!/[a-z0-9]/i.test(w)) { t.cls = "punct"; continue; }
     // multiword phrases (the coerced doom)
     let matched = false;
@@ -398,7 +399,8 @@ function makeSample(l, p, f, fill, question) {
   if (question) { words.push(vg.aux, ...pre.map((w, i) => (i === 0 && !p.subj?.form?.match(/name/) ? w.toLowerCase() : w)), ...vg.main, ...post); }
   else words.push(...pre, ...vg.main, ...post);
   let s = words.filter(w => w !== "").join(" ").replace(/ ([.,!?;:])/g, "$1").replace(/\b(a|an) (\w)/gi, (m, d, c) => (/[aeiou]/i.test(c) ? (d[0] === "A" ? "An" : "an") : (d[0] === "A" ? "A" : "a")) + " " + c);
-  s = s.replace(/[.!?]?\s*$/, question ? "?" : ".");
+  const bang = l.toks.some(t => t.bang && memory.get(t.span)?.confirmed && choices[memory.get(t.span).choice] !== "Drop");
+  s = s.replace(/[.!?]?\s*$/, question ? "?" : bang ? "!" : ".");
   return cap(s);
 }
 function samplesFor(l, li) {

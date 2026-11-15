@@ -27,6 +27,7 @@ W2b. Fillers are chosen to be distinctive so alignment is exact (sd/03/A1): uniq
 W3. The user types one sentence per line. Several lines are several realisations of the same meaning (sd/03/A2).
 W3a. Alignment runs as the user types (on a short pause), in Go, with no model: it's fast enough (sd/03/D73). Each traced word gets an underline in its role's colour. Grammar words stay plain. Untraced spans get a dashed warn underline plus a ? mark, so it never depends on colour (09/C3).
 W3b. Pasting is allowed and recorded as pasted (sd/07/E1).
+W3c. Punctuation (user asked whether to type it): capitals and full stops are optional, since code adds them (sd/04/N2). "!" and "?" carry meaning. "?" is the question mood. "!" (emphasis, surprise) is extra meaning, so it's treated like an untraced word: highlighted, suggested as an attitude ("emphatic"), confirmed or dropped. A confirmed "!" stays in the template and its samples; a dropped one gives ".". Mid-sentence commas stay code's job, since they follow from structure. (The first mock-up silently turned "!" into "."; fixed.)
 
 ## Per-sentence review
 
@@ -84,6 +85,7 @@ D95. Span suggestions automatic, word helper on request (W4, W5). Answers Q67. (
 D96. Keyboard keys as in K1. Answers Q68. (user: "Yes.")
 D97. Next step: a working mock-up of this page in ganglion with hard-coded data, before any generator code. Answers Q69. (user: "Yes.")
 
+D99. "!" is extra meaning, resolved like an untraced span (W3c). (user: "Yes.")
 D98. "Sounds Odd" marks the template's feature combination as needing a modifier, and the generator adds one ("By next year, this book will be old."); it skips the combination only when no suitable modifier template exists (W6a3). Answers Q70. (user: "Yes, add one")
 
 ## Open questions
