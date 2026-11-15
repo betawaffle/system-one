@@ -12,10 +12,10 @@ import (
 
 // Features of an event (02/L4, 05/V1).
 type Features struct {
-	Tense    string // past, present, future
-	Aspect   string // simple, progressive, perfect ("" is simple)
-	Polarity string // positive, negative
-	Mood     string // statement, question, command
+	Tense    string `json:"tense"`    // past, present, future
+	Aspect   string `json:"aspect"`   // simple, progressive, perfect ("" is simple)
+	Polarity string `json:"polarity"` // positive, negative
+	Mood     string `json:"mood"`     // statement, question, command
 }
 
 // Agr is what the verb agrees with: the subject's person and number.

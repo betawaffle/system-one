@@ -6,8 +6,8 @@ package main
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/hex"
 	"embed"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -20,6 +20,7 @@ import (
 	"syscall"
 	"time"
 
+	"ganglion/internal/author"
 	"ganglion/internal/grammar"
 	"ganglion/internal/lexicon"
 	"ganglion/internal/store"
@@ -67,6 +68,27 @@ func main() {
 	}
 	defer st.Close()
 
+	// the synthetic-data grammar (design/synthetic-data): files under <data>/grammar
+	gram, err := grammar.Open(filepath.Join(*data, "grammar"))
+	if err != nil {
+		log.Fatalf("open grammar: %v", err)
+	}
+	if seeded, err := author.Seed(gram); err != nil {
+		log.Fatalf("seed grammar: %v", err)
+	} else if seeded {
+		gram.AddEvent("seed", "ganglion", "ganglion/seed", map[string]any{"heads": len(gram.Heads(""))})
+		log.Printf("seeded the grammar")
+	}
+	var lex *lexicon.Lexicon
+	if p, err := lexicon.Latest(filepath.Join(gram.Dir(), "lexicon")); err == nil {
+		if lex, err = lexicon.Load(p); err != nil {
+			log.Fatalf("load lexicon: %v", err)
+		}
+		log.Printf("lexicon %s: %d entries", lex.Hash[:12], lex.Len())
+	} else {
+		log.Printf("no lexicon imported; the Write page needs `ganglion lexicon import`")
+	}
+
 	static, _ := fs.Sub(files, "static")
 	tmpl, _ := fs.Sub(files, "templates")
 	wk := worker.New(*sock)
@@ -79,6 +101,8 @@ func main() {
 		Worker:    wk,
 		Hosts:     strings.Split(*hosts, ","),
 		User:      *user,
+		Grammar:   gram,
+		Lexicon:   lex,
 	})
 	if err != nil {
 		log.Fatalf("web: %v", err)

@@ -24,9 +24,9 @@ type Means struct {
 
 // Add is meaning the template carries beyond the frame (03/A13d).
 type Add struct {
-	Kind  string `json:"kind"`  // modifier, event, attitude
-	Key   string `json:"key"`   // occasion, purpose, send, emphatic…
-	Text  string `json:"text"`  // the words that say it
+	Kind string `json:"kind"` // modifier, event, attitude
+	Key  string `json:"key"`  // occasion, purpose, send, emphatic…
+	Text string `json:"text"` // the words that say it
 }
 
 type Supports struct {
@@ -190,8 +190,10 @@ func Build(l Line, m Meaning, w *World, res map[string]Resolution, needs []Need)
 	return t, nil
 }
 
-func isAux(w string) bool    { b, _ := negBase(strings.ToLower(w)); return auxes[b] }
-func isArticle(w string) bool { return set("a", "an", "the", "this", "that", "these", "those")[strings.ToLower(w)] }
+func isAux(w string) bool { b, _ := negBase(strings.ToLower(w)); return auxes[b] }
+func isArticle(w string) bool {
+	return set("a", "an", "the", "this", "that", "these", "those")[strings.ToLower(w)]
+}
 
 func spanByKey(l Line, key string) Span {
 	for _, s := range l.Spans {

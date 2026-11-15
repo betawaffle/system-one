@@ -7,6 +7,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"ganglion/internal/grammar"
+	"ganglion/internal/lexicon"
 	"html/template"
 	"io"
 	"io/fs"
@@ -34,10 +36,13 @@ type Config struct {
 	Worker    *worker.Client
 	Hosts     []string
 	User      string // who labels come from: a name claim, no logins yet
+	Grammar   *grammar.Store
+	Lexicon   *lexicon.Lexicon
 }
 
 type Server struct {
 	cfg     Config
+	writer  *writer
 	mux     *http.ServeMux
 	build   string // hash of all static files; part of every asset URL
 	assets  map[string]asset
@@ -61,6 +66,11 @@ func New(cfg Config) (*Server, error) {
 	if err := s.loadTemplates(); err != nil {
 		return nil, err
 	}
+	wr, err := newWriter(cfg.Grammar, cfg.Lexicon)
+	if err != nil {
+		return nil, err
+	}
+	s.writer = wr
 	s.routes()
 	s.handler = knownHost(cfg.Hosts, security(gzipMiddleware(s.mux)))
 	return s, nil

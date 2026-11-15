@@ -80,6 +80,15 @@ Z6. `lexicon/base-<hash>.jsonl`, one entry per line, built by `ganglion lexicon 
 ```
 Z6a. Rules fill regular forms; the exception lists override them; `doubt` marks forms the rules guessed (sd/05/P1d.2). The file's hash goes into each snapshot, so a dataset records exactly which lexicon it used.
 
+## Build status (2026-11-15)
+
+B1. Built and in use: the grammar store (Z1–Z3), seeding of starting types, attributes, frames and entities, the lexicon base (Z6), templates (Z5) saved from /write, authoring events (sentence, verdict, seed, lexicon-import).
+B2. Not built yet:
+  - lexicon overrides (Z4b) and the "hey wait a minute" fix flow (sd/05/D74, D79)
+  - authored sentences into the utterance store (sd/07/D89)
+  - the logged model-call path (sd/07/D90), so span suggestions are keyword guesses and the word helper shows only the lexicon
+  - snapshots per generation run and dataset recipes (sd/07/N, G): there's no bulk generation yet
+
 ## Decided
 
 (none yet)

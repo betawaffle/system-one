@@ -40,12 +40,12 @@ type Span struct {
 
 // Line is an aligned sentence.
 type Line struct {
-	Text     string   `json:"text"`
-	Tokens   []Token  `json:"tokens"`
-	Spans    []Span   `json:"spans"`
-	Waits    []string `json:"waits"`    // unsupported verb shapes: the template saves frozen (05/D80)
-	Warnings []string `json:"warnings"` // the sentence's features disagree with the meaning
-	VG       int      `json:"vg"`       // index of the frame verb, -1 if none
+	Text     string           `json:"text"`
+	Tokens   []Token          `json:"tokens"`
+	Spans    []Span           `json:"spans"`
+	Waits    []string         `json:"waits"`    // unsupported verb shapes: the template saves frozen (05/D80)
+	Warnings []string         `json:"warnings"` // the sentence's features disagree with the meaning
+	VG       int              `json:"vg"`       // index of the frame verb, -1 if none
 	Said     realize.Features `json:"said"`
 }
 
@@ -214,6 +214,10 @@ func matchEntity(toks []Token, lw []string, i int, m Meaning, w *World, lex *lex
 			t.Cls, t.Role, t.Form = "role", role, "plural"
 		default:
 			if s, c, ok := realize.PronounCase(word); ok && s == e.Pronouns {
+				// "her" is object or possessive: possessive when a word that isn't grammar follows ("her birthday")
+				if word == "her" && i+1 < len(lw) && wordRE.MatchString(lw[i+1]) && !grammarWords[lw[i+1]] {
+					c = "det"
+				}
 				t.Cls, t.Role, t.Form, t.Case = "role", role, "pron", c
 			}
 		}
@@ -310,7 +314,13 @@ func findSpans(toks []Token) []Span {
 		return j < len(toks) && toks[j].Cls == "untraced"
 	}
 	for i, t := range toks {
-		next := i + 1 < len(toks)
+		if t.Bang { // "!" is always its own span (08/D99)
+			flush()
+			run = []int{i}
+			flush()
+			continue
+		}
+		next := i+1 < len(toks)
 		possInside := t.Cls == "role" && (t.Case == "det" || t.Form == "possname") && len(run) > 0 && next && toks[i+1].Cls == "untraced"
 		if t.Cls == "untraced" || (t.Cls == "grammar" && (len(run) > 0 || leadsIn(i))) || possInside {
 			run = append(run, i)

@@ -1,11 +1,11 @@
 {{define "head"}}<link rel="stylesheet" href="{{asset "css/write.css"}}">
 <script type="module" src="{{asset "js/write.js"}}"></script>{{end}}
-{{define "content"}}
+{{define "content"}}{{with .Data.Error}}<div class="card card-pad notice-fail" id="write-error">{{.}}</div>{{end}}
 <div class="page-head">
   <div>
-    <div class="eyebrow">Mock-Up · Hard-Coded Data · Nothing Is Saved</div>
+    <div class="eyebrow">Synthetic Data · Templates</div>
     <h1>Write</h1>
-    <p>Write sentences for the meaning below, one per line. Words that match the meaning are underlined in their role's colour as you type; words that don't get a dashed underline and a ?. Samples, suggestions and the word helper here are faked in the browser: the real generator isn't built yet (design/synthetic-data/08). Press <span class="kbd">?</span> for keys.</p>
+    <p>Write sentences for the meaning below, one per line. Words that match the meaning are underlined in their role's colour as you type; words that don't get a dashed underline and a ?. Samples come from the real generator. No model is connected yet, so span suggestions are keyword guesses and the word helper shows only the lexicon. Press <span class="kbd">?</span> for keys.</p>
   </div>
 </div>
 

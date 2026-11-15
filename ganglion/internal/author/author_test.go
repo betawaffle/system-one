@@ -87,6 +87,20 @@ func TestAlignGive(t *testing.T) {
 	if strings.Join(l.Waits, ",") != "modals" {
 		t.Fatalf("waits: %v", l.Waits)
 	}
+	// "her" before a noun is possessive, and "!" stays its own span
+	l = Align("Tom got the book from Mara on her birthday!", m, w, lex)
+	spans = nil
+	for _, s := range l.Spans {
+		spans = append(spans, s.Text)
+	}
+	if strings.Join(spans, "|") != "on her birthday|!" {
+		t.Fatalf("spans: %v (%s)", spans, classes(l))
+	}
+	l = Align("Tom gave her a book.", give(pastStatement), w, lex)
+	if l.Tokens[2].Case != "obj" {
+		t.Fatalf("her as object: %+v", l.Tokens[2])
+	}
+
 	l = Align("Mara gave Tom a book!", m, w, lex)
 	if len(l.Spans) != 1 || !l.Spans[0].Bang {
 		t.Fatalf("! should be a span: %v", l.Spans)
