@@ -40,6 +40,22 @@ GANGLION_HOSTS=myhost,myhost.example.ts.net
 
 `deploy/install.sh` builds to `~/.local/bin/ganglion`, installs the two systemd user units from `deploy/`, and restarts them.
 
+## Backups
+
+A plain file copy of a live SQLite database (and its `-wal` file) can be inconsistent, so don't back up or restore `index.db` and `blobs.db` directly. `ganglion snapshot-db` writes consistent copies (`VACUUM INTO`, safe while the server runs) to `<data>/snapshot/`. Restore from those. `blobs.db` can't be rebuilt, since it holds the small blobs themselves.
+
+The backup should run the snapshot as its own first step, so the copy always happens right before the backup, whenever that is. With a systemd backup service, a drop-in like this does it (adjust user and path):
+
+```
+# /etc/systemd/system/<backup>.service.d/ganglion-snapshot.conf
+[Service]
+ExecStartPre=-/usr/sbin/runuser -u USER -- /home/USER/.local/bin/ganglion snapshot-db
+```
+
+Then exclude the live `index.db*` and `blobs.db*` from the backup. If the snapshot ever fails, the previous one stays in place: older, but consistent.
+
+Rule for new data (design/synthetic-data/07, B1d): the source of truth is append-only files (JSONL records, blob files). SQLite is only an index that can be rebuilt from them, so nothing new depends on the backup getting SQLite right.
+
 ## Licence
 
 MIT, see `../LICENSE`. The bundled IBM Plex fonts are under the SIL Open Font License (`static/fonts/LICENSE-OFL.txt`).

@@ -38,6 +38,10 @@ func main() {
 		blacklistCmd(defaultData, os.Args[2:])
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "snapshot-db" {
+		snapshotCmd(defaultData, os.Args[2:])
+		return
+	}
 
 	addr := flag.String("addr", ":7171", "listen address")
 	data := flag.String("data", defaultData, "data directory")
@@ -92,6 +96,28 @@ func envOr(k, def string) string {
 		return v
 	}
 	return def
+}
+
+// snapshotCmd: ganglion snapshot-db [-data DIR] [-out DIR]
+// Writes consistent copies of the SQLite databases for the backup to pick up.
+func snapshotCmd(defaultData string, args []string) {
+	fl := flag.NewFlagSet("snapshot-db", flag.ExitOnError)
+	data := fl.String("data", defaultData, "data directory")
+	out := fl.String("out", "", "output directory (default <data>/snapshot)")
+	fl.Parse(args)
+	if *out == "" {
+		*out = filepath.Join(*data, "snapshot")
+	}
+	st, err := store.Open(*data)
+	if err != nil {
+		log.Fatalf("open store: %v", err)
+	}
+	defer st.Close()
+	start := time.Now()
+	if err := st.Snapshot(*out); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("snapshot written to %s in %s\n", *out, time.Since(start).Round(time.Millisecond))
 }
 
 // blacklistCmd:ganglion blacklist list | ganglion blacklist add HASH-PREFIX REASON [-by NAME]

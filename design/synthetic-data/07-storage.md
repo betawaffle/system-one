@@ -80,11 +80,20 @@ D88. Datasets as recipes plus rows with per-row derivations; regenerate rather t
 D89. Authored sentences also go into the utterance store as kind `authored` (U1). Answers Q61. (user: "Yes.")
 D90. One model-call path in the Go server that logs everything (M2). Answers Q62. (user: "Yes.")
 
+D91. Both parts of B1d. Part 2 (append-only files as the source of truth, SQLite rebuildable) is the rule for new data and must be documented; part 1 (the backup takes a consistent copy first) is needed too, at least for `blobs.db`, which can't be rebuilt since it holds the small blobs. Answers Q63. (user: "Ok, 2 is fine, just make sure it's documented. And 1 is also something to do, as you said. I think blobs.db can't (it's small blobs).")
+D91a. Done 2026-11-15:
+  - `ganglion snapshot-db` writes `index.db` and `blobs.db` to `<data>/snapshot/` with `VACUUM INTO` (about 1 s; integrity check ok on a test copy).
+  - The backup service runs it as `ExecStartPre` (a systemd drop-in; a failure keeps the previous snapshot and the backup still runs).
+  - The live `index.db*` and `blobs.db*` are excluded from the backup; a dry run shows the snapshot included and the live files not.
+  - Both parts documented in `ganglion/README.md` (Backups).
+
 ## Open questions
 
-Q63. Revised: source of truth in append-only files with SQLite as a rebuildable index, plus a pre-backup step in the backup service for the existing databases (B1d, B1e)? I lean both. (user on the original B1b: "I'm fine with Q63, but it feels fragile, since the backup time could change without ganglion knowing.")
+(none for this note)
 
 ## Superseded
+
+Q63 (answered by D91). Append-only source of truth plus a pre-backup step?
 
 Q59 (answered by D87). Content-addressed versions with heads and snapshots?
 Q60 (answered by D88). Datasets as recipes plus rows with derivations?

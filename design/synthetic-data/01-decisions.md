@@ -12,11 +12,11 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 - sd/05 inflection: D74 rules propose, look up at generation, vet as needed, D75 WordNet + CMUdict, clean licence (no share-alike), D76 explicit pronoun sets (amends sd/02/L2), D77 style features, US default, D78 first verb-group scope, D79 retroactive fixes and doubt flags, no pre-vetting, D80 unsupported verb groups saved frozen and usable.
 
 - sd/06 first frames: D81 frames F1–F6, D82 properties as attribute + value, D83 "not old" ≠ "new", D84 adjective order by code, D85 starting types and attributes.
-- sd/07 storage: D86 authoring events and model calls logged per the capture requirements, D87 content-addressed versions (id outside the hash), heads, snapshots, D88 datasets as recipes plus derivations, D89 authored sentences as utterances, D90 one logged model-call path.
+- sd/07 storage: D86 authoring events and model calls logged per the capture requirements, D87 content-addressed versions (id outside the hash), heads, snapshots, D88 datasets as recipes plus derivations, D89 authored sentences as utterances, D90 one logged model-call path, D91 append-only source of truth plus a snapshot step in the backup (done).
 
 ## Open questions (all)
 
-- Q63 (revised) append-only files as source of truth, SQLite rebuildable, plus a pre-backup step (sd/07/B1d, B1e). Lean both.
+(none)
 
 ## Future topics (all)
 
