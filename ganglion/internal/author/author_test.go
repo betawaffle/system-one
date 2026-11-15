@@ -356,3 +356,53 @@ func TestDeterminers(t *testing.T) {
 		t.Error(Compact("x", tpl))
 	}
 }
+
+func TestCoverage(t *testing.T) {
+	w, lex := setup(t)
+	m := give(pastStatement)
+	tpl, err := Build(Align("Mara gave Tom a book.", m, w, lex), m, w, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dims := Dims(tpl, m, w)
+	names := map[string]int{}
+	for _, d := range dims {
+		names[d.Name] = len(d.Values)
+	}
+	// 3 tenses x 2 polarities x 2 moods; the thing's reference; two people's pronoun sets
+	if names["verb"] != 12 || names["ref:thing"] != 4 || names["who:giver"] != 3 || names["who:recipient"] != 3 {
+		t.Fatalf("dims: %v", names)
+	}
+	judged := map[string]map[string]bool{"verb": {"past positive statement": true}}
+	got := Aimed(tpl, m, w, lex, 1, 8, judged)
+	if len(got) != 8 {
+		t.Fatalf("%d samples", len(got))
+	}
+	covered := map[string]bool{}
+	for _, s := range got {
+		c := ComboOf(s, w)
+		for k, v := range c {
+			covered[k+"="+v] = true
+		}
+		if c["verb"] == "past positive statement" && got[0].Text == s.Text {
+			t.Errorf("first sample should aim at something unjudged: %q", s.Text)
+		}
+	}
+	if !covered["who:giver=they"] && !covered["who:recipient=they"] {
+		t.Log("they not reached in 8; fine, it's further down the list")
+	}
+	t.Log(got[0].Text, ComboOf(got[0], w))
+
+	// has-property: no "a" on the subject, age rules trim the verb forms
+	hp := Meaning{Frame: "frame:has-property", Features: realize.Features{Tense: "present", Polarity: "positive", Mood: "statement"},
+		Roles: map[string]Filler{"holder": {Entity: "entity:apple"}, "property": {Value: &Value{Attribute: "age", Value: "old"}}}}
+	tpl, _ = Build(Align("this apple is old", hp, w, lex), hp, w, nil, nil)
+	for _, d := range Dims(tpl, hp, w) {
+		if d.Name == "ref:holder" && strings.Join(d.Values, ",") != "the,this,that" {
+			t.Errorf("ref:holder %v", d.Values)
+		}
+		if d.Name == "verb" && len(d.Values) != 8 { // 12 minus past positive and future negative, both moods
+			t.Errorf("verb %d %v", len(d.Values), d.Values)
+		}
+	}
+}

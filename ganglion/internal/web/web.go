@@ -142,7 +142,7 @@ func (s *Server) serveAsset(w http.ResponseWriter, r *http.Request) {
 	w.Write(a.raw)
 }
 
-var pageFiles = []string{"overview", "events", "event", "fields", "utterances", "utterance", "samples", "write", "ettin", "design", "error"}
+var pageFiles = []string{"overview", "events", "event", "fields", "utterances", "utterance", "samples", "write", "coverage", "ettin", "design", "error"}
 
 func (s *Server) loadTemplates() error {
 	funcs := template.FuncMap{

@@ -49,6 +49,14 @@ W6a3. Where Sounds Odd goes: the template's supported features (sd/04/N1a). That
 W6d. Verdicts carry over (user asked whether a ✓ would still show next time): the server reads every verdict from the event log at start and keeps the latest per sentence text; a sample whose sentence was judged before shows that verdict, dimmed and tagged Judged Before. Keyed on the text alone, since a sentence is right or wrong whichever template made it, except Means Something Else, which only carries over when the tags match. Clearing a verdict clears it for good. Prior Ungrammatical / Means Something Else verdicts also hold a line back (W7d).
 W6b. A sample can also be saved as a ★ favourite: a good example to show later, or a boundary case worth keeping (sd/02/D61).
 
+## Coverage
+
+W9. The Coverage page (user worried about missing things to mark as odd): one verdict covers every sentence of its kind, so what matters is whether every kind has been checked. For each saved template it lists the kinds of sample it can make, as dimensions: verb form (tense × polarity × mood, minus combinations the age rules skip), how each noun is referred to (the, a, this, that, minus "a" on a "be" subject), and each named role's pronoun set (she, he, they). Judged values show ✓, the rest ○, with a count.
+W9a. A value counts as judged once any sample showing it has a verdict (✓ or ✕). The user's own sentence counts for its own kind.
+W9b. Show Me draws 8 samples, each aimed at one unjudged value (tagged as the reason it's shown), the rest random. Verdicts are the same as on Write. Sounds Odd on a saved template makes a new template version that adds a time modifier for that tense.
+W9c. Values are counted one at a time, not every combination: 22 kinds for "Ana gave Lee a chair" rather than hundreds. Pairs (e.g. negative × question × "they") would come later if one-at-a-time misses things.
+W9d. Later, before any bulk export: a random audit (50 rows judged with none wrong means fewer than about 6% are bad, at 95%), and a model flagging likely-odd samples once one is connected.
+
 ## Save
 
 W7. **Save Template** saves each fully traced sentence as a template version (sd/07/D87). The compact text form (sd/04/S1) is shown folded under each one for when the user wants to see the tree.
@@ -88,6 +96,7 @@ D95. Span suggestions automatic, word helper on request (W4, W5). Answers Q67. (
 D96. Keyboard keys as in K1. Answers Q68. (user: "Yes.")
 D97. Next step: a working mock-up of this page in ganglion with hard-coded data, before any generator code. Answers Q69. (user: "Yes.")
 
+D105. A Coverage page with Show Me, as in W9. (user: "Yes")
 D104. Verdicts carry over to later sessions by sentence text (W6d). (user: "Yes")
 D101. Save holds back lines with a ⚠ or a blocking verdict (W7d). (user: "Yes.")
 D99. "!" is extra meaning, resolved like an untraced span (W3c). (user: "Yes.")

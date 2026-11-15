@@ -24,7 +24,8 @@ type writer struct {
 	g        *grammar.Store
 	lex      *lexicon.Lexicon
 	world    *author.World
-	verdicts map[string]priorVerdict // sample text -> latest verdict (08/D104)
+	verdicts map[string]priorVerdict   // sample text -> latest verdict (08/D104)
+	meanings map[string]author.Meaning // sentence event id -> the meaning it was written for
 }
 
 // priorVerdict is the latest verdict on a sentence, from the event log.
@@ -36,6 +37,8 @@ type priorVerdict struct {
 	At       string           `json:"at"`
 	Features realize.Features `json:"-"`
 	Fillers  string           `json:"-"`
+	Line     string           `json:"-"` // the sentence the sample came from
+	Sample   author.Sample    `json:"-"`
 }
 
 func fillersKey(f map[string]string) string {
@@ -52,6 +55,7 @@ func (x *writer) noteVerdict(at string, d map[string]any) {
 	b, _ := json.Marshal(d)
 	var v struct {
 		Sample  author.Sample `json:"sample"`
+		Line    string        `json:"line"`
 		Verdict string        `json:"verdict"`
 		Reason  string        `json:"reason"`
 		Note    string        `json:"note"`
@@ -65,7 +69,7 @@ func (x *writer) noteVerdict(at string, d map[string]any) {
 		return
 	}
 	x.verdicts[v.Sample.Text] = priorVerdict{Verdict: v.Verdict, Reason: v.Reason, Note: v.Note, Star: v.Star, At: at,
-		Features: v.Sample.Features, Fillers: fillersKey(v.Sample.Fillers)}
+		Features: v.Sample.Features, Fillers: fillersKey(v.Sample.Fillers), Line: v.Line, Sample: v.Sample}
 }
 
 // prior returns the verdict to show on a sample, if any. A "Means Something
@@ -96,10 +100,13 @@ func newWriter(g *grammar.Store, lex *lexicon.Lexicon) (*writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	x := &writer{g: g, lex: lex, world: w, verdicts: map[string]priorVerdict{}}
+	x := &writer{g: g, lex: lex, world: w, verdicts: map[string]priorVerdict{}, meanings: map[string]author.Meaning{}}
 	err = g.Events(func(ev grammar.Event) {
-		if ev.Type == "verdict" {
+		switch ev.Type {
+		case "verdict":
 			x.noteVerdict(ev.At, ev.Data)
+		case "sentence":
+			x.noteMeaning(ev.ID, ev.Data)
 		}
 	})
 	return x, err
@@ -254,7 +261,8 @@ type lineReq struct {
 
 type sampleOut struct {
 	author.Sample
-	Prior *priorVerdict `json:"prior,omitempty"`
+	Prior *priorVerdict     `json:"prior,omitempty"`
+	Combo map[string]string `json:"combo,omitempty"`
 }
 
 type lineOut struct {
@@ -354,6 +362,9 @@ func (s *Server) writeSave(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), 500)
 			return
 		}
+		x.mu.Lock()
+		x.meanings[ev] = req.Meaning
+		x.mu.Unlock()
 		if req.Draft {
 			out = append(out, saved{Text: lr.Text, Draft: true})
 			continue
