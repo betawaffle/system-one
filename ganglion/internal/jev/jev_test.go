@@ -4,21 +4,19 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
-
-	"ganglion/internal/judge"
 )
 
 func TestRequestShape(t *testing.T) {
-	raw, err := Request(judge.Input{Frame: "Compare", Roles: []string{"a: Ana"}, Authored: "Ana is older than Noor", Sample: "Ana will be older than Lee.", Tags: "future"})
+	raw, err := Request(State{Sample: "Ana will be older than Lee.", Meaning: Meaning{Frame: "compare", Tense: "future", Roles: map[string]Role{"a": {FilledBy: "Ana"}}}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	var b struct {
-		State     string                     `json:"state"`
+		State     State                      `json:"state"`
 		Model     string                     `json:"model"`
 		Questions map[string]json.RawMessage `json:"questions"`
 	}
-	if err := json.Unmarshal(raw, &b); err != nil || b.Model != Model || !strings.Contains(b.State, `Sample: "Ana will be older than Lee."`) {
+	if err := json.Unmarshal(raw, &b); err != nil || b.Model != Model || b.State.Sample != "Ana will be older than Lee." || b.State.Meaning.Roles["a"].FilledBy != "Ana" {
 		t.Fatalf("%v %+v", err, b)
 	}
 	for _, f := range flags {

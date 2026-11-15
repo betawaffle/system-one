@@ -14,7 +14,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/template"
 
 	"ganglion/internal/judge"
 	"ganglion/internal/llm"
@@ -23,27 +22,54 @@ import (
 //go:embed questions.json
 var questionsFile []byte
 
-const stateText = `How to read this: a program generated the sample sentence from a meaning. The meaning says what it's about. The sample's tags set its tense (past, present, future), whether it affirms or denies the meaning (positive or negative), and whether it's a statement or a question. So "This ladder wasn't old." is a correct sample of "holder: ladder, property: age = old" with the tags past, negative, statement. Tags for roles say who or what fills them, including words like "the", "this", "that".
+// State is what Jev sees for one sample: the sample and the structure of the
+// meaning it was generated from, as JSON, so questions can name fields.
+type State struct {
+	Sample  string  `json:"sample"`
+	Meaning Meaning `json:"meaning"`
+	// Implications the rules already tag for this sample (02/L9).
+	AlreadyRecorded []string `json:"already_recorded_implications"`
+	Author          Author   `json:"author_example"`
+}
 
-Meaning: {{.Frame}}: {{.Explainer}}
-Roles:
-{{range .Roles}}- {{.}}
-{{end}}
-The author wrote this sentence for the meaning (it's known to be good): "{{.Authored}}"
+type Meaning struct {
+	Frame          string          `json:"frame"`
+	FrameExplainer string          `json:"frame_explainer"`
+	FrameKind      string          `json:"frame_kind"` // state: holds over time; action: an event
+	Roles          map[string]Role `json:"roles"`
+	Tense          string          `json:"tense"`
+	Polarity       string          `json:"polarity"` // positive affirms the frame; negative denies it
+	Mood           string          `json:"mood"`     // statement or question
+	Aspect         string          `json:"aspect,omitempty"`
+	Time           string          `json:"time,omitempty"` // a time modifier the sample adds
+}
 
-Sample: "{{.Sample}}"
-Its tags: {{.Tags}}
-{{if .Known}}Already recorded for this sample: {{.Known}}
-{{end}}`
+type Role struct {
+	Explainer string `json:"explainer"`
+	FilledBy  string `json:"filled_by,omitempty"` // as the sample refers to it
+	Type      string `json:"type,omitempty"`      // the entity's type
+	Attribute string `json:"attribute,omitempty"`
+	Value     string `json:"value,omitempty"`
+	Direction string `json:"direction,omitempty"` // compare: more, less, same
+}
 
-var stateTmpl = template.Must(template.New("state").Parse(stateText))
+type Author struct {
+	Sentence string `json:"sentence"`
+	About    string `json:"about"`
+}
 
-const combineVersion = "jev-checks-1"
+// AuthorAbout explains the author example's field.
+const AuthorAbout = "A sentence the author wrote for this frame, known to be good. The sample varies its tense, polarity, mood and fillers on purpose."
+
+const combineVersion = "jev-checks-2"
 
 // Version is the hash of the questions, the state text and the combining rules.
 var Version = func() string {
 	h := sha256.New()
-	h.Write([]byte(combineVersion + "\x00" + stateText + "\x00"))
+	st, _ := json.Marshal(State{})
+	h.Write([]byte(combineVersion + "\x00" + AuthorAbout + "\x00"))
+	h.Write(st) // the state's shape
+	h.Write([]byte{0})
 	h.Write(questionsFile)
 	return "jev-" + hex.EncodeToString(h.Sum(nil))[:8]
 }()
@@ -67,21 +93,16 @@ func Load(path, dir string) (*Config, error) {
 }
 
 // Request is the exact body sent for one sample.
-func Request(in judge.Input) ([]byte, error) {
-	var st bytes.Buffer
-	if err := stateTmpl.Execute(&st, in); err != nil {
-		return nil, err
-	}
-	var qs json.RawMessage = questionsFile
+func Request(st State) ([]byte, error) {
 	var compact bytes.Buffer
-	if err := json.Compact(&compact, qs); err != nil {
+	if err := json.Compact(&compact, questionsFile); err != nil {
 		return nil, err
 	}
 	return json.Marshal(struct {
-		State     string          `json:"state"`
+		State     State           `json:"state"`
 		Model     string          `json:"model"`
 		Questions json.RawMessage `json:"questions"`
-	}{st.String(), Model, compact.Bytes()})
+	}{st, Model, compact.Bytes()})
 }
 
 type answer struct {
@@ -131,8 +152,8 @@ type Result struct {
 }
 
 // Judge sends one sample and combines the answers.
-func (c *Config) Judge(ctx context.Context, in judge.Input) (Result, error) {
-	raw, err := Request(in)
+func (c *Config) Judge(ctx context.Context, st State) (Result, error) {
+	raw, err := Request(st)
 	if err != nil {
 		return Result{}, err
 	}

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -83,7 +84,7 @@ func (s *Server) jevRequests(w http.ResponseWriter, r *http.Request) {
 	}
 	var out []item
 	for _, v := range set {
-		raw, err := jev.Request(x.judgeInput(v.Meaning, v.Line, v.Sample, false))
+		raw, err := jev.Request(x.jevState(v.Meaning, v.Line, v.Sample))
 		if err != nil {
 			x.mu.RUnlock()
 			http.Error(w, err.Error(), 500)
@@ -112,7 +113,7 @@ func (s *Server) jevMany(ctx context.Context, x *writer, m author.Meaning, line 
 		out[i].Text = smp.Text
 		x.mu.RLock()
 		cached, ok := x.modelVerdicts[mvKey(smp.Text, jev.Version, "jev")]
-		in := x.judgeInput(m, line, smp, false)
+		in := x.jevState(m, line, smp)
 		x.mu.RUnlock()
 		if ok {
 			c := cached
@@ -140,4 +141,40 @@ func (s *Server) jevMany(ctx context.Context, x *writer, m author.Meaning, line 
 	}
 	wg.Wait()
 	return out
+}
+
+// jevState is the sample and the structure of its meaning, for Jev (10/J14).
+// Fillers are the sample's own, which vary from the authored meaning's.
+func (x *writer) jevState(m author.Meaning, line string, s author.Sample) jev.State {
+	w := x.world
+	f := w.Frames[m.Frame]
+	st := jev.State{Sample: s.Text, AlreadyRecorded: append([]string{}, s.Implies...), Author: jev.Author{Sentence: line, About: jev.AuthorAbout},
+		Meaning: jev.Meaning{Frame: strings.TrimPrefix(m.Frame, "frame:"), FrameExplainer: f.Explainer, FrameKind: f.Kind, Roles: map[string]jev.Role{},
+			Tense: s.Features.Tense, Polarity: s.Features.Polarity, Mood: s.Features.Mood, Aspect: s.Features.Aspect, Time: s.Time}}
+	for _, ro := range f.Roles {
+		r := jev.Role{Explainer: ro.Explainer}
+		fl := m.Roles[ro.Name]
+		if fl.Value != nil {
+			r.Attribute, r.Value, r.Direction = fl.Value.Attribute, fl.Value.Value, fl.Value.Dir
+		} else {
+			r.FilledBy = s.Fillers[ro.Name]
+			if r.FilledBy == "" && fl.Entity != "" {
+				r.FilledBy = w.Entities[fl.Entity].Display()
+			}
+			r.Type = x.entityType(r.FilledBy)
+		}
+		st.Meaning.Roles[ro.Name] = r
+	}
+	return st
+}
+
+// entityType finds the type of the entity a filler shows ("Ana", "that ladder").
+func (x *writer) entityType(shown string) string {
+	for _, e := range x.world.Entities {
+		d := e.Display()
+		if d != "" && (shown == d || strings.HasSuffix(shown, " "+d)) {
+			return e.Type
+		}
+	}
+	return ""
 }

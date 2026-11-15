@@ -1,66 +1,66 @@
 {
   "grammar": {
     "type": "choice",
-    "instructions": "Is the sample sentence broken English: wrong word order, wrong agreement, or a missing or extra word? Judge only grammar, not whether it is true, sensible or natural.",
+    "instructions": "Is `sample` broken English: wrong word order, wrong agreement, or a missing or extra word? Judge only grammar, not whether it is true, sensible or natural.",
     "criteria": {
-      "broken": "The sample is not grammatical English.",
-      "grammatical": "The sample is grammatical English, whatever it means."
+      "broken": "`sample` is not grammatical English.",
+      "grammatical": "`sample` is grammatical English, whatever it means."
     }
   },
   "filler": {
     "type": "choice",
-    "instructions": "Is something in the sample the wrong kind of thing for its role, so the sentence could never literally be true? For example \"The idea is tall\" (an idea has no height) or \"The rock gave Lee a book\" (a rock can't give). Merely unusual is fine.",
+    "instructions": "Is some `meaning.roles` filler the wrong kind of thing for its role, so `sample` could never literally be true? For example an idea as the holder of height, or a rock as the giver. Merely unusual is fine.",
     "criteria": {
-      "wrong_kind": "Some person or thing can't fill its role or have that property at all.",
-      "fits": "Every person and thing can fill its role."
+      "wrong_kind": "Some filler can't fill its role or have that property at all.",
+      "fits": "Every filler can fill its role."
     }
   },
   "meaning": {
     "type": "choice",
-    "instructions": "Does the sample's literal meaning differ from its tags? Count an extra fact, a different relation, a different person or thing, or something the tags say that the sample leaves out. A negative tag denying the meaning is not a difference, and neither is a question asking it. Don't count what a reader might infer.",
+    "instructions": "Do the words of `sample` say exactly `meaning`: the frame, each role's filler, the tense, the polarity, the mood, and `meaning.time` if present? `meaning.polarity` negative means `sample` denies the frame, and `meaning.mood` question means it asks it; neither is a difference. Count an extra fact, a different relation, a wrong filler, or something left out. Don't count what a reader might infer.",
     "criteria": {
-      "differs": "The words say something other than the tags.",
-      "matches": "The words say exactly what the tags say."
+      "differs": "The words of `sample` say something other than `meaning`.",
+      "matches": "The words of `sample` say exactly `meaning`."
     }
   },
   "change": {
     "type": "choice",
-    "instructions": "Does the sample's tense suggest the fact is different at some other time (\"will be X\": it isn't X now; \"was X\": it no longer is), and if so, could it really change like that, given what these people and things are? Actions such as giving are events, not facts that hold over time.",
+    "instructions": "Only for `meaning.frame_kind` state. Does `meaning.tense` suggest the fact is different at some other time (future: it isn't so now; past: it no longer is), and if so, could it really change like that, given what the fillers are?",
     "criteria": {
-      "no_change": "The tense doesn't suggest the fact is different at another time, or the sample is about an action.",
+      "no_change": "`meaning.frame_kind` is action, or the tense doesn't suggest the fact differs at another time.",
       "possible_change": "The tense suggests a change, and that change can really happen.",
       "impossible_change": "The tense suggests a change that can't happen."
     }
   },
   "implies": {
     "type": "choice",
-    "instructions": "Would most readers assume something extra from the sample, beyond what its words say? For example \"won't give\" suggesting a refusal, or \"gives\" in the present suggesting a habit. What the literal meaning already says doesn't count: a negative means the positive is false, \"her chair\" says she owns it, a question asks whether. What's already recorded for the sample doesn't count either.",
+    "instructions": "Would most readers assume something from `sample` beyond `meaning`? For example \"won't give\" suggesting a refusal, or a present-tense action suggesting a habit. What `meaning` itself says doesn't count: denying or asking the frame, or ownership a possessive states. What's in `already_recorded_implications` doesn't count either.",
     "criteria": {
-      "implies_more": "Most readers would assume something extra.",
-      "nothing_extra": "It says what it says and nothing more."
+      "implies_more": "Most readers would assume something beyond `meaning`.",
+      "nothing_extra": "`sample` says `meaning` and nothing more."
     }
   },
   "context": {
     "type": "choice",
-    "instructions": "Would the sample be confusing as the first sentence of a conversation, even with a scene in front of both people, so that it needs an earlier sentence? Names, \"the\", \"this\", \"that\" and possessives are all fine to open with.",
+    "instructions": "Would `sample` be confusing as the first sentence of a conversation, even with a scene in front of both people, so that it needs an earlier sentence? Names, \"the\", \"this\", \"that\" and possessives are all fine to open with.",
     "criteria": {
-      "needs_earlier": "It can't stand first, like \"He did too.\"",
-      "can_open": "It works as an opening sentence."
+      "needs_earlier": "`sample` can't stand first, like \"He did too.\"",
+      "can_open": "`sample` works as an opening sentence."
     }
   },
   "verdict": {
     "type": "choice",
-    "instructions": "Overall, which describes the sample best? Judge it against its own tags, not against the author's sentence.",
+    "instructions": "Overall, which describes `sample` best, judged against `meaning` (not against `author_example`)?",
     "criteria": {
-      "fine": "Correct English, means exactly its tags, natural on its own.",
-      "fine_needs_context": "Correct and means its tags, but only natural after something else.",
-      "fine_implies_more": "Correct and means its tags, but a reader would infer more.",
+      "fine": "Correct English, says exactly `meaning`, natural on its own.",
+      "fine_needs_context": "Correct and says `meaning`, but only natural after something else.",
+      "fine_implies_more": "Correct and says `meaning`, but a reader would infer more.",
       "word_form": "A word is spelled or inflected wrong.",
-      "wrong_kind_of_filler": "Grammatical, but some thing can't fill its role.",
+      "wrong_kind_of_filler": "Grammatical, but some filler can't fill its role.",
       "ungrammatical": "Broken English.",
-      "means_something_else": "Reads fine but doesn't match its tags.",
-      "sounds_odd": "Correct and means its tags, but nobody would say it like that without adding something.",
-      "other": "Wrong in some other way, for example it suggests a change that can't happen."
+      "means_something_else": "Reads fine but doesn't say `meaning`.",
+      "sounds_odd": "Correct and says `meaning`, but nobody would say it like that without adding something.",
+      "other": "Wrong in some other way, for example the tense suggests a change that can't happen."
     }
   }
 }
