@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"ganglion/internal/author"
 	"ganglion/internal/grammar"
@@ -19,10 +20,65 @@ import (
 // and samples are plain code (03/D73); model features aren't connected yet.
 
 type writer struct {
-	mu    sync.RWMutex
-	g     *grammar.Store
-	lex   *lexicon.Lexicon
-	world *author.World
+	mu       sync.RWMutex
+	g        *grammar.Store
+	lex      *lexicon.Lexicon
+	world    *author.World
+	verdicts map[string]priorVerdict // sample text -> latest verdict (08/D104)
+}
+
+// priorVerdict is the latest verdict on a sentence, from the event log.
+type priorVerdict struct {
+	Verdict  string           `json:"verdict"` // ok, bad
+	Reason   string           `json:"reason,omitempty"`
+	Note     string           `json:"note,omitempty"`
+	Star     bool             `json:"star,omitempty"`
+	At       string           `json:"at"`
+	Features realize.Features `json:"-"`
+	Fillers  string           `json:"-"`
+}
+
+func fillersKey(f map[string]string) string {
+	var ks []string
+	for k, v := range f {
+		ks = append(ks, k+"="+v)
+	}
+	sort.Strings(ks)
+	return strings.Join(ks, ";")
+}
+
+// noteVerdict folds one verdict event's data into the index.
+func (x *writer) noteVerdict(at string, d map[string]any) {
+	b, _ := json.Marshal(d)
+	var v struct {
+		Sample  author.Sample `json:"sample"`
+		Verdict string        `json:"verdict"`
+		Reason  string        `json:"reason"`
+		Note    string        `json:"note"`
+		Star    bool          `json:"star"`
+	}
+	if json.Unmarshal(b, &v) != nil || v.Sample.Text == "" {
+		return
+	}
+	if v.Verdict == "" && !v.Star { // cleared
+		delete(x.verdicts, v.Sample.Text)
+		return
+	}
+	x.verdicts[v.Sample.Text] = priorVerdict{Verdict: v.Verdict, Reason: v.Reason, Note: v.Note, Star: v.Star, At: at,
+		Features: v.Sample.Features, Fillers: fillersKey(v.Sample.Fillers)}
+}
+
+// prior returns the verdict to show on a sample, if any. A "Means Something
+// Else" verdict depends on the tags, so it only carries over when they match.
+func (x *writer) prior(s author.Sample) *priorVerdict {
+	p, ok := x.verdicts[s.Text]
+	if !ok {
+		return nil
+	}
+	if p.Reason == "Means Something Else" && (p.Features != s.Features || p.Fillers != fillersKey(s.Fillers)) {
+		return nil
+	}
+	return &p
 }
 
 func (s *Server) wr() (*writer, error) {
@@ -40,7 +96,13 @@ func newWriter(g *grammar.Store, lex *lexicon.Lexicon) (*writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &writer{g: g, lex: lex, world: w}, nil
+	x := &writer{g: g, lex: lex, world: w, verdicts: map[string]priorVerdict{}}
+	err = g.Events(func(ev grammar.Event) {
+		if ev.Type == "verdict" {
+			x.noteVerdict(ev.At, ev.Data)
+		}
+	})
+	return x, err
 }
 
 func (x *writer) reload() error {
@@ -190,12 +252,17 @@ type lineReq struct {
 	How   string                       `json:"how"`
 }
 
+type sampleOut struct {
+	author.Sample
+	Prior *priorVerdict `json:"prior,omitempty"`
+}
+
 type lineOut struct {
 	author.Line
-	Traced  bool            `json:"traced"`
-	Compact string          `json:"compact,omitempty"`
-	Samples []author.Sample `json:"samples"`
-	Error   string          `json:"error,omitempty"`
+	Traced  bool        `json:"traced"`
+	Compact string      `json:"compact,omitempty"`
+	Samples []sampleOut `json:"samples"`
+	Error   string      `json:"error,omitempty"`
 }
 
 // POST /api/write/preview: align each line, and for traced lines build the
@@ -223,14 +290,16 @@ func (s *Server) writePreview(w http.ResponseWriter, r *http.Request) {
 	out := []lineOut{}
 	for i, lr := range req.Lines {
 		l := author.Align(lr.Text, req.Meaning, x.world, x.lex)
-		lo := lineOut{Line: l, Traced: l.Traced(lr.Res), Samples: []author.Sample{}}
+		lo := lineOut{Line: l, Traced: l.Traced(lr.Res), Samples: []sampleOut{}}
 		if lo.Traced {
 			t, err := author.Build(l, req.Meaning, x.world, lr.Res, lr.Needs)
 			if err != nil {
 				lo.Error = err.Error()
 			} else {
 				lo.Compact = author.Compact("(unsaved)", t)
-				lo.Samples = author.Samples(t, req.Meaning, x.world, x.lex, req.Seed+uint64(i)*7919, 8)
+				for _, s := range author.Samples(t, req.Meaning, x.world, x.lex, req.Seed+uint64(i)*7919, 8) {
+					lo.Samples = append(lo.Samples, sampleOut{Sample: s, Prior: x.prior(s)})
+				}
 			}
 		}
 		out = append(out, lo)
@@ -326,6 +395,9 @@ func (s *Server) writeVerdict(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
+	x.mu.Lock()
+	x.noteVerdict(time.Now().UTC().Format(time.RFC3339Nano), req)
+	x.mu.Unlock()
 	jsonOut(w, map[string]any{"event": id})
 }
 

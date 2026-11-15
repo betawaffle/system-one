@@ -333,3 +333,24 @@ func (s *Store) AddEvent(typ, by, client string, data map[string]any) (string, e
 
 // Dir is the grammar directory.
 func (s *Store) Dir() string { return s.dir }
+
+// Events calls fn for each authoring event, oldest first. Torn lines are skipped.
+func (s *Store) Events(fn func(Event)) error {
+	f, err := os.Open(filepath.Join(s.dir, "events.jsonl"))
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 1<<20), 1<<24)
+	for sc.Scan() {
+		var ev Event
+		if json.Unmarshal(sc.Bytes(), &ev) == nil {
+			fn(ev)
+		}
+	}
+	return sc.Err()
+}

@@ -63,3 +63,5 @@ details.tree[open] summary, details.forms[open] summary { margin-bottom: var(--s
 .reason-why .input { max-width: 40ch; }
 .held { display: grid; gap: 4px; padding: var(--s2) var(--s3); border: 1px dashed var(--warn); border-radius: var(--r-md); }
 .held ul { margin: 0; padding-left: 1.2em; color: var(--ink-2); }
+.sample-row.prior:not(.current) { opacity: 0.6; }
+.sample-text .tag.mini { margin-left: 8px; vertical-align: 2px; }

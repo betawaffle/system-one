@@ -46,6 +46,7 @@ W6a. Each sample has ✓ and ✕. ✕ asks what's wrong, one tap: Word Form, Wro
 W6a1. Each reason has a one-line explainer (shown on hover, and under the chips once picked, so it works on a phone) and says where the verdict goes. (user: "The 'What's wrong?' buttons need explainers.")
 W6a2. New reason **Sounds Odd**: correct and means what its tags say, but nobody would say it like that without more context. Found by the user in the mock-up: "This book will be old." It's grammatical and the meaning is right (has-property, future), but a future statement about a state reads oddly with no time anchor ("by next year this book will be old"), and it hints the book isn't old now. That's the pragmatic oddness risk (sd/00/X2), not a mock-up bug: the real generator would make it too. None of the first five reasons fit it.
 W6a3. Where Sounds Odd goes: the template's supported features (sd/04/N1a). That combination is marked "needs a modifier" (here a time), so the generator either adds one ("by next year", "someday") or skips the combination. (Q70)
+W6d. Verdicts carry over (user asked whether a ✓ would still show next time): the server reads every verdict from the event log at start and keeps the latest per sentence text; a sample whose sentence was judged before shows that verdict, dimmed and tagged Judged Before. Keyed on the text alone, since a sentence is right or wrong whichever template made it, except Means Something Else, which only carries over when the tags match. Clearing a verdict clears it for good. Prior Ungrammatical / Means Something Else verdicts also hold a line back (W7d).
 W6b. A sample can also be saved as a ★ favourite: a good example to show later, or a boundary case worth keeping (sd/02/D61).
 
 ## Save
@@ -87,6 +88,7 @@ D95. Span suggestions automatic, word helper on request (W4, W5). Answers Q67. (
 D96. Keyboard keys as in K1. Answers Q68. (user: "Yes.")
 D97. Next step: a working mock-up of this page in ganglion with hard-coded data, before any generator code. Answers Q69. (user: "Yes.")
 
+D104. Verdicts carry over to later sessions by sentence text (W6d). (user: "Yes")
 D101. Save holds back lines with a ⚠ or a blocking verdict (W7d). (user: "Yes.")
 D99. "!" is extra meaning, resolved like an untraced span (W3c). (user: "Yes.")
 D98. "Sounds Odd" marks the template's feature combination as needing a modifier, and the generator adds one ("By next year, this book will be old."); it skips the combination only when no suitable modifier template exists (W6a3). Answers Q70. (user: "Yes, add one")

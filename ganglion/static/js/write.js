@@ -271,11 +271,15 @@ function renderSamples() {
   if (curSample >= rows.length) curSample = rows.length - 1;
   rows.forEach((r, i) => r.classList.toggle("current", i === curSample));
 }
+// a verdict given before, in any session, comes from the server (08/D104)
+function fromPrior(p) {
+  return p ? { v: p.verdict || null, reason: p.reason || null, note: p.note || "", star: !!p.star, prior: p.at } : {};
+}
 function sampleRow(l, s) {
   const key = l.text + "\u0000" + s.text;
-  const v = verdicts.get(key) || {};
+  const v = verdicts.get(key) || fromPrior(s.prior);
   const send = patch => {
-    const nv = { ...v, ...patch };
+    const nv = { ...v, ...patch, prior: null };
     verdicts.set(key, nv);
     api("/api/write/verdict", { meaning: card.meaning, line: l.text, sample: s, verdict: nv.v || "", reason: nv.reason || "", note: nv.note || "", star: !!nv.star }).catch(fail);
     if (patch.reason === "Sounds Odd") {
@@ -291,9 +295,10 @@ function sampleRow(l, s) {
     ...Object.entries(s.fillers).map(([r, f]) => [`${r}: ${f}`, s.changed.includes(r)]),
     ...(s.time ? [[`time: ${s.time}`, true]] : []),
   ];
-  return h("div", { class: "sample-row" + (v.v ? " judged" : ""), "data-key": key },
+  return h("div", { class: "sample-row" + (v.v ? " judged" : "") + (v.prior ? " prior" : ""), "data-key": key },
     h("div", { class: "sample-main" },
-      h("div", { class: "sample-text" }, s.text),
+      h("div", { class: "sample-text" }, s.text,
+        v.prior ? h("span", { class: "tag mini", "data-tip": `Your verdict from ${new Date(v.prior).toLocaleString()}. Change it any time.` }, "Judged Before") : null),
       h("div", { class: "row sample-tags" }, tags.map(([t, c]) => h("span", { class: "tag mini" + (c ? " accent" : "") }, t)))),
     h("div", { class: "row" },
       h("div", { class: "seg rate", role: "group", "aria-label": "Verdict" },
@@ -339,8 +344,10 @@ const blocking = new Set(["Ungrammatical", "Means Something Else"]);
 function blockers(l) {
   const out = l.warnings.map(w => "⚠ " + w);
   const seen = new Set();
-  for (const [k, v] of verdicts) {
-    if (k.startsWith(l.text + "\u0000") && v.v === "bad" && blocking.has(v.reason) && !seen.has(v.reason)) {
+  const all = new Map((l.samples || []).map(s => [l.text + "\u0000" + s.text, fromPrior(s.prior)]));
+  for (const [k, v] of verdicts) if (k.startsWith(l.text + "\u0000")) all.set(k, v);
+  for (const [, v] of all) {
+    if (v.v === "bad" && blocking.has(v.reason) && !seen.has(v.reason)) {
       seen.add(v.reason);
       out.push(`A sample is marked ${v.reason}: reword the sentence, or clear that ✕ if it was a slip.`);
     }
