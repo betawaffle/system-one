@@ -33,6 +33,29 @@ let items = [];
 const shown = new Map();    // template id -> samples
 const verdicts = new Map(); // id + sample text -> verdict this page view
 const seeds = new Map();
+const review = new Map();   // template id -> {samples, filter: [dim, value] | null}
+
+// the samples you've judged, newest first, to look at again (08/W9e)
+async function openReview(it, filter = null) {
+  try {
+    const j = await api("/api/coverage/judged?id=" + encodeURIComponent(it.id));
+    review.set(it.id, { samples: j.samples || [], filter });
+  } catch (e) { return alert(e.message); }
+  render(); sizeBars();
+}
+function reviewBlock(it) {
+  const r = review.get(it.id);
+  const list = r.filter ? r.samples.filter(s => (s.combo || {})[r.filter[0]] === r.filter[1]) : r.samples;
+  const label = r.filter ? `${r.filter[0] === "verb" ? "" : r.filter[0].split(":")[1] + ": "}${r.filter[1]}` : "all";
+  return h("div", { class: "stack tight gap-top review" },
+    h("div", { class: "row" },
+      h("h4", {}, "Judged: ", label), h("span", { class: "muted small" }, list.length, " sample", list.length === 1 ? "" : "s", ", newest first. Change any verdict here."),
+      h("span", { class: "spacer" }),
+      r.filter ? h("button", { class: "btn chip", onclick: () => { r.filter = null; render(); sizeBars(); } }, "Show All") : null,
+      h("button", { class: "btn chip", onclick: () => { review.delete(it.id); render(); sizeBars(); } }, "Close")),
+    list.length ? list.map(s => sampleRow(it, s)) :
+      h("div", { class: "muted small" }, r.filter ? "Only your own sentence covers this one: nothing judged by sample yet." : "No samples judged yet."));
+}
 
 async function load() {
   try { items = (await api("/api/coverage")).templates; } catch (e) { $("#templates").replaceChildren(h("div", { class: "card card-pad notice-fail" }, e.message)); return; }
@@ -55,14 +78,17 @@ function card(it) {
           h("span", { class: "covbar" }, h("i", { "data-w": pct })),
           `${it.done} of ${it.total} kinds judged`,
           (it.needs || []).map(n => h("span", { class: "tag warn" }, `${cap(n.tense)}: adds a time`)))),
-      h("button", { class: "btn primary", onclick: () => show(it) }, it.done < it.total ? "Show Me" : "Show More")),
+      h("div", { class: "row" },
+        h("button", { class: "btn", onclick: () => review.has(it.id) ? (review.delete(it.id), render(), sizeBars()) : openReview(it), "aria-expanded": String(review.has(it.id)) }, "Judged"),
+        h("button", { class: "btn primary", onclick: () => show(it) }, it.done < it.total ? "Show Me" : "Show More"))),
     h("div", { class: "card-body stack tight" },
       it.dims.map(d => h("div", { class: "dimrow" },
         h("span", { class: "label" }, d.title),
         h("div", { class: "row chips" }, d.values.map((v, i) => d.judged[i]
-          ? h("span", { class: "tag ok", "data-tip": "Judged" }, "✓ ", v)
+          ? h("button", { class: "tag ok chipbtn", "data-tip": "Judged: click to see the samples", onclick: () => openReview(it, [d.name, v]) }, "✓ ", v)
           : h("span", { class: "tag pending", "data-tip": "Not judged yet" }, "○ ", v))))),
-      shown.has(it.id) ? h("div", { class: "stack tight gap-top" }, shown.get(it.id).map(s => sampleRow(it, s))) : null));
+      review.has(it.id) ? reviewBlock(it) : null,
+      shown.has(it.id) ? h("div", { class: "stack tight gap-top" }, h("h4", {}, "Aimed at what's left"), shown.get(it.id).map(s => sampleRow(it, s))) : null));
 }
 async function show(it) {
   const seed = (seeds.get(it.id) || 0) + 1;
@@ -86,6 +112,10 @@ function sampleRow(it, s) {
     } catch (e) { alert(e.message); }
     const fresh = (await api("/api/coverage")).templates;
     items = fresh;
+    if (review.has(it.id)) {
+      const j = await api("/api/coverage/judged?id=" + encodeURIComponent(it.id));
+      review.get(it.id).samples = j.samples || [];
+    }
     render(); sizeBars();
   };
   const judged = new Map(it.dims.map(d => [d.name, new Map(d.values.map((x, i) => [x, d.judged[i]]))]));
@@ -96,7 +126,7 @@ function sampleRow(it, s) {
   });
   return h("div", { class: "sample-row" + (v.v ? " judged" : "") + (v.prior ? " prior" : "") },
     h("div", { class: "sample-main" },
-      h("div", { class: "sample-text" }, s.text, v.prior ? h("span", { class: "tag mini" }, "Judged Before") : null),
+      h("div", { class: "sample-text" }, s.text, v.prior ? h("span", { class: "tag mini", "data-tip": `Judged ${new Date(v.prior).toLocaleString()}` }, "Judged ", new Date(v.prior).toLocaleDateString()) : null),
       h("div", { class: "row sample-tags" }, tags, s.time ? h("span", { class: "tag mini" }, "time: ", s.time) : null)),
     h("div", { class: "row" },
       h("div", { class: "seg rate", role: "group", "aria-label": "Verdict" },

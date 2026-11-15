@@ -55,6 +55,7 @@ W9. The Coverage page (user worried about missing things to mark as odd): one ve
 W9a. A value counts as judged once any sample showing it has a verdict (✓ or ✕). The user's own sentence counts for its own kind.
 W9b. Show Me draws 8 samples, each aimed at one unjudged value (tagged as the reason it's shown), the rest random. Verdicts are the same as on Write. Sounds Odd on a saved template makes a new template version that adds a time modifier for that tense.
 W9c. Values are counted one at a time, not every combination: 22 kinds for "Ana gave Lee a chair" rather than hundreds. Pairs (e.g. negative × question × "they") would come later if one-at-a-time misses things.
+W9e. Judged list (user: to make sure they didn't judge one too quickly): a Judged button on each template lists the samples judged so far, newest first, with verdict, reason, note and date, and each verdict can be changed there. Clicking a ✓ value filters the list to samples of that kind.
 W9d. Later, before any bulk export: a random audit (50 rows judged with none wrong means fewer than about 6% are bad, at 95%), and a model flagging likely-odd samples once one is connected.
 
 ## Save
@@ -96,6 +97,7 @@ D95. Span suggestions automatic, word helper on request (W4, W5). Answers Q67. (
 D96. Keyboard keys as in K1. Answers Q68. (user: "Yes.")
 D97. Next step: a working mock-up of this page in ganglion with hard-coded data, before any generator code. Answers Q69. (user: "Yes.")
 
+D106. A Judged list per template, filterable by kind, with verdicts changeable in place (W9e). (user)
 D105. A Coverage page with Show Me, as in W9. (user: "Yes")
 D104. Verdicts carry over to later sessions by sentence text (W6d). (user: "Yes")
 D101. Save holds back lines with a ⚠ or a blocking verdict (W7d). (user: "Yes.")

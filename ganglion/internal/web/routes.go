@@ -35,6 +35,7 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /coverage", s.coveragePage)
 	m.HandleFunc("GET /api/coverage", s.coverage)
 	m.HandleFunc("POST /api/coverage/show", s.coverageShow)
+	m.HandleFunc("GET /api/coverage/judged", s.coverageJudged)
 	m.HandleFunc("POST /api/template/need", s.templateNeed)
 	m.HandleFunc("GET /ettin", s.ettin)
 	m.HandleFunc("GET /design", s.design)

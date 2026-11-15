@@ -201,3 +201,30 @@ func (s *Server) coveragePage(w http.ResponseWriter, r *http.Request) {
 	}
 	s.render(w, "coverage", Page{Title: "Coverage", Nav: "coverage", Data: map[string]any{"Error": msg}})
 }
+
+// GET /api/coverage/judged?id=ID: the samples of one template the user has
+// judged, newest first, so a quick verdict can be looked at again (08/W9e).
+func (s *Server) coverageJudged(w http.ResponseWriter, r *http.Request) {
+	x, err := s.wr()
+	if err != nil {
+		http.Error(w, err.Error(), 503)
+		return
+	}
+	x.mu.RLock()
+	defer x.mu.RUnlock()
+	t, ok := x.world.Templates[r.URL.Query().Get("id")]
+	if !ok {
+		http.Error(w, "unknown template", 404)
+		return
+	}
+	out := []sampleOut{}
+	for _, v := range x.verdicts {
+		if v.Line != t.Source.Text {
+			continue
+		}
+		p := v
+		out = append(out, sampleOut{Sample: v.Sample, Prior: &p, Combo: author.ComboOf(v.Sample, x.world)})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Prior.At > out[j].Prior.At })
+	jsonOut(w, map[string]any{"samples": out})
+}

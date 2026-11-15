@@ -71,3 +71,7 @@ details.tree[open] summary, details.forms[open] summary { margin-bottom: var(--s
 .dimrow .chips { gap: 6px; }
 .tag.pending { border-style: dashed; color: var(--muted); }
 @media (max-width: 640px) { .dimrow { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+.chipbtn { cursor: pointer; font: inherit; font-size: var(--t-xs); }
+.chipbtn:hover { border-color: var(--ok); }
+.review { border-top: 1px solid var(--line); padding-top: var(--s3); }
+.review h4, .card-body h4 { font-size: var(--t-sm); }
