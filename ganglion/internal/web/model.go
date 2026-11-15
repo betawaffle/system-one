@@ -19,12 +19,11 @@ import (
 // modelVerdict is a stored first-pass answer.
 type modelVerdict struct {
 	judge.Verdict
-	Checks []judge.Check  `json:"checks,omitempty"` // each narrow check's answer (10/J2)
-	Direct *judge.Verdict `json:"direct,omitempty"` // Jev's own overall verdict, beside the one made from its checks (10/J14)
-	Call   string         `json:"call"`
-	Prompt string         `json:"prompt"`
-	Effort string         `json:"effort"`
-	At     string         `json:"at"`
+	Checks []judge.Check `json:"checks,omitempty"` // each narrow check's answer (10/J2)
+	Call   string        `json:"call"`
+	Prompt string        `json:"prompt"`
+	Effort string        `json:"effort"`
+	At     string        `json:"at"`
 }
 
 func mvKey(text, prompt, effort string) string { return text + "\x00" + prompt + "\x00" + effort }

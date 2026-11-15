@@ -22,54 +22,19 @@ import (
 //go:embed questions.json
 var questionsFile []byte
 
-// State is what Jev sees for one sample: the sample and the structure of the
-// meaning it was generated from, as JSON, so questions can name fields.
+// State is what Jev sees for one sample, kept minimal: the sentence, and its
+// meaning as flat fields (frame, each role's filler, tense, polarity, mood).
 type State struct {
-	Sample  string  `json:"sample"`
-	Meaning Meaning `json:"meaning"`
-	// Implications the rules already tag for this sample (02/L9).
-	AlreadyRecorded []string `json:"already_recorded_implications"`
-	Author          Author   `json:"author_example"`
+	Sample  string            `json:"sample"`
+	Meaning map[string]string `json:"meaning"`
 }
 
-type Meaning struct {
-	Frame          string          `json:"frame"`
-	FrameExplainer string          `json:"frame_explainer"`
-	FrameKind      string          `json:"frame_kind"` // state: holds over time; action: an event
-	Roles          map[string]Role `json:"roles"`
-	Tense          string          `json:"tense"`
-	Polarity       string          `json:"polarity"` // positive affirms the frame; negative denies it
-	Mood           string          `json:"mood"`     // statement or question
-	Aspect         string          `json:"aspect,omitempty"`
-	Time           string          `json:"time,omitempty"` // a time modifier the sample adds
-}
+const combineVersion = "jev-noul-1"
 
-type Role struct {
-	Explainer string `json:"explainer"`
-	FilledBy  string `json:"filled_by,omitempty"` // as the sample refers to it
-	Type      string `json:"type,omitempty"`      // the entity's type
-	Attribute string `json:"attribute,omitempty"`
-	Value     string `json:"value,omitempty"`
-	Direction string `json:"direction,omitempty"` // compare: more, less, same
-}
-
-type Author struct {
-	Sentence string `json:"sentence"`
-	About    string `json:"about"`
-}
-
-// AuthorAbout explains the author example's field.
-const AuthorAbout = "A sentence the author wrote for this frame, known to be good. The sample varies its tense, polarity, mood and fillers on purpose."
-
-const combineVersion = "jev-checks-2"
-
-// Version is the hash of the questions, the state text and the combining rules.
+// Version is the hash of the questions and the combining rules.
 var Version = func() string {
 	h := sha256.New()
-	st, _ := json.Marshal(State{})
-	h.Write([]byte(combineVersion + "\x00" + AuthorAbout + "\x00"))
-	h.Write(st) // the state's shape
-	h.Write([]byte{0})
+	h.Write([]byte(combineVersion + "\x00"))
 	h.Write(questionsFile)
 	return "jev-" + hex.EncodeToString(h.Sum(nil))[:8]
 }()
@@ -106,48 +71,38 @@ func Request(st State) ([]byte, error) {
 }
 
 type answer struct {
-	Type          string             `json:"type"`
-	Choice        string             `json:"choice"`
-	Confidence    float64            `json:"confidence"`
-	Probabilities map[string]float64 `json:"probabilities"`
+	Type string  `json:"type"`
+	Noul float64 `json:"noul"` // 0..1, how true the statement is
 }
 
-// flags: the answer to each check that counts against the sample, and what it gives.
-var flags = []struct {
-	q, bad          string
+// Each question is a statement that's true of a good sample; a low value
+// flags it. Threshold is a starting point, to be set from calibration.
+const Threshold = 0.5
+
+var checks = []struct {
+	q               string
 	verdict, reason string
 	butKind         string
 }{
-	{q: "grammar", bad: "broken", verdict: "bad", reason: "Ungrammatical"},
-	{q: "filler", bad: "wrong_kind", verdict: "bad", reason: "Wrong Kind of Filler"},
-	{q: "meaning", bad: "differs", verdict: "bad", reason: "Means Something Else"},
-	{q: "change", bad: "impossible_change", verdict: "bad", reason: "Other"},
-	{q: "implies", bad: "implies_more", verdict: "but", butKind: "implies"},
-	{q: "context", bad: "needs_earlier", verdict: "but", butKind: "context"},
+	{q: "grammar", verdict: "bad", reason: "Ungrammatical"},
+	{q: "filler", verdict: "bad", reason: "Wrong Kind of Filler"},
+	{q: "meaning", verdict: "bad", reason: "Means Something Else"},
+	{q: "context", verdict: "but", butKind: "context"},
 }
 
-var direct = map[string]judge.Verdict{
-	"fine": {Verdict: "ok"}, "fine_needs_context": {Verdict: "but", ButKind: "context"}, "fine_implies_more": {Verdict: "but", ButKind: "implies"},
-	"word_form": {Verdict: "bad", Reason: "Word Form"}, "wrong_kind_of_filler": {Verdict: "bad", Reason: "Wrong Kind of Filler"},
-	"ungrammatical": {Verdict: "bad", Reason: "Ungrammatical"}, "means_something_else": {Verdict: "bad", Reason: "Means Something Else"},
-	"sounds_odd": {Verdict: "bad", Reason: "Sounds Odd"}, "other": {Verdict: "bad", Reason: "Other"},
-}
-
-func level(c float64) string {
-	switch {
-	case c >= 0.8:
-		return "high"
-	case c >= 0.5:
-		return "medium"
+// Names lists the checks in deciding order.
+func Names() []string {
+	var out []string
+	for _, c := range checks {
+		out = append(out, c.q)
 	}
-	return "low"
+	return out
 }
 
-// Result is the combined verdict, each check, and Jev's direct verdict.
+// Result is the combined verdict and each check.
 type Result struct {
 	Verdict judge.Verdict
 	Checks  []judge.Check
-	Direct  judge.Verdict
 	Call    string
 }
 
@@ -170,32 +125,36 @@ func (c *Config) Judge(ctx context.Context, st State) (Result, error) {
 	return combine(resp.Answers, rec.ID)
 }
 
+// combine: the first flagged check in order decides (10/J3); ✓ otherwise.
 func combine(as map[string]answer, call string) (Result, error) {
-	r := Result{Call: call}
-	var decided *judge.Verdict
-	lowest := 1.0
-	for _, f := range flags {
-		a, ok := as[f.q]
-		if !ok || a.Choice == "" {
-			return r, fmt.Errorf("the answer didn't fit: no answer to %s", f.q)
+	r := Result{Call: call, Verdict: judge.Verdict{Verdict: "ok", Confidence: "high"}}
+	decided := false
+	for _, c := range checks {
+		a, ok := as[c.q]
+		if !ok || a.Type != "noul" {
+			return r, fmt.Errorf("the answer didn't fit: no noul answer to %s", c.q)
 		}
-		ch := judge.Check{Name: f.q, Answer: a.Choice, Confidence: fmt.Sprintf("%.2f", a.Confidence), Flagged: a.Choice == f.bad, Call: call,
-			Why: fmt.Sprintf("p(%s) = %.2f", f.bad, a.Probabilities[f.bad])}
-		r.Checks = append(r.Checks, ch)
-		lowest = min(lowest, a.Confidence)
-		if ch.Flagged && decided == nil {
-			decided = &judge.Verdict{Verdict: f.verdict, Reason: f.reason, ButKind: f.butKind, Note: f.q + ": " + a.Choice, Confidence: level(a.Confidence), Decided: f.q}
+		flag := a.Noul < Threshold
+		r.Checks = append(r.Checks, judge.Check{Name: c.q, Answer: fmt.Sprintf("%.2f", a.Noul), Flagged: flag, Call: call, Confidence: level(a.Noul)})
+		if flag && !decided {
+			decided = true
+			r.Verdict = judge.Verdict{Verdict: c.verdict, Reason: c.reason, ButKind: c.butKind, Note: fmt.Sprintf("%s: %.2f", c.q, a.Noul), Confidence: level(1 - a.Noul), Decided: c.q}
 		}
-	}
-	if decided != nil {
-		r.Verdict = *decided
-	} else {
-		r.Verdict = judge.Verdict{Verdict: "ok", Confidence: level(lowest)}
-	}
-	if a, ok := as["verdict"]; ok {
-		r.Direct = direct[a.Choice]
-		r.Direct.Confidence = level(a.Confidence)
-		r.Direct.Note = a.Choice
 	}
 	return r, nil
+}
+
+// level says how far a value is from the threshold.
+func level(v float64) string {
+	d := v - Threshold
+	if d < 0 {
+		d = -d
+	}
+	switch {
+	case d >= 0.4:
+		return "high"
+	case d >= 0.2:
+		return "medium"
+	}
+	return "low"
 }

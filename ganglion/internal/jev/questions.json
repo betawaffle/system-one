@@ -1,66 +1,18 @@
 {
   "grammar": {
-    "type": "choice",
-    "instructions": "Is `sample` broken English: wrong word order, wrong agreement, or a missing or extra word? Judge only grammar, not whether it is true, sensible or natural.",
-    "criteria": {
-      "broken": "`sample` is not grammatical English.",
-      "grammatical": "`sample` is grammatical English, whatever it means."
-    }
+    "type": "noul",
+    "instructions": "`sample` is grammatical English."
   },
   "filler": {
-    "type": "choice",
-    "instructions": "Is some `meaning.roles` filler the wrong kind of thing for its role, so `sample` could never literally be true? For example an idea as the holder of height, or a rock as the giver. Merely unusual is fine.",
-    "criteria": {
-      "wrong_kind": "Some filler can't fill its role or have that property at all.",
-      "fits": "Every filler can fill its role."
-    }
+    "type": "noul",
+    "instructions": "Every person and thing in `sample` is the kind of thing that can do or be what `sample` says of it."
   },
   "meaning": {
-    "type": "choice",
-    "instructions": "Do the words of `sample` say exactly `meaning`: the frame, each role's filler, the tense, the polarity, the mood, and `meaning.time` if present? `meaning.polarity` negative means `sample` denies the frame, and `meaning.mood` question means it asks it; neither is a difference. Count an extra fact, a different relation, a wrong filler, or something left out. Don't count what a reader might infer.",
-    "criteria": {
-      "differs": "The words of `sample` say something other than `meaning`.",
-      "matches": "The words of `sample` say exactly `meaning`."
-    }
-  },
-  "change": {
-    "type": "choice",
-    "instructions": "Only for `meaning.frame_kind` state. Does `meaning.tense` suggest the fact is different at some other time (future: it isn't so now; past: it no longer is), and if so, could it really change like that, given what the fillers are?",
-    "criteria": {
-      "no_change": "`meaning.frame_kind` is action, or the tense doesn't suggest the fact differs at another time.",
-      "possible_change": "The tense suggests a change, and that change can really happen.",
-      "impossible_change": "The tense suggests a change that can't happen."
-    }
-  },
-  "implies": {
-    "type": "choice",
-    "instructions": "Would most readers assume something from `sample` beyond `meaning`? For example \"won't give\" suggesting a refusal, or a present-tense action suggesting a habit. What `meaning` itself says doesn't count: denying or asking the frame, or ownership a possessive states. What's in `already_recorded_implications` doesn't count either.",
-    "criteria": {
-      "implies_more": "Most readers would assume something beyond `meaning`.",
-      "nothing_extra": "`sample` says `meaning` and nothing more."
-    }
+    "type": "noul",
+    "instructions": "`sample` says exactly `meaning`, no more and no less. A negative `meaning.polarity` denies it and a question `meaning.mood` asks it."
   },
   "context": {
-    "type": "choice",
-    "instructions": "Would `sample` be confusing as the first sentence of a conversation, even with a scene in front of both people, so that it needs an earlier sentence? Names, \"the\", \"this\", \"that\" and possessives are all fine to open with.",
-    "criteria": {
-      "needs_earlier": "`sample` can't stand first, like \"He did too.\"",
-      "can_open": "`sample` works as an opening sentence."
-    }
-  },
-  "verdict": {
-    "type": "choice",
-    "instructions": "Overall, which describes `sample` best, judged against `meaning` (not against `author_example`)?",
-    "criteria": {
-      "fine": "Correct English, says exactly `meaning`, natural on its own.",
-      "fine_needs_context": "Correct and says `meaning`, but only natural after something else.",
-      "fine_implies_more": "Correct and says `meaning`, but a reader would infer more.",
-      "word_form": "A word is spelled or inflected wrong.",
-      "wrong_kind_of_filler": "Grammatical, but some filler can't fill its role.",
-      "ungrammatical": "Broken English.",
-      "means_something_else": "Reads fine but doesn't say `meaning`.",
-      "sounds_odd": "Correct and says `meaning`, but nobody would say it like that without adding something.",
-      "other": "Wrong in some other way, for example the tense suggests a change that can't happen."
-    }
+    "type": "noul",
+    "instructions": "`sample` could be the first sentence of a conversation."
   }
 }

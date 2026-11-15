@@ -39,6 +39,7 @@ func (s *Server) routes() {
 	m.HandleFunc("POST /api/model/calibrate", s.modelCalibrate)
 	m.HandleFunc("GET /api/model/calibration", s.modelCalibration)
 	m.HandleFunc("GET /api/model/jev/requests", s.jevRequests)
+	m.HandleFunc("POST /api/model/jev/run", s.jevRun)
 	m.HandleFunc("GET /api/lexicon", s.lexiconWord)
 	m.HandleFunc("GET /coverage", s.coveragePage)
 	m.HandleFunc("GET /api/coverage", s.coverage)

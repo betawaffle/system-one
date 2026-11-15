@@ -2,12 +2,11 @@ package jev
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 )
 
 func TestRequestShape(t *testing.T) {
-	raw, err := Request(State{Sample: "Ana will be older than Lee.", Meaning: Meaning{Frame: "compare", Tense: "future", Roles: map[string]Role{"a": {FilledBy: "Ana"}}}})
+	raw, err := Request(State{Sample: "Ana gave Lee a chair.", Meaning: map[string]string{"frame": "give", "giver": "Ana"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -16,30 +15,29 @@ func TestRequestShape(t *testing.T) {
 		Model     string                     `json:"model"`
 		Questions map[string]json.RawMessage `json:"questions"`
 	}
-	if err := json.Unmarshal(raw, &b); err != nil || b.Model != Model || b.State.Sample != "Ana will be older than Lee." || b.State.Meaning.Roles["a"].FilledBy != "Ana" {
+	if err := json.Unmarshal(raw, &b); err != nil || b.Model != Model || b.State.Meaning["giver"] != "Ana" {
 		t.Fatalf("%v %+v", err, b)
 	}
-	for _, f := range flags {
-		if !strings.Contains(string(b.Questions[f.q]), `"`+f.bad+`"`) {
-			t.Errorf("question %s has no option %s", f.q, f.bad)
+	for _, n := range Names() {
+		if b.Questions[n] == nil {
+			t.Errorf("no question %s", n)
 		}
 	}
 }
 
 func TestCombine(t *testing.T) {
 	as := map[string]answer{}
-	for _, f := range flags {
-		as[f.q] = answer{Choice: "fine-ish", Confidence: 0.9}
+	for _, n := range Names() {
+		as[n] = answer{Type: "noul", Noul: 0.95}
 	}
 	r, err := combine(as, "c")
 	if err != nil || r.Verdict.Verdict != "ok" {
 		t.Fatalf("%+v %v", r, err)
 	}
-	as["implies"] = answer{Choice: "implies_more", Confidence: 0.6}
-	as["change"] = answer{Choice: "impossible_change", Confidence: 0.95}
-	as["verdict"] = answer{Choice: "other", Confidence: 0.7}
+	as["context"] = answer{Type: "noul", Noul: 0.2}
+	as["meaning"] = answer{Type: "noul", Noul: 0.1}
 	r, _ = combine(as, "c")
-	if r.Verdict.Verdict != "bad" || r.Verdict.Decided != "change" || r.Direct.Reason != "Other" {
+	if r.Verdict.Verdict != "bad" || r.Verdict.Decided != "meaning" || !r.Checks[3].Flagged {
 		t.Errorf("%+v", r)
 	}
 	delete(as, "grammar")
