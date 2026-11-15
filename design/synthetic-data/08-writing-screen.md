@@ -84,12 +84,15 @@ D95. Span suggestions automatic, word helper on request (W4, W5). Answers Q67. (
 D96. Keyboard keys as in K1. Answers Q68. (user: "Yes.")
 D97. Next step: a working mock-up of this page in ganglion with hard-coded data, before any generator code. Answers Q69. (user: "Yes.")
 
+D98. "Sounds Odd" marks the template's feature combination as needing a modifier, and the generator adds one ("By next year, this book will be old."); it skips the combination only when no suitable modifier template exists (W6a3). Answers Q70. (user: "Yes, add one")
+
 ## Open questions
 
-Q70. "Sounds Odd" marks a template's feature combination as needing a modifier, so the generator adds one or skips it (W6a3)? I lean yes, adding one when a suitable modifier template exists, since that also teaches which combinations need context.
+(none for this note)
 
 ## Superseded
 
+Q70 (answered by D98). Sounds Odd: add a modifier or skip?
 Q64 (answered by D92). One-page layout?
 Q65 (answered by D93). Next picks from coverage gaps?
 Q66 (answered by D94). Align while typing?

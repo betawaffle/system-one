@@ -33,6 +33,9 @@ const saved = [];
 let helperFor = null;     // {word, entry}
 let curSample = -1;
 const verdicts = new Map(); // sample key -> {v, reason, star}
+const needsTime = new Set(); // "line|tense" combinations marked Sounds Odd (sd/08/D98)
+const timeMods = { future: ["By next year,", "Someday,", "In a few years,"], past: ["Years ago,", "Back then,"], present: ["These days,", "By now,"] };
+const names = new Set(Object.values(entities).filter(e => e.name).map(e => e.name));
 
 function clone(x) { return JSON.parse(JSON.stringify(x)); }
 const frame = () => frames[meaning.frame];
@@ -417,11 +420,16 @@ function samplesFor(l, li) {
       polarity: i % 4 === 3 ? "negative" : "positive",
       mood: p.simple && i % 5 === 4 ? "question" : "statement",
     };
-    let text;
+    let text, time = null;
     try { text = makeSample(l, p, f, fill, f.mood === "question"); } catch (e) { continue; }
+    if (needsTime.has(`${l.n}|${f.tense}`)) { // the generator adds a modifier (sd/08/D98)
+      time = pick(r, timeMods[f.tense]);
+      const first = text.split(/[\s,]/)[0];
+      text = time + " " + (names.has(first) ? text : text.charAt(0).toLowerCase() + text.slice(1));
+    }
     if (seen.has(text)) continue;
     seen.add(text);
-    out.push({ key: `${li}:${text}`, text, f, fill });
+    out.push({ key: `${li}:${text}`, text, f, fill, ln: l.n, time });
   }
   return out;
 }
@@ -429,6 +437,7 @@ function sampleTags(s) {
   const tags = [];
   for (const k of ["tense", "polarity", "mood"]) tags.push([cap(s.f[k]), s.f[k] !== meaning.features[k]]);
   for (const [role, k] of Object.entries(s.fill)) tags.push([`${role}: ${entities[k].name || entities[k].noun}`, k !== meaning.roles[role]]);
+  if (s.time) tags.push([`time: ${s.time.replace(/,$/, "").toLowerCase()}`, true]);
   return tags;
 }
 // What a ✕ can mean (sd/08/W6a): an explainer for each, and where the verdict goes.
@@ -452,8 +461,13 @@ function renderSamples() {
   }
   const groups = ready.map(([l, i]) => {
     const ss = samplesFor(l, i);
+    const marked = tenses.filter(t => needsTime.has(`${l.n}|${t}`));
     return h("div", { class: "stack tight" },
       h("div", { class: "label" }, "From line ", l.n + 1, l.waits.length ? " · frozen: fillers vary, tense and mood don't" : ""),
+      marked.map(t => h("div", { class: "row needs" },
+        h("span", { class: "tag warn" }, "Needs Context"),
+        h("span", { class: "small" }, cap(t), " tense sounded odd, so the generator now adds a time modifier to it (sd/08/D98)."),
+        h("button", { class: "btn chip", onclick: () => { needsTime.delete(`${l.n}|${t}`); renderSamples(); } }, "Undo"))),
       ss.map(s => sampleRow(s)));
   });
   box.replaceChildren(head, h("div", { class: "card-body stack" }, groups));
@@ -463,7 +477,11 @@ function renderSamples() {
 }
 function sampleRow(s) {
   const v = verdicts.get(s.key) || {};
-  const set = patch => { verdicts.set(s.key, { ...v, ...patch }); renderSamples(); };
+  const set = patch => {
+    verdicts.set(s.key, { ...v, ...patch });
+    if (patch.reason === "Sounds Odd") needsTime.add(`${s.ln}|${s.f.tense}`);
+    renderSamples();
+  };
   return h("div", { class: "sample-row" + (v.v ? " judged" : ""), "data-key": s.key },
     h("div", { class: "sample-main" },
       h("div", { class: "sample-text" }, s.text),
