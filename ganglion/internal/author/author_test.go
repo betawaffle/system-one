@@ -635,3 +635,52 @@ func TestSizes(t *testing.T) {
 		}
 	}
 }
+
+func TestCompareSameAndSkip(t *testing.T) {
+	w, lex := setup(t)
+	dirs := map[string]bool{}
+	for i := 0; i < 40; i++ {
+		m, err := Next(w, i, "frame:compare", map[string]bool{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		dirs[m.Roles["attribute"].Value.Dir] = true
+	}
+	if !dirs["same"] || !dirs["more"] || !dirs["less"] {
+		t.Errorf("directions offered: %v", dirs)
+	}
+	// Enough for Now: Next leaves a skipped frame out, unless asked for by hand
+	skip := map[string]bool{"frame:compare": true}
+	for i := 0; i < 20; i++ {
+		if m, _ := NextSkipping(w, i, "", map[string]bool{}, skip); m.Frame == "frame:compare" {
+			t.Fatalf("skipped frame offered at %d", i)
+		}
+	}
+	if m, _ := NextSkipping(w, 0, "frame:compare", map[string]bool{}, skip); m.Frame != "frame:compare" {
+		t.Error("by hand should still work")
+	}
+	all := map[string]bool{}
+	for id := range w.Frames {
+		all[id] = true
+	}
+	if _, err := NextSkipping(w, 0, "", map[string]bool{}, all); err != nil {
+		t.Errorf("all skipped: %v", err)
+	}
+	// "and" joining the two compared is grammar; as…as against more warns
+	same := Meaning{Frame: "frame:compare", Features: realize.Features{Tense: "present", Polarity: "positive", Mood: "statement"},
+		Roles: map[string]Filler{"a": {Entity: "entity:ana"}, "b": {Entity: "entity:noor"}, "attribute": {Value: &Value{Attribute: "age", Dir: "more"}}}}
+	l := Align("Of Ana and Noor, Ana is older.", same, w, lex)
+	if len(l.Spans) != 0 || len(l.Warnings) != 0 {
+		t.Errorf("of-and: %s %v %v", classes(l), l.Spans, l.Warnings)
+	}
+	if l := Align("Ana is as old as Noor.", same, w, lex); len(l.Warnings) != 1 {
+		t.Errorf("as…as for more: %v", l.Warnings)
+	}
+	same.Roles["attribute"] = Filler{Value: &Value{Attribute: "age", Dir: "same"}}
+	if l := Align("Ana is older than Noor.", same, w, lex); len(l.Warnings) != 1 {
+		t.Errorf("-er for same: %v", l.Warnings)
+	}
+	if l := Align("Ana is as old as Noor.", same, w, lex); len(l.Warnings) != 0 {
+		t.Errorf("as…as for same: %v", l.Warnings)
+	}
+}

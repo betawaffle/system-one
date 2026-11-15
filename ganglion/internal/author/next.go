@@ -12,11 +12,17 @@ import (
 // templates, with distinctive fillers. Every fifth pick is a deliberate joke
 // when the grammar has a coerced entity (02/L8, D61). n varies the choice.
 func Next(w *World, n int, frameID string, used map[string]bool) (Meaning, error) {
+	return NextSkipping(w, n, frameID, used, nil)
+}
+
+// NextSkipping is Next, leaving out frames the user has had enough of for now
+// (08/W8c), unless every frame is skipped or one is asked for by hand.
+func NextSkipping(w *World, n int, frameID string, used map[string]bool, skip map[string]bool) (Meaning, error) {
 	// skip meanings already written for, so Next keeps offering new ones
 	var first Meaning
 	var err error
 	for k := 0; k < 97; k++ {
-		m, e := nextAt(w, n+k, frameID)
+		m, e := nextAt(w, n+k, frameID, skip)
 		if e != nil {
 			if k == 0 {
 				err = e
@@ -47,14 +53,21 @@ func Signature(m Meaning) string {
 	return m.Frame + "|" + strings.Join(parts, ",")
 }
 
-func nextAt(w *World, n int, frameID string) (Meaning, error) {
+func nextAt(w *World, n int, frameID string, skip map[string]bool) (Meaning, error) {
 	counts := map[string]int{}
 	for _, t := range w.Templates {
 		counts[t.Means.Frame]++
 	}
 	var frames []string
 	for id := range w.Frames {
-		frames = append(frames, id)
+		if !skip[id] {
+			frames = append(frames, id)
+		}
+	}
+	if len(frames) == 0 { // everything skipped: skip nothing
+		for id := range w.Frames {
+			frames = append(frames, id)
+		}
 	}
 	if len(frames) == 0 {
 		return Meaning{}, fmt.Errorf("no frames")
@@ -174,7 +187,9 @@ func nextAt(w *World, n int, frameID string) (Meaning, error) {
 			}
 			m.Roles[r.Name] = Filler{Value: &Value{Attribute: a.Name, Value: vals[((n/stride)*2+end)%len(vals)]}}
 		} else if id == "frame:compare" {
-			m.Roles[r.Name] = Filler{Value: &Value{Attribute: a.Name, Dir: []string{"more", "less"}[end]}}
+			// more, less, and the same ("as old as"), which Next never offered
+			m.Roles[r.Name] = Filler{Value: &Value{Attribute: a.Name, Dir: []string{"more", "less", "same"}[(end+2*((n/stride)%2))%3]}}
+			stride *= 2
 		} else {
 			m.Roles[r.Name] = Filler{Value: &Value{Attribute: a.Name, Value: a.Scale[[]int{len(a.Scale) - 1, 0}[end]]}}
 		}

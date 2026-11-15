@@ -26,6 +26,7 @@ func (s *Server) routes() {
 	m.HandleFunc("POST /api/labels", s.addLabel)
 	m.HandleFunc("GET /write", s.write)
 	m.HandleFunc("GET /api/write/next", s.writeNext)
+	m.HandleFunc("POST /api/write/skip", s.writeSkip)
 	m.HandleFunc("POST /api/write/fillers", s.writeFillers)
 	m.HandleFunc("POST /api/write/preview", s.writePreview)
 	m.HandleFunc("POST /api/write/save", s.writeSave)

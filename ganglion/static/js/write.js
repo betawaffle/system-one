@@ -63,6 +63,8 @@ function renderMeaning() {
       h("div", { class: "row" },
         h("button", { class: "btn primary", onclick: next, "data-tip": "Alt+N" }, "Next"),
         h("button", { class: "btn", onclick: newFillers, "data-tip": "Alt+F" }, "New Fillers"),
+        isSkipped() ? h("button", { class: "btn", onclick: () => skip(false), "data-tip": "Let Next offer this frame again" }, "Bring Back") :
+          h("button", { class: "btn", onclick: () => skip(true), "data-tip": `Next stops offering ${card.title} until you bring it back` }, "Enough for Now"),
         h("button", { class: "btn ghost", onclick: () => { changing = !changing; renderMeaning(); }, "aria-expanded": String(changing) }, "Change"))),
     h("div", { class: "card-body stack tight" },
       h("table", { class: "table roles" }, h("tbody", {},
@@ -74,6 +76,8 @@ function renderMeaning() {
         ["tense", "polarity", "mood"].map(k => h("span", { class: "tag accent" }, cap(m.features[k]))),
         Object.entries(m.modifiers || {}).map(([k, v]) => h("span", { class: "tag" }, `${cap(k)}: ${v}`))),
       m.why ? h("div", { class: "muted small" }, "Why this one: ", m.why) : null,
+      (card.skipped || []).length ? h("div", { class: "row small" }, h("span", { class: "muted" }, "Next is skipping:"),
+        card.skipped.map(([id, title]) => h("button", { class: "btn chip", "data-tip": "Bring it back", onclick: () => skip(false, id) }, title, " ×"))) : null,
       changing ? changePanel() : null));
 }
 function changePanel() {
@@ -98,6 +102,12 @@ async function load(q = {}) {
   renderMeaning(); refresh();
 }
 function next() { n++; load(); }
+const isSkipped = () => (card.skipped || []).some(([id]) => id === card.meaning.frame);
+// "Enough for Now" on the current frame, or bring one back (08/W8c)
+async function skip(on, frame = card.meaning.frame) {
+  try { await api("/api/write/skip", { frame, skip: on }); } catch (e) { return fail(e); }
+  if (on) next(); else { card.skipped = card.skipped.filter(([id]) => id !== frame); renderMeaning(); }
+}
 async function newFillers() {
   try { card = await api("/api/write/fillers", { meaning: card.meaning, seed: Math.floor(Math.random() * 1e6) }); } catch (e) { return fail(e); }
   renderMeaning(); refresh();

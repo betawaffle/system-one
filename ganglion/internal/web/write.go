@@ -30,6 +30,7 @@ type writer struct {
 	modelVerdicts map[string]modelVerdict   // sample text + prompt + effort -> the model's first pass (10/M1)
 	jevCache      map[string]modelVerdict   // exact request sha256 -> Jev's answer, never asked twice (10/J15)
 	jevInflight   map[string]chan struct{}  // requests being sent now
+	skipped       map[string]bool           // frames Next leaves out for now (08/W8c)
 }
 
 // priorVerdict is the latest verdict on a sentence, from the event log.
@@ -114,11 +115,13 @@ func newWriter(g *grammar.Store, lex *lexicon.Lexicon) (*writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	x := &writer{g: g, lex: lex, world: w, verdicts: map[string]priorVerdict{}, meanings: map[string]author.Meaning{}, notes: map[string]map[string]int{}, modelVerdicts: map[string]modelVerdict{}, jevCache: map[string]modelVerdict{}, jevInflight: map[string]chan struct{}{}}
+	x := &writer{g: g, lex: lex, world: w, verdicts: map[string]priorVerdict{}, meanings: map[string]author.Meaning{}, notes: map[string]map[string]int{}, modelVerdicts: map[string]modelVerdict{}, jevCache: map[string]modelVerdict{}, jevInflight: map[string]chan struct{}{}, skipped: map[string]bool{}}
 	err = g.Events(func(ev grammar.Event) {
 		switch ev.Type {
 		case "verdict":
 			x.noteVerdict(ev.At, ev.Data)
+		case "frame-skip":
+			x.noteSkip(ev.Data)
 		case "sentence":
 			x.noteMeaning(ev.ID, ev.Data)
 		case "model-verdict":
@@ -168,7 +171,8 @@ type card struct {
 	Title     string         `json:"title"`
 	Explainer string         `json:"explainer"`
 	Roles     []roleCard     `json:"roles"`
-	Frames    [][2]string    `json:"frames"` // id, title
+	Frames    [][2]string    `json:"frames"`  // id, title
+	Skipped   [][2]string    `json:"skipped"` // frames Next leaves out for now (08/W8c)
 }
 
 func (x *writer) card(m author.Meaning) card {
@@ -183,6 +187,9 @@ func (x *writer) card(m author.Meaning) card {
 			fill = fl.Value.Attribute + " = " + fl.Value.Value
 		case fl.Value != nil:
 			fill = fl.Value.Attribute + ", " + fl.Value.Dir
+			if fl.Value.Dir == "same" {
+				fill = fl.Value.Attribute + ", the same (as … as)"
+			}
 		case fl.Entity != "":
 			e := w.Entities[fl.Entity]
 			fill = e.Display() + " · " + e.Type
@@ -201,6 +208,12 @@ func (x *writer) card(m author.Meaning) card {
 		c.Frames = append(c.Frames, [2]string{id, f.Title})
 	}
 	sort.Slice(c.Frames, func(i, j int) bool { return c.Frames[i][1] < c.Frames[j][1] })
+	c.Skipped = [][2]string{}
+	for _, fr := range c.Frames {
+		if x.skipped[fr[0]] {
+			c.Skipped = append(c.Skipped, fr)
+		}
+	}
 	return c
 }
 
@@ -218,7 +231,7 @@ func (s *Server) writeNext(w http.ResponseWriter, r *http.Request) {
 	for _, mm := range x.meanings {
 		used[author.Signature(mm)] = true
 	}
-	m, err := author.Next(x.world, n, r.URL.Query().Get("frame"), used)
+	m, err := author.NextSkipping(x.world, n, r.URL.Query().Get("frame"), used, x.skipped)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
@@ -509,4 +522,47 @@ func (s *Server) writeNotes(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	jsonOut(w, out)
+}
+
+func (x *writer) noteSkip(d map[string]any) {
+	f, _ := d["frame"].(string)
+	skip, _ := d["skip"].(bool)
+	if f == "" {
+		return
+	}
+	if skip {
+		x.skipped[f] = true
+	} else {
+		delete(x.skipped, f)
+	}
+}
+
+// POST /api/write/skip {frame, skip}: "Enough for Now" on a frame, or bring
+// it back (08/W8c). Recorded as an event, so it lasts.
+func (s *Server) writeSkip(w http.ResponseWriter, r *http.Request) {
+	x, err := s.wr()
+	if err != nil {
+		http.Error(w, err.Error(), 503)
+		return
+	}
+	var req struct {
+		Frame string `json:"frame"`
+		Skip  bool   `json:"skip"`
+	}
+	if !jsonIn(w, r, &req) {
+		return
+	}
+	if _, ok := x.world.Frames[req.Frame]; !ok {
+		http.Error(w, "no such frame", 400)
+		return
+	}
+	d := map[string]any{"frame": req.Frame, "skip": req.Skip}
+	if _, err := x.g.AddEvent("frame-skip", s.cfg.User, "ganglion/write", d); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	x.mu.Lock()
+	x.noteSkip(d)
+	x.mu.Unlock()
+	jsonOut(w, map[string]any{"ok": true})
 }

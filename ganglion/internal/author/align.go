@@ -230,6 +230,15 @@ func Align(text string, m Meaning, w *World, lex *lexicon.Lexicon) Line {
 			t.Cls, t.Poss = "untraced", true
 		}
 	}
+	// "and" joining two of the meaning's people or things ("Of Ana and Noor,
+	// Ana is older") adds nothing, like "than"; between clauses it would
+	// (user: "What do I say for the 'and'?")
+	for i := 1; i+1 < len(toks); i++ {
+		p, t, nx := toks[i-1], &toks[i], toks[i+1]
+		if lw[i] == "and" && t.Cls == "untraced" && p.Cls == "role" && !p.Prop && nx.Cls == "role" && !nx.Prop && p.Role != nx.Role {
+			t.Cls = "grammar"
+		}
+	}
 	line := Line{Text: text, Tokens: toks, VG: -1}
 	for i, t := range toks {
 		if t.Cls == "frame" {
@@ -246,6 +255,7 @@ func Align(text string, m Meaning, w *World, lex *lexicon.Lexicon) Line {
 	line.Waits = waitsOn(toks, lw)
 	line.Said = said(toks, lw, line.VG, m.Features)
 	line.Warnings = warnings(line.Said, m.Features, line.VG >= 0)
+	line.Warnings = append(line.Warnings, compareWarnings(toks, m)...)
 	if line.Spans == nil {
 		line.Spans = []Span{}
 	}
@@ -512,6 +522,28 @@ func warnings(s, m realize.Features, hasVerb bool) []string {
 	}
 	if s.Mood != m.Mood {
 		out = append(out, "Is a "+s.Mood+"; the meaning is a "+m.Mood+".")
+	}
+	return out
+}
+
+// compareWarnings: "as old as" says the same, "older" says more or less;
+// either one against the other kind of meaning is a different meaning.
+func compareWarnings(toks []Token, m Meaning) []string {
+	var out []string
+	for _, t := range toks {
+		if !t.Prop {
+			continue
+		}
+		v := m.Roles[t.Role].Value
+		if v == nil || v.Dir == "" {
+			continue
+		}
+		switch {
+		case t.Form == "" && v.Dir != "same":
+			out = append(out, "Says the same (as … as); the meaning is "+v.Dir+".")
+		case t.Form != "" && v.Dir == "same":
+			out = append(out, "Says more or less; the meaning is the same (as … as).")
+		}
 	}
 	return out
 }

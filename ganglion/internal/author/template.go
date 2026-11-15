@@ -162,6 +162,8 @@ func Build(l Line, m Meaning, w *World, res map[string]Resolution, needs []Need)
 			}
 			kids = append(kids, n)
 			i = vgEnd
+		case tk.Cls == "punct" && tk.Text == "," && i+1 < len(l.Tokens) && l.Tokens[i+1].Cls != "punct":
+			kids = append(kids, Node{T: "word", Text: ","}) // inside the sentence it's part of the shape
 		case tk.Cls == "punct":
 		case tk.Cls == "role" && tk.Part > 0:
 		case tk.Cls == "role" && tk.Form == "det": // folded into the noun's slot

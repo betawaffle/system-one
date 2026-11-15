@@ -46,6 +46,7 @@ P9. The user asked whether the age rule should apply to "this apple is old". Not
 P9a. An attribute can say `direction: increasing` (age). Those combinations are skipped by the generator until the world model can state existence, as in P8b. The rule sits on the attribute and applies at generation time, so templates saved before or after it are the same.
 
 P10. "Umbrellas aren't tall, they are long." (user, from a meaning card offering "umbrella, height = tall"). Which dimension a thing has depends on its shape, finer than "artifact". Fix: a new type `rod` (long, thin made things: umbrella, pencil) under artifact; attributes can list types they don't apply to (`except`), so height skips rods; a new attribute `length` (short/long) covers them. Also: age = young is "fresh" for food, now that Next offers both ends of a scale.
+F5a. Next now offers all three directions; it had only ever offered more and less, so "as old as" never came up. Templates are direction-specific: "-er than" serves more and less (one from each side), "as … as" serves the same. Samples keep the authored meaning's direction, so that holds for now; bulk generation will have to match a template's form to the direction.
 F6a. Built (2026-11-15; user: "Let's do F9", the chat's name for this frame): `located(thing, place, relation)`, title Located, a state with the verb be. The relation is an attribute of a new kind, `relation` (`position`: in, on, under, near), held by the place: its word depends on the place's type the way property words depend on the holder's (P4), and a value fits a place only where it has a word for it. In: containers and places. On: surfaces. Under: surfaces and containers. Near: anything placeable.
 F6b. New types under artifact: `container` (box, cup, bottle) and `surface` (table, chair); and `place` under physical (park, kitchen, garden, house). Samples and New Fillers used to swap a filler only for one of exactly the same type, which after this retyping would have stopped a box swapping with a chair. They now swap within the same kind (person, animal, artifact, food, place…), still only where the attribute or relation fits.
 F6c. Next picks a thing that isn't a person or a place, a place some relation fits, and a relation with a word for that place.
@@ -90,6 +91,7 @@ T16. Numbers and quantities ("four legs", "two books"), and numeric values for a
 
 ## Decided
 
+D120. Next offers the same direction for Compare (F5a), with Enough for Now to skip a frame (sd/08/W8c). (user: "Sure.")
 D119. Rough size classes for Located (F6e). Answers Q81. (user: "Yep.")
 D109. Rods (umbrella, pencil) have length, not height; attributes can have exceptions (P10). (user: "Umbrellas aren't tall, they are long.")
 D102. Age only increases; the generator skips "was old", "won't be old" and "will be new" (and their questions) until the world model (P9, P9a). (user: "Yes")
