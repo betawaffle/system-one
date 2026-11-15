@@ -120,6 +120,9 @@ type Value struct {
 type Filler struct {
 	Entity string `json:"entity,omitempty"` // entity id, e.g. "entity:mara"
 	Value  *Value `json:"value,omitempty"`
+	// Det is how a noun is referred to: the, a, this, that (04/F4, D69). Empty
+	// means the template's own choice.
+	Det string `json:"det,omitempty"`
 }
 
 // Meaning is what the user writes for (02/L5).

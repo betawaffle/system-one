@@ -25,6 +25,8 @@ type Token struct {
 	Converse bool   `json:"converse,omitempty"`
 	Modal    bool   `json:"modal,omitempty"`
 	Bang     bool   `json:"bang,omitempty"`
+	Det      string `json:"det,omitempty"`  // on a noun: the determiner written before it
+	Poss     bool   `json:"poss,omitempty"` // a possessive before another role's noun: extra meaning (an owner)
 	Span     string `json:"span,omitempty"`
 }
 
@@ -64,6 +66,10 @@ func sortedRoles(m Meaning) []string {
 
 var grammarWords = set("a", "an", "the", "to", "than", "as", "of", "this", "that", "these", "those", "not", "very", "from", "by",
 	"did", "does", "do", "will", "has", "have", "had", "am", "are", "were", "is", "was", "be", "been", "being")
+
+// determiners, by the reference setting they express
+var determiners = map[string]string{"a": "a", "an": "a", "the": "the", "this": "this", "these": "this", "that": "that", "those": "that"}
+
 var modals = set("can", "could", "may", "might", "must", "shall", "should", "would")
 var auxes = set("did", "does", "do", "will", "has", "have", "had", "not", "am", "is", "are", "was", "were", "be", "been")
 
@@ -143,6 +149,22 @@ func Align(text string, m Meaning, w *World, lex *lexicon.Lexicon) Line {
 			continue
 		}
 		t.Cls = "untraced"
+	}
+	// a determiner before a role's noun is part of that reference (04/F4); a
+	// possessive before it ("her chair") says who owns it, which the meaning
+	// doesn't, so it's extra meaning to resolve
+	for i := 0; i+1 < len(toks); i++ {
+		nx := &toks[i+1]
+		if nx.Cls != "role" || nx.Prop || (nx.Form != "noun" && nx.Form != "plural") || nx.Part != 0 {
+			continue
+		}
+		t := &toks[i]
+		if d, ok := determiners[lw[i]]; ok && t.Cls == "grammar" {
+			t.Cls, t.Role, t.Form = "role", nx.Role, "det"
+			nx.Det = d
+		} else if t.Cls == "role" && t.Role != nx.Role && (t.Case == "det" || t.Form == "possname") {
+			t.Cls, t.Poss = "untraced", true
+		}
 	}
 	line := Line{Text: text, Tokens: toks, VG: -1}
 	for i, t := range toks {

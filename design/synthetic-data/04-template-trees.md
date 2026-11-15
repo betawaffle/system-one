@@ -41,6 +41,10 @@ F2. Agreement is by label: `lex` in `vg` agrees with `subj` by default. A slot p
 F3. Case comes from position: the `subj` REF is nominative ("he"), others take object case ("him"). Possessives are a REF form ("his").
 F4. Reference choice is code's, from context: first mention gets a name or "a {noun}", later mentions a pronoun or "the {noun}". A template can pin one (always a name, say). This is where "a" vs "the" comes from (sd/03/A8a).
 
+F5. Built 2026-11-15 (user asked whether to write a line per "this/the/that"): a determiner before a noun is part of that noun's REF slot, not a word node. The slot keeps the determiner as written; each filler can carry a reference setting (the, a, this, that) that overrides it, and samples vary it, tagged ("holder: this apple"). "this apple is old" and "the apple is old" are one template shape. Plural nouns take these/those, and no article for "a".
+F5a. "a" is left out for the subject of a "be" frame: "An apple is old" reads as a statement about apples in general, not one apple.
+F6. A possessive before another role's noun ("Ana gave Lee her chair") says who owns it. That's extra meaning, so alignment makes it a span to resolve (suggested: Modifier, owner); the owner stays a slot inside it, so samples agree ("Lee gave Tom his chair"). Found in the user's second saved template, which was saved before this existed and so lacks the owner.
+
 ## Clause handling
 
 C1. Verb groups: `vg` is a clause-level node code realises from tense, aspect, polarity and mood. That covers auxiliaries ("did give", "has given"), negation ("didn't give") and question inversion ("Did Mara give…?"), the way SimpleNLG does it (sd/00/K6). One authored template then covers every combination in `supports`.
@@ -112,6 +116,7 @@ S1. Stored as JSON (the canonical form); shown and edited in a compact text form
 
 ## Decided
 
+D103. Determiners belong to the noun's reference, which samples vary; "a" never on the subject of a "be" frame; a possessive is extra meaning (an owner) (F5, F5a, F6). (user: "Build that")
 D66. Node types N2 and starting kinds N3. Answers Q40. (user: "I think so.")
 D67. Verb groups realised by code from features (C1). Answers Q41. (user: "If that's possible, sure.") It is: SimpleNLG (sd/00/K6) does this for English, and it's a small rule set (auxiliary choice, "do" insertion, "not" placement, inversion, C1b exceptions).
 D68. REL templates derived from CLAUSE templates by marking a gap, with the user vetting results (C2). Answers Q42. (user: "I guess so.")

@@ -57,6 +57,7 @@ type Node struct {
 	Form     string `json:"form,omitempty"`
 	Case     string `json:"case,omitempty"`
 	Converse bool   `json:"converse,omitempty"`
+	Det      string `json:"det,omitempty"` // a REF noun's determiner as written
 	Realises string `json:"realises,omitempty"`
 	Kids     []Node `json:"kids,omitempty"`
 }
@@ -109,7 +110,7 @@ func Build(l Line, m Meaning, w *World, res map[string]Resolution, needs []Need)
 	simpleSubject := true
 	for i := 0; i < vgStart; i++ {
 		tk := l.Tokens[i]
-		if !(tk.Cls == "role" && !tk.Prop) && !isArticle(tk.Text) {
+		if !(tk.Cls == "role" && !tk.Prop) {
 			simpleSubject = false
 		}
 	}
@@ -119,7 +120,7 @@ func Build(l Line, m Meaning, w *World, res map[string]Resolution, needs []Need)
 		if tk.Prop {
 			return Node{T: "slot", Kind: "DESC", Var: t.Means.Vars[tk.Role], Form: tk.Form, Converse: tk.Converse, Realises: tk.Role}
 		}
-		return Node{T: "slot", Kind: "REF", Var: t.Means.Vars[tk.Role], Form: tk.Form, Case: tk.Case}
+		return Node{T: "slot", Kind: "REF", Var: t.Means.Vars[tk.Role], Form: tk.Form, Case: tk.Case, Det: tk.Det}
 	}
 	bang := false
 	for i := 0; i < len(l.Tokens); i++ {
@@ -144,7 +145,7 @@ func Build(l Line, m Meaning, w *World, res map[string]Resolution, needs []Need)
 			}
 			n := Node{T: "seq", Realises: "e." + add.Key}
 			for j := sp.First; j <= sp.Last; j++ {
-				if l.Tokens[j].Cls == "role" {
+				if l.Tokens[j].Cls == "role" || l.Tokens[j].Poss {
 					n.Kids = append(n.Kids, slotOf(l.Tokens[j]))
 				} else if !l.Tokens[j].Bang {
 					n.Kids = append(n.Kids, Node{T: "word", Text: l.Tokens[j].Text})
@@ -162,6 +163,7 @@ func Build(l Line, m Meaning, w *World, res map[string]Resolution, needs []Need)
 			i = vgEnd
 		case tk.Cls == "punct":
 		case tk.Cls == "role" && tk.Part > 0:
+		case tk.Cls == "role" && tk.Form == "det": // folded into the noun's slot
 		case tk.Cls == "role":
 			n := slotOf(tk)
 			if i < vgStart && !tk.Prop {
@@ -191,9 +193,6 @@ func Build(l Line, m Meaning, w *World, res map[string]Resolution, needs []Need)
 }
 
 func isAux(w string) bool { b, _ := negBase(strings.ToLower(w)); return auxes[b] }
-func isArticle(w string) bool {
-	return set("a", "an", "the", "this", "that", "these", "those")[strings.ToLower(w)]
-}
 
 func spanByKey(l Line, key string) Span {
 	for _, s := range l.Spans {

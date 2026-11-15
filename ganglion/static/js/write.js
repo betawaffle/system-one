@@ -38,12 +38,13 @@ let curSample = -1;
 let changing = false;
 
 const choices = ["Modifier", "New Modifier", "Event", "Attitude", "Drop"];
-const modifierKinds = ["occasion", "purpose", "time", "means", "place"];
+const modifierKinds = ["owner", "occasion", "purpose", "time", "means", "place"];
 // Not a model: keyword guesses until the model call path exists (07/D90).
 const spanHints = [
   [/birthday|christmas|anniversary/, 0, "occasion"], [/gift|present\b/, 0, "purpose"],
   [/finally|at last|eventually/, 3, "expected and late"], [/mail|post|sent|send|ship/, 2, "send"],
   [/yesterday|today|monday|morning|night|ago/, 0, "time"], [/^!$/, 3, "emphatic"],
+  [/^(her|his|their|its|my|your|our|\w+'s)$/, 0, "owner"], // a possessive says who owns it
 ];
 
 // ---------- meaning card (W2) ----------

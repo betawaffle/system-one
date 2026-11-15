@@ -60,7 +60,7 @@ func TestAlignGive(t *testing.T) {
 	w, lex := setup(t)
 	m := give(pastStatement)
 	l := Align("Mara gave Tom a book.", m, w, lex)
-	if got := classes(l); got != "Mara/role:giver gave/frame Tom/role:recipient a/grammar book/role:thing ./punct" {
+	if got := classes(l); got != "Mara/role:giver gave/frame Tom/role:recipient a/role:thing book/role:thing ./punct" {
 		t.Fatal(got)
 	}
 	if len(l.Spans) != 0 || len(l.Warnings) != 0 {
@@ -311,5 +311,48 @@ func TestOnlyIncreasing(t *testing.T) {
 	young.Features.Tense = "past"
 	if !w.Allowed(young) {
 		t.Fatal("was new is fine")
+	}
+}
+
+func TestDeterminers(t *testing.T) {
+	w, lex := setup(t)
+	hp := Meaning{Frame: "frame:has-property", Features: realize.Features{Tense: "present", Polarity: "positive", Mood: "statement"},
+		Roles: map[string]Filler{"holder": {Entity: "entity:apple"}, "property": {Value: &Value{Attribute: "age", Value: "old"}}}}
+	// "this apple" and "the apple" are one template shape (04/F4)
+	t1, _ := Build(Align("this apple is old", hp, w, lex), hp, w, nil, nil)
+	t2, _ := Build(Align("The apple is old.", hp, w, lex), hp, w, nil, nil)
+	if len(t1.Tree.Kids) != len(t2.Tree.Kids) || t1.Tree.Kids[0].Kind != "REF" || t1.Tree.Kids[0].Det != "this" || t2.Tree.Kids[0].Det != "the" {
+		t.Fatalf("trees: %+v / %+v", t1.Tree.Kids, t2.Tree.Kids)
+	}
+	dets := map[string]bool{}
+	for seed := uint64(0); seed < 10; seed++ {
+		for _, s := range Samples(t1, hp, w, lex, seed, 8) {
+			first := strings.ToLower(strings.Fields(s.Text)[0])
+			if first == "a" || first == "an" {
+				t.Fatalf("no \"a\" on the subject of a be frame: %q", s.Text)
+			}
+			dets[strings.Fields(s.Fillers["holder"])[0]] = true
+		}
+	}
+	if len(dets) < 3 {
+		t.Errorf("references should vary: %v", dets)
+	}
+
+	// a possessive before another role's noun is extra meaning: an owner
+	m := give(pastStatement)
+	l := Align("Mara gave Tom her book.", m, w, lex)
+	if len(l.Spans) != 1 || l.Spans[0].Text != "her" {
+		t.Fatalf("spans: %+v (%s)", l.Spans, classes(l))
+	}
+	tpl, err := Build(l, m, w, map[string]Resolution{"her": {"Modifier", "owner"}}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.Roles["giver"] = Filler{Entity: "entity:lee"}
+	if got, _, _ := Generate(tpl, m, w, lex, realize.Style{}, newRand(3)); got != "Lee gave Tom his book." {
+		t.Errorf("got %q", got)
+	}
+	if !strings.Contains(Compact("x", tpl), `e.owner = "her"`) {
+		t.Error(Compact("x", tpl))
 	}
 }

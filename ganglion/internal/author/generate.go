@@ -48,10 +48,17 @@ func Generate(t Template, m Meaning, w *World, lex *lexicon.Lexicon, st realize.
 			return e.Name, agr, nil
 		case "possname":
 			return e.Display() + "'s", agr, nil
-		case "noun":
-			return e.Noun, agr, nil
-		case "plural":
-			return plural(lex, e.Noun), realize.Agr{Person: 3, Plural: true}, nil
+		case "noun", "plural":
+			pl := n.Form == "plural"
+			word := e.Noun
+			if pl {
+				word, agr = plural(lex, e.Noun), realize.Agr{Person: 3, Plural: true}
+			}
+			det := m.Roles[byVar[n.Var]].Det
+			if det == "" {
+				det = n.Det
+			}
+			return detWord(det, pl) + word, agr, nil
 		case "pron":
 			p, ok := realize.Pronoun(e.Pronouns, n.Case)
 			if !ok {
@@ -130,7 +137,7 @@ func Generate(t Template, m Meaning, w *World, lex *lexicon.Lexicon, st realize.
 			if err != nil {
 				return err
 			}
-			*out = append(*out, s)
+			*out = append(*out, strings.Fields(s)...) // separate words, so a/an gets fixed
 		}
 		return nil
 	}
@@ -174,6 +181,53 @@ func Generate(t Template, m Meaning, w *World, lex *lexicon.Lexicon, st realize.
 	return realize.Sentence(lex, words, end), strings.TrimSuffix(time, ","), nil
 }
 
+// detWord realises a reference setting before a noun; Sentence fixes a/an.
+func detWord(det string, plural bool) string {
+	switch {
+	case det == "":
+		return ""
+	case plural && det == "a":
+		return ""
+	case plural && det == "this":
+		return "these "
+	case plural && det == "that":
+		return "those "
+	}
+	return det + " "
+}
+
+// detSlots finds REF noun slots that carry a determiner, by role.
+func detSlots(t Template) map[string]Node {
+	byVar := map[string]string{}
+	for role, v := range t.Means.Vars {
+		byVar[v] = role
+	}
+	out := map[string]Node{}
+	var walk func(n Node)
+	walk = func(n Node) {
+		if n.T == "slot" && n.Kind == "REF" && n.Det != "" {
+			out[byVar[n.Var]] = n
+		}
+		for _, k := range n.Kids {
+			walk(k)
+		}
+	}
+	walk(t.Tree)
+	return out
+}
+
+// detOptions are the reference settings a slot may vary over. "a" is left out
+// for the subject of a "be" frame: "An apple is old" reads as a statement about
+// apples in general (04/F4).
+func detOptions(n Node, f Frame) []string {
+	for _, v := range f.Verbs {
+		if v == "be" && n.Label == "subj" {
+			return []string{"the", "this", "that"}
+		}
+	}
+	return []string{"the", "a", "this", "that"}
+}
+
 func plural(lex *lexicon.Lexicon, noun string) string {
 	if e := lex.Get("noun", noun); e != nil && e.Forms["plural"] != "" {
 		return e.Forms["plural"]
@@ -209,6 +263,7 @@ func Samples(t Template, m Meaning, w *World, lex *lexicon.Lexicon, seed uint64,
 	f := w.Frames[m.Frame]
 	var out []Sample
 	seen := map[string]bool{}
+	dets := detSlots(t)
 	tenses := t.Supports.Tense
 	if w.Stable(m) {
 		tenses = []string{"present"} // 06/D100
@@ -244,6 +299,10 @@ func Samples(t Template, m Meaning, w *World, lex *lexicon.Lexicon, seed uint64,
 					fl.Entity = free[r.IntN(len(free))]
 				}
 				used[fl.Entity] = true
+				if n, ok := dets[ro.Name]; ok && i%3 != 0 {
+					opts := detOptions(n, f)
+					fl.Det = opts[r.IntN(len(opts))]
+				}
 				mm.Roles[ro.Name] = fl
 			}
 			mm.Features.Tense = tenses[i%len(tenses)]
@@ -275,7 +334,18 @@ func Samples(t Template, m Meaning, w *World, lex *lexicon.Lexicon, seed uint64,
 		for role, fl := range mm.Roles {
 			if fl.Entity != "" {
 				s.Fillers[role] = w.Entities[fl.Entity].Display()
-				if fl.Entity != m.Roles[role].Entity {
+				det := fl.Det
+				if n, ok := dets[role]; ok {
+					if det == "" {
+						det = n.Det
+					}
+					s.Fillers[role] = det + " " + s.Fillers[role]
+				}
+				authored := m.Roles[role].Det
+				if authored == "" {
+					authored = dets[role].Det
+				}
+				if fl.Entity != m.Roles[role].Entity || det != authored {
 					s.Changed = append(s.Changed, role)
 				}
 			}
