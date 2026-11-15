@@ -87,6 +87,14 @@ J7. Cost: seven calls per sample instead of one, and with 16 running at once eac
 P4. `20fb3318f9a9` (checks-1): **9 of 44** (✓ 8/39, ◐ 1/1, ✕ 0/4). False alarms on your ✓: implies 27/39, context 21/39, change 4/39, meaning 3/39, form 1/39. Implies counted the literal meaning (a negative implying the opposite, "his lamp" implying ownership, a question implying the speaker doesn't know); context said any named thing "needs prior mention"; meaning read "positive" on a question as a mismatch. Change saw the tense right on all four age ✕ ("future tense implies not older now") and then said the age order *can* change, despite that example in the prompt.
 P5. checks-3: implies and context tightened to exclude the literal meaning and to accept names, "this", "that" and possessives as openers (your ✓ include "That apple is old."); meaning told that a positive question isn't a mismatch; change skipped for actions, and made to write out the opposite fact first ("then") before judging whether it can change, with the reason ages keep their order. Caveat: that reason is close to the very ✕ cases being measured, so a catch here proves less than it looks; fresh ✕ samples are needed. Its run was stopped part way (user: "Just kill this run, and don't start the next one until we have a better plan in place.").
 
+P6. Jev `jev-6b03606e` (jev-1.14.0), minimal state (the sentence and its meaning as flat fields), four noul checks flagged below 0.5, on the 40 samples marked ✓ or ◐ plus 9 broken in code (J11): **no false alarms on the 40, and 7 of 9 broken caught by the right check**, ~80 ms per request. Lowest value on a good sample, against the broken ones:
+  - grammar: good ≥ 0.90; broken 0.16 (gived), 0.04 (more older), 0.50 (verb dropped). A threshold of ~0.75 would catch all three.
+  - meaning: good ≥ 0.63 (negative questions lowest); broken 0.02 (swapped roles), 0.09 (recipient dropped), 0.38 (present for past), 0.11 (negated). Clear, though the gap is narrower.
+  - filler: good ≥ 0.57 ("That chair is tall."); broken 0.15 (an idea giving), 0.59 (an idea older than Noor, a weak case since ideas can be old). Overlaps; the least reliable.
+  - context: good ≥ 0.87; not tested, since nothing in J11 needs context.
+  - Not tested: the age-change ✕ (left to rules, J14 discussion), Word Form apart from "gived".
+P6a. The user found that Jev knows "the relative age of two things doesn't change" only weakly (72%), and the answer flipped with rewording, so facts about how attributes change go in the meaning language, written by the user, not asked of a model.
+
 ## Plan before the next run
 
 J8. Measure first: the same check prompt at 1, 2, 4, 8 and 16 at once, about 50 short calls (~2 min). With 16 at once the server managed ~20 tok/s in total, below one call alone (~52 tok/s), so the fastest setting is probably far lower. Cap ganglion's parallel calls there (it affects v2 too).
