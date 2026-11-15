@@ -39,6 +39,7 @@ export function showTip(el, html, x, y) {
 export function hideTip() { tip.classList.remove("on"); tipFor = null; }
 document.addEventListener("pointerover", e => {
   const el = e.target.closest("[data-tip]");
+  if (tipFor && !tipFor.isConnected) hideTip(); // the page redrew under the pointer
   if (!el || el === tipFor) return;
   tipFor = el;
   const r = el.getBoundingClientRect();
@@ -134,3 +135,8 @@ $$("form[data-autosubmit] select, form[data-autosubmit] input[type=checkbox]").f
   el.addEventListener("change", () => el.form.requestSubmit()));
 
 export { $, $$ };
+
+// A click usually redraws something; a tooltip whose element was replaced never
+// gets its pointerout, so hide it on any click, and when its element goes away.
+document.addEventListener("click", hideTip, true);
+new MutationObserver(() => { if (tipFor && !tipFor.isConnected) hideTip(); }).observe(document.body, { childList: true, subtree: true });
