@@ -1,4 +1,4 @@
-# Storage in ganglion (draft 1, 2026-11-15)
+# Storage in ganglion (draft 2, 2026-11-15)
 
 How the grammar (types, frames, lexicon, templates), the authoring history and generated data are stored. Built on what ganglion already does (08/D33): content-addressed blobs in `blobs.db`, an SQLite index in `index.db`, append-only JSONL beside them (`labels.jsonl`, `blacklist.jsonl`), datasets as directories under `datasets/`. Observed in `ganglion/internal/store`: events and utterances are already hashed as sha256 of their canonical JSON.
 
@@ -6,11 +6,13 @@ How the grammar (types, frames, lexicon, templates), the authoring history and g
 
 O1. Five object kinds: type, attribute, frame, lexicon entry, template.
 O2. Each object has a stable id (`template:give-1`, `lex:give.v`) and a series of versions.
+O2a. The stable id is not part of the hashed content (user: "this stable id isn't part of the hashed object, right?"). Content is hashed alone, so identical content has one hash wherever it appears, and the hash is also the template identity used for counting (sd/04/I1).
+O2b. References between objects inside content use stable ids (a template's `lex give` names `lex:give.v`, not a version). A snapshot (N1) resolves them to versions, so fixing a word doesn't force a new version of every template that uses it.
 
 ## Versions
 
-V1. A version is the object's canonical JSON, stored once as a blob under its sha256, like utterances today. Versions never change.
-V2. Each version records its parent version, who made it (user, model id, import), when, and why (edit, fix from a sample, import).
+V1. A version's content is the object's canonical JSON, without id or metadata, stored once as a blob under its sha256, like utterances today. Content never changes.
+V2. A version record ties it together: stable id, content hash, parent version, who made it (user, model id, import), when, and why (edit, fix from a sample, import). Records are append-only rows, separate from the content blob, so two edits that arrive at the same content share the blob but keep their own records.
 V3. An index table maps id → current version (the head). An edit writes a new version and moves the head. Retiring an object is a version too (state retired). Nothing is deleted, matching the capture rules' append-only requirement (CAPTURE-REQUIREMENTS 2).
 V4. History per object is the parent chain, so the UI can show what changed and roll back by writing an older content as a new version.
 
@@ -57,6 +59,8 @@ U1. The user's sentences are their own prose, written to a meaning. They could a
 ## Backup
 
 B1. All of this lives in ganglion's data directory, which is backed up with everything else. Not in git: templates are data, and prose stays out of the repo (system-one data rules).
+B1a. Checked 2026-11-15 (user asked): the nightly backup timer is active and its last runs succeeded, and its path list includes `~/.local/share`, so ganglion's data directory is covered.
+B1b. Gap found: the backup copies SQLite files with rsync while ganglion may be writing them, which can leave an inconsistent copy of `index.db` or `blobs.db`. The append-only JSONL files are safe. Fix: ganglion writes a consistent copy (SQLite's `VACUUM INTO`, or the backup API) into its data directory before the backup window, and that copy is what a restore uses. (Q63)
 
 ## Future topics
 
@@ -65,10 +69,18 @@ T17. Publishing the grammar (templates, frames, lexicon) as an open dataset. Cle
 ## Decided
 
 D86. Authoring events and model calls are logged append-only per CAPTURE-REQUIREMENTS (E1–E3, M1). Not a new decision: this applies the user's standing capture requirements.
+D87. Content-addressed versions with heads and snapshots (V1–V4, N1–N3), with the stable id outside the hashed content (O2a). Answers Q59. (user: "Yes.")
+D88. Datasets as recipes plus rows with per-row derivations; regenerate rather than patch (G1–G4). Answers Q60. (user: "Yes.")
+D89. Authored sentences also go into the utterance store as kind `authored` (U1). Answers Q61. (user: "Yes.")
+D90. One model-call path in the Go server that logs everything (M2). Answers Q62. (user: "Yes.")
 
 ## Open questions
 
-Q59. Content-addressed versions with heads and snapshots (V1–V4, N1–N3)? I lean yes.
-Q60. Datasets as recipes plus rows with per-row derivations; regenerate rather than patch (G1–G4)? I lean yes.
-Q61. Authored sentences also go into the utterance store as kind `authored` (U1)? I lean yes.
-Q62. One model-call path in the Go server that logs everything (M2)? I lean yes.
+Q63. Consistent SQLite copies before the nightly backup (B1b)? I lean yes.
+
+## Superseded
+
+Q59 (answered by D87). Content-addressed versions with heads and snapshots?
+Q60 (answered by D88). Datasets as recipes plus rows with derivations?
+Q61 (answered by D89). Authored sentences as utterances?
+Q62 (answered by D90). One logged model-call path?
