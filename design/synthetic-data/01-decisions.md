@@ -16,9 +16,11 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 
 - sd/08 writing screen: D92 one page, D93 Next from coverage gaps, D94 align while typing, D95 suggestions automatic / helper on request, D96 keys as K1, D97 mock-up first, D98 Sounds Odd makes the generator add a modifier, D99 "!" is extra meaning.
 
+- sd/09 data shapes: (none yet)
+
 ## Open questions (all)
 
-(none)
+- Q71 data shapes for the first build (sd/09). Comment on anything off; cheap to change for now.
 
 ## Future topics (all)
 
