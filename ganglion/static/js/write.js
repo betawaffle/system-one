@@ -303,7 +303,9 @@ function sampleRow(l, s) {
       reasons.map(([x, why]) => h("button", { class: "btn chip" + (v.reason === x ? " picked" : ""), "data-tip": why, onclick: () => send({ reason: x }) }, x)),
       v.reason ? (([x, why, goes]) => h("div", { class: "reason-why small" },
         h("div", {}, why),
-        x === "Other" ? h("input", { class: "input", placeholder: "What's wrong?", "aria-label": "Note", onchange: e => send({ note: e.target.value }) }) : null,
+        x === "Other" ? h("div", { class: "row" },
+          h("input", { class: "input grow", placeholder: "What's wrong? Enter saves", value: v.note || "", "aria-label": "Note", onchange: e => send({ note: e.target.value }) }),
+          v.note ? h("span", { class: "tag ok", "data-tip": "Saved in the grammar's event log with this sample" }, "✓ Note Saved") : null) : null,
         h("div", { class: "muted" }, "Goes to ", goes, ".")))(reasons.find(r => r[0] === v.reason)) : null) : null);
 }
 function freshDraw() { seed = Math.floor(Math.random() * 1e6); refresh(); }

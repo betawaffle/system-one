@@ -20,6 +20,7 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 
 ## Open questions (all)
 
+- Q72 stable-order attributes: comparisons on age don't vary by tense (sd/06/P8a). Lean yes.
 - Q71 data shapes for the first build (sd/09). Comment on anything off; cheap to change for now.
 
 ## Future topics (all)

@@ -36,6 +36,11 @@ R2. A REF's meaning is the facts it realises, merged with the sentence's (sd/04/
 R3. Adjective order is a rule code applies: opinion, size, age, shape, colour, origin, material, purpose ("a lovely little old red wooden box"). Getting it wrong sounds off at once, so it's a good early check of the generator.
 R4. Degree: a property value can carry a degree (`age=old, degree=very`). DESC templates realise it ("very old", "really old", "a bit old").
 
+## Found while writing
+
+P8. The user's note on "In a few years, Ana will be older than Lee." (an Other verdict, 2026-11-15): "Age differences between people never change." So for age, which of two people is older is fixed for life: if Ana is older than Lee now, she always was and always will be. Changing the tense of that comparison doesn't make a new meaning, it makes an odd one, and the Sounds Odd fix (a time modifier) made it worse, not better.
+P8a. Proposal: an attribute can say its order between two holders is stable (`stable_order: true` for age). Comparisons on a stable attribute are generated in the present only (or the tense of the authored sentence), and Sounds Odd doesn't offer a time modifier for them. Height, size and weight can change, so they keep all tenses. (Q72)
+
 ## Starting types
 
 Y1. A small tree, grown as the user writes (sd/02/D60):
@@ -75,7 +80,7 @@ D85. Starting types and attributes as in Y1 and P7, grown as the user writes. An
 
 ## Open questions
 
-(none for this note)
+Q72. Attributes with a stable order (age), whose comparisons don't vary by tense (P8a)? I lean yes.
 
 ## Superseded
 
