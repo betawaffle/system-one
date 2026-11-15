@@ -6,6 +6,21 @@ Started from Perplexity's Decider v1.3 write-up (https://www.perplexity.ai/hub/b
 - Oriented around *actions* rather than output. Output (in the chat sense) is just one of many potential actions.
 - Analogy: humans aren't output based. They act (muscle control) to do things like speaking and typing.
 
+## Goal (2026-11-15)
+
+G1. "What I really want is a general purpose 'do what I do until it matches what I do', and the prose rating is one possible 'what I do'." (user)
+G2. So a task is: a situation, the options open to the user, and what the user chose. The model predicts the choice; agreement on unseen cases is the measure of whether it works.
+G3. "Until it matches" suggests autonomy by earned trust: per task, the model only acts alone where it agrees with the user reliably and knows when it doesn't (calibration, abstaining). Otherwise it asks, and the answer is a new label. (user: "Confirmed.")
+G4. Fits 03 as designed: options as described entities scored by a pointer head means a new task is new data, not a new head.
+G5. Other projects (tack, Pi) were earlier attempts at this; fine to draw on. (user)
+G6. Prose rating (11/D51) is the first candidate task (01/Q18).
+G7. Decisions in replies: "Figure out what I'm deciding or not deciding in my reply." (user) Each reply to a proposal or question is a choice among what was offered, plus things outside it:
+   - accept, reject, pick one, amend ("keep 9 as an option")
+   - defer ("keep it open", 01/W1), hand back ("your call")
+   - not decide: ignore the question, change subject, question the premise (D27 reopened this way)
+G8. Structured sources already exist: answers to multiple-choice prompts, next-step buttons, permission approvals and denials. Options and choice are both recorded, so no extraction is needed.
+G9. Free-text replies need extraction, which is itself a judgement (R1). A large model could propose extractions as a teacher; the user confirms or corrects in ganglion; later the small model learns the extraction too. Who extracts: Q19.
+
 ## Ground rules
 
 R1. A model is for judgements, not things that are trivially computable with a single right answer.

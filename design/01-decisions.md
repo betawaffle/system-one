@@ -33,6 +33,9 @@ R5. Action-oriented: output is one action among many (00).
 - Q5 compute cost for halting (04): unknown; decide at the outcomes stage.
 - Q13 sizes, K_max (06): not yet.
 - Q16 Ettin vocabulary pruning (06): not yet.
+- Q17 is "text" one field type or several (06): decide when a second domain arrives.
+- Q18 first judgement (2026-11-15): which judgement does the user actually want made, that they can label and check? Important now: D27 (commands first) reopened because it fails this test. Pick the judgement first, then the smallest domain and architecture that serve it.
+- Q19 who extracts decisions from free-text replies (00/G9): the user by hand, a large model as teacher with the user confirming, or both. Decide when building the first decision dataset.
 
 ## Future topics (all)
 

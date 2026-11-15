@@ -62,6 +62,9 @@ I1. From scratch: cleanest provenance (02/N5a), but text fields need language kn
 I2. Pretrained small encoder for the text field level: Ettin (17M to 1B, MIT) is a candidate family; training data reportedly released (unverified). Mechanical embedders and the event level are new either way.
 I3. Distill-then-discard (05/T2): later, if borrowed weights are a concern.
 I4. I lean I2 for text, new for everything else. (D28)
+I5. Own small text encoder from scratch, on a bounded budget (tens of billions of tokens, days on the Framework, not Ettin's 2T and months). Kept open as an option (user: "I'd definitely keep 9 as an option"). Buys full control of tokenizer and data (02/N5a). Worth it if the capacity curve (I6) shows Ettin's vocabulary or data holding us back.
+I6. Capacity curve before committing: 17M, 32M, 68M through the same inversion recipe (10) on commands and prose, plus a training-throughput benchmark per size.
+I7. Ettin data (model card, 2026-11-15): 1.7T pretraining (DCLM, Dolma v1.7, papers, code, curated), 250B mid-training on filtered data with context extended to 8K, 100B decay on premium sources. All phases, the batch order and 250+ checkpoints are public. Resolves I2's "unverified".
 
 ## Evaluating an encoder (proposal)
 
@@ -103,7 +106,9 @@ W8. Alternatives: plain prose messages (simplest, exercises no structure); file 
 ## Decided
 
 D23. Two levels: field-type encoders shared across domains, small event-level encoder per domain (L1, L2), answering Q11. (user: "Agreed." to both)
+   - Note (user, 2026-11-15): when deciding, didn't realise "text" would mix prose with non-prose (argv, stdout, tracebacks, code). Not reversed; see Q17.
 D27. First domain: command executions (W1–W8). Answers Q9. (user: "I think that's fine, but I'll want to see some examples in the UI, I think?" → examples in the data browser, 07/A1.)
+   - Reopened (user, 2026-11-15): "I don't know that I'm _ever_ going to care about predicting anything about a grep command. I don't want a model that writes bash." No way to tell whether it worked, and no use to the user even if it did. Chosen for data and structure, not relevance. Start instead from a judgement the user cares about (01/Q18).
 D28. Text encoder: Ettin 17M by default, 32M if 17M falls short at the evaluation gate (V1–V5). Answers Q10. (user: fine with either, "17M if we can get away with it".)
    - Non-embedding capacity is the real difference: about 4M (17M) vs about 13M (32M), 7 vs 10 layers (from E2/E4 arithmetic). Terminal output and code may need more than 4M; the gate tells us.
    - Both are cheap enough to run side by side when the time comes.
@@ -114,6 +119,7 @@ D24. Text vocabulary: no special tokens, just text. Trust/role is an embedding a
 ## Open questions
 
 Q16. Prune Ettin's vocabulary for small sizes (E4)? Not important yet.
+Q17. Is "text" one field type, or several (prose, terminal output, code)? Shared within each either way (D23). Options: one encoder for all text; one encoder with a text-kind embedding; separate encoders per kind. Becomes important when the second domain (messages) arrives; the D23 transfer test answers it.
 Q13. Sizes and K_max (Z1–Z3). Provisional numbers are fine for now; not important yet.
 
 ## Future topics
