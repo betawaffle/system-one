@@ -11,10 +11,16 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 
 - sd/05 inflection: D74 rules propose, look up at generation, vet as needed, D75 WordNet + CMUdict, clean licence (no share-alike), D76 explicit pronoun sets (amends sd/02/L2), D77 style features, US default, D78 first verb-group scope, D79 retroactive fixes and doubt flags, no pre-vetting, D80 unsupported verb groups saved frozen and usable.
 
+- sd/06 first frames: (none yet)
+
 ## Open questions (all)
 
-(none)
+- Q54 first frames F1–F6 (sd/06). Lean yes.
+- Q55 properties as attribute + value, typed domains, scales from WordNet (sd/06/P1–P6). Lean yes.
+- Q56 "not old" and "new" as different meanings (sd/06/P5). Lean yes.
+- Q57 adjective order by code (sd/06/R3). Lean yes.
+- Q58 starting types and attributes (sd/06/Y1, P7). Lean yes.
 
 ## Future topics (all)
 
-T10 world model (sd/00). T11 modals, passive, more aspects (sd/05). T12 coordination agreement (sd/05).
+T10 world model (sd/00). T11 modals, passive, more aspects (sd/05). T12 coordination agreement (sd/05). T13 superlatives, T14 generics, T15 existentials, T16 numbers and quantities (sd/06).
