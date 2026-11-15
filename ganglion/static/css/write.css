@@ -59,3 +59,5 @@ dialog.keys::backdrop { background: rgba(0, 0, 0, 0.35); }
 
 details.tree summary, details.forms summary { cursor: pointer; color: var(--ink-2); font: 500 var(--t-xs) var(--sans); }
 details.tree[open] summary, details.forms[open] summary { margin-bottom: var(--s2); }
+.reason-why { flex-basis: 100%; display: grid; gap: 4px; color: var(--ink-2); }
+.reason-why .input { max-width: 40ch; }

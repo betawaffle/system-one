@@ -42,6 +42,9 @@ W6. As soon as a sentence is traced, 8 samples appear below it, refreshed on eve
   - samples spread across fillers, features, lemma classes, optional parts and nested templates (sd/03/A16a)
   - the seed stays fixed between edits so changes are easy to spot; **Fresh Draw** gets new ones
 W6a. Each sample has ✓ and ✕. ✕ asks what's wrong, one tap: Word Form, Wrong Kind of Filler, Ungrammatical, Means Something Else, Other. Each answer goes where it belongs (lexicon entry, slot type, template, the A13 resolution) and is logged (sd/07/E1).
+W6a1. Each reason has a one-line explainer (shown on hover, and under the chips once picked, so it works on a phone) and says where the verdict goes. (user: "The 'What's wrong?' buttons need explainers.")
+W6a2. New reason **Sounds Odd**: correct and means what its tags say, but nobody would say it like that without more context. Found by the user in the mock-up: "This book will be old." It's grammatical and the meaning is right (has-property, future), but a future statement about a state reads oddly with no time anchor ("by next year this book will be old"), and it hints the book isn't old now. That's the pragmatic oddness risk (sd/00/X2), not a mock-up bug: the real generator would make it too. None of the first five reasons fit it.
+W6a3. Where Sounds Odd goes: the template's supported features (sd/04/N1a). That combination is marked "needs a modifier" (here a time), so the generator either adds one ("by next year", "someday") or skips the combination. (Q70)
 W6b. A sample can also be saved as a ★ favourite: a good example to show later, or a boundary case worth keeping (sd/02/D61).
 
 ## Save
@@ -83,7 +86,7 @@ D97. Next step: a working mock-up of this page in ganglion with hard-coded data,
 
 ## Open questions
 
-(none for this note)
+Q70. "Sounds Odd" marks a template's feature combination as needing a modifier, so the generator adds one or skips it (W6a3)? I lean yes, adding one when a suitable modifier template exists, since that also teaches which combinations need context.
 
 ## Superseded
 

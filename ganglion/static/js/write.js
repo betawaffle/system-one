@@ -431,8 +431,15 @@ function sampleTags(s) {
   for (const [role, k] of Object.entries(s.fill)) tags.push([`${role}: ${entities[k].name || entities[k].noun}`, k !== meaning.roles[role]]);
   return tags;
 }
-const reasons = ["Word Form", "Wrong Kind of Filler", "Ungrammatical", "Means Something Else", "Other"];
-const reasonGoes = { "Word Form": "the lexicon entry", "Wrong Kind of Filler": "the slot's type", "Ungrammatical": "the template", "Means Something Else": "the span resolution", "Other": "a note" };
+// What a ✕ can mean (sd/08/W6a): an explainer for each, and where the verdict goes.
+const reasons = [
+  ["Word Form", "A word is spelled or inflected wrong: \"gived\", \"a umbrella\".", "the word's lexicon entry"],
+  ["Wrong Kind of Filler", "Grammatical, but that thing can't fill that role: \"The idea is tall.\"", "the role's type"],
+  ["Ungrammatical", "Broken English: word order, agreement, a missing or extra word.", "the template"],
+  ["Means Something Else", "Reads fine, but doesn't match its tags, or a word adds meaning the tags don't have.", "the template's meaning links"],
+  ["Sounds Odd", "Correct, and means what the tags say, but nobody would say it like that without more context: \"This book will be old.\"", "the template's supported features: that combination may need a modifier, like a time"],
+  ["Other", "Something else. Say what.", "a note"],
+];
 function renderSamples() {
   const box = $("#samples");
   const ready = lines.map((l, i) => [l, i]).filter(([l]) => fullyTraced(l));
@@ -468,8 +475,11 @@ function sampleRow(s) {
         h("button", { "aria-pressed": String(!!v.star), onclick: () => set({ star: !v.star }), "data-tip": "Keep as a good example or boundary case" }, "★"))),
     v.v === "bad" ? h("div", { class: "row reasons" },
       h("span", { class: "label" }, "What's wrong?"),
-      reasons.map(x => h("button", { class: "btn chip" + (v.reason === x ? " picked" : ""), onclick: () => set({ reason: x }) }, x)),
-      v.reason ? h("span", { class: "muted small" }, "Goes to ", reasonGoes[v.reason], " (mock: not recorded).") : null) : null);
+      reasons.map(([x, why]) => h("button", { class: "btn chip" + (v.reason === x ? " picked" : ""), "data-tip": why, onclick: () => set({ reason: x }) }, x)),
+      v.reason ? (([x, why, goes]) => h("div", { class: "reason-why small" },
+        h("div", {}, why),
+        x === "Other" ? h("input", { class: "input", placeholder: "What's wrong?", "aria-label": "Note" }) : null,
+        h("div", { class: "muted" }, "Goes to ", goes, ". (Mock: not recorded.)")))(reasons.find(r => r[0] === v.reason)) : null) : null);
 }
 function freshDraw() { seed = Math.floor(Math.random() * 100000); renderSamples(); }
 function moveSample(d) {

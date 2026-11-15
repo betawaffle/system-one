@@ -18,7 +18,7 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 
 ## Open questions (all)
 
-(none)
+- Q70 "Sounds Odd" marks a feature combination as needing a modifier (sd/08/W6a3). Lean yes.
 
 ## Future topics (all)
 
