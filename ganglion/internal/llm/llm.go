@@ -49,9 +49,10 @@ type serverInfo struct {
 type Record struct {
 	Schema    int               `json:"schema"`
 	ID        string            `json:"id"`
-	Purpose   string            `json:"purpose"`          // judge, span, helper, rules…
-	Prompt    string            `json:"prompt,omitempty"` // prompt file version (sha256)
-	Client    string            `json:"client"`           // ganglion and its build
+	Provider  string            `json:"provider,omitempty"` // empty: the local llm-server; "typesafe": Jev
+	Purpose   string            `json:"purpose"`            // judge, span, helper, rules…
+	Prompt    string            `json:"prompt,omitempty"`   // prompt file version (sha256)
+	Client    string            `json:"client"`             // ganglion and its build
 	URL       string            `json:"url"`
 	Requested string            `json:"model_requested"`
 	Returned  string            `json:"model_returned,omitempty"`
@@ -315,4 +316,53 @@ func (c *Client) Find(id string) (*Record, error) {
 		}
 	}
 	return nil, os.ErrNotExist
+}
+
+// Post sends a JSON request to another provider's endpoint and logs it the
+// same way as Chat. The key goes in the Authorization header only; it is never
+// recorded (capture requirements 28).
+func Post(ctx context.Context, dir, provider, purpose, prompt, url, key, model string, raw []byte) (*Record, error) {
+	rec := Record{Schema: 1, ID: newID(), Provider: provider, Purpose: purpose, Prompt: prompt, Client: "ganglion " + Build, URL: url,
+		Requested: model, Request: raw, Sent: now()}
+	c := &Client{Dir: dir}
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(raw))
+	if err != nil {
+		return &rec, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+key)
+	resp, err := (&http.Client{Timeout: 2 * time.Minute}).Do(req)
+	if err != nil {
+		rec.Done, rec.Error = now(), err.Error()
+		c.log(rec)
+		return &rec, err
+	}
+	rec.FirstByte = now()
+	rec.Status = resp.StatusCode
+	rec.Headers = map[string]string{}
+	for k, v := range resp.Header {
+		if len(v) > 0 && k != "Set-Cookie" {
+			rec.Headers[k] = v[0]
+		}
+	}
+	b, err := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	rec.Done, rec.Response = now(), string(b)
+	if err != nil {
+		rec.Error = err.Error()
+	} else if resp.StatusCode != 200 {
+		rec.Error = fmt.Sprintf("status %d", resp.StatusCode)
+	}
+	var out struct {
+		Model string `json:"model"`
+	}
+	json.Unmarshal(b, &out)
+	rec.Returned = out.Model
+	if lerr := c.log(rec); lerr != nil {
+		return &rec, lerr
+	}
+	if rec.Error != "" {
+		return &rec, errors.New(rec.Error)
+	}
+	return &rec, nil
 }

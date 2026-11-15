@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"ganglion/internal/grammar"
+	"ganglion/internal/jev"
 	"ganglion/internal/lexicon"
 	"ganglion/internal/llm"
 	"html/template"
@@ -41,6 +42,7 @@ type Config struct {
 	Lexicon   *lexicon.Lexicon
 	LLM       *llm.Client // nil: no model features (10/R2)
 	FewShot   bool        // judge prompt includes the user's verdicts (10/D113: off to start)
+	Jev       *jev.Config // nil: no Jev baseline (10/J14)
 }
 
 type Server struct {

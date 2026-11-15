@@ -1,0 +1,66 @@
+{
+  "grammar": {
+    "type": "choice",
+    "instructions": "Is the sample sentence broken English: wrong word order, wrong agreement, or a missing or extra word? Judge only grammar, not whether it is true, sensible or natural.",
+    "criteria": {
+      "broken": "The sample is not grammatical English.",
+      "grammatical": "The sample is grammatical English, whatever it means."
+    }
+  },
+  "filler": {
+    "type": "choice",
+    "instructions": "Is something in the sample the wrong kind of thing for its role, so the sentence could never literally be true? For example \"The idea is tall\" (an idea has no height) or \"The rock gave Lee a book\" (a rock can't give). Merely unusual is fine.",
+    "criteria": {
+      "wrong_kind": "Some person or thing can't fill its role or have that property at all.",
+      "fits": "Every person and thing can fill its role."
+    }
+  },
+  "meaning": {
+    "type": "choice",
+    "instructions": "Does the sample's literal meaning differ from its tags? Count an extra fact, a different relation, a different person or thing, or something the tags say that the sample leaves out. A negative tag denying the meaning is not a difference, and neither is a question asking it. Don't count what a reader might infer.",
+    "criteria": {
+      "differs": "The words say something other than the tags.",
+      "matches": "The words say exactly what the tags say."
+    }
+  },
+  "change": {
+    "type": "choice",
+    "instructions": "Does the sample's tense suggest the fact is different at some other time (\"will be X\": it isn't X now; \"was X\": it no longer is), and if so, could it really change like that, given what these people and things are? Actions such as giving are events, not facts that hold over time.",
+    "criteria": {
+      "no_change": "The tense doesn't suggest the fact is different at another time, or the sample is about an action.",
+      "possible_change": "The tense suggests a change, and that change can really happen.",
+      "impossible_change": "The tense suggests a change that can't happen."
+    }
+  },
+  "implies": {
+    "type": "choice",
+    "instructions": "Would most readers assume something extra from the sample, beyond what its words say? For example \"won't give\" suggesting a refusal, or \"gives\" in the present suggesting a habit. What the literal meaning already says doesn't count: a negative means the positive is false, \"her chair\" says she owns it, a question asks whether. What's already recorded for the sample doesn't count either.",
+    "criteria": {
+      "implies_more": "Most readers would assume something extra.",
+      "nothing_extra": "It says what it says and nothing more."
+    }
+  },
+  "context": {
+    "type": "choice",
+    "instructions": "Would the sample be confusing as the first sentence of a conversation, even with a scene in front of both people, so that it needs an earlier sentence? Names, \"the\", \"this\", \"that\" and possessives are all fine to open with.",
+    "criteria": {
+      "needs_earlier": "It can't stand first, like \"He did too.\"",
+      "can_open": "It works as an opening sentence."
+    }
+  },
+  "verdict": {
+    "type": "choice",
+    "instructions": "Overall, which describes the sample best? Judge it against its own tags, not against the author's sentence.",
+    "criteria": {
+      "fine": "Correct English, means exactly its tags, natural on its own.",
+      "fine_needs_context": "Correct and means its tags, but only natural after something else.",
+      "fine_implies_more": "Correct and means its tags, but a reader would infer more.",
+      "word_form": "A word is spelled or inflected wrong.",
+      "wrong_kind_of_filler": "Grammatical, but some thing can't fill its role.",
+      "ungrammatical": "Broken English.",
+      "means_something_else": "Reads fine but doesn't match its tags.",
+      "sounds_odd": "Correct and means its tags, but nobody would say it like that without adding something.",
+      "other": "Wrong in some other way, for example it suggests a change that can't happen."
+    }
+  }
+}

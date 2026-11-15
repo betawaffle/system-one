@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
+	"ganglion/internal/jev"
 	"io/fs"
 	"log"
 	"net/http"
@@ -65,6 +66,7 @@ func main() {
 	llmURL := flag.String("llm", envOr("GANGLION_LLM", "http://localhost:8081"), "llama.cpp server for model features, or \"none\" (default $GANGLION_LLM)")
 	llmModel := flag.String("llm-model", envOr("GANGLION_LLM_MODEL", "gpt-oss-120b"), "model id on that server")
 	fewShot := flag.Bool("few-shot", os.Getenv("GANGLION_FEW_SHOT") == "1", "include the user's verdicts as examples in the judge prompt (off to start: design/synthetic-data/10/D113)")
+	jevKey := flag.String("jev-key", envOr("GANGLION_JEV_KEY", filepath.Join(os.Getenv("HOME"), ".config/ganglion/jev.key")), "Jev key file: API key on line 1, endpoint on line 2 (design/synthetic-data/10/J14); missing means no Jev")
 	flag.Parse()
 	if *sock == "" {
 		*sock = filepath.Join(*data, "worker.sock")
@@ -113,6 +115,7 @@ func main() {
 		Lexicon:   lex,
 		LLM:       llmClient(*llmURL, *llmModel, *data),
 		FewShot:   *fewShot,
+		Jev:       jevConfig(*jevKey, *data),
 	})
 	if err != nil {
 		log.Fatalf("web: %v", err)
@@ -323,4 +326,16 @@ func llmClient(url, model, data string) *llm.Client {
 		return nil
 	}
 	return llm.New(url, model, filepath.Join(data, "model-calls"))
+}
+
+func jevConfig(path, data string) *jev.Config {
+	c, err := jev.Load(path, filepath.Join(data, "model-calls"))
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.Printf("jev: %v", err)
+		}
+		return nil
+	}
+	log.Printf("jev: key loaded from %s", path)
+	return c
 }

@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"ganglion/internal/jev"
 	"net/http"
 	"sort"
 	"sync"
@@ -34,12 +35,17 @@ func (s *Server) modelCalibrate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var req struct {
-		Effort string `json:"effort"`
+		Effort string `json:"effort"` // low | medium | high, or "jev" for the baseline (10/J14)
+		Small  bool   `json:"small"`  // only the small set (10/J10)
 	}
 	if !jsonIn(w, r, &req) {
 		return
 	}
-	if req.Effort != "medium" && req.Effort != "high" {
+	if req.Effort == "jev" && s.cfg.Jev == nil {
+		http.Error(w, "no Jev key configured", 503)
+		return
+	}
+	if req.Effort != "medium" && req.Effort != "high" && req.Effort != "jev" {
 		req.Effort = "low"
 	}
 	cal.mu.Lock()
@@ -57,7 +63,14 @@ func (s *Server) modelCalibrate(w http.ResponseWriter, r *http.Request) {
 	groups := map[string]*group{}
 	x.mu.RLock()
 	total := 0
-	for _, v := range x.verdicts {
+	pool := x.verdicts
+	if req.Small {
+		pool = map[string]priorVerdict{}
+		for _, v := range x.smallSet() {
+			pool[v.Sample.Text] = v
+		}
+	}
+	for _, v := range pool {
 		if v.Verdict == "" || v.Meaning.Frame == "" {
 			continue
 		}
@@ -77,7 +90,11 @@ func (s *Server) modelCalibrate(w http.ResponseWriter, r *http.Request) {
 		for _, g := range groups {
 			for i := 0; i < len(g.samples); i += 16 {
 				end := min(i+16, len(g.samples))
-				s.judgeMany(ctx, x, g.m, g.line, g.samples[i:end], req.Effort)
+				if req.Effort == "jev" {
+					s.jevMany(ctx, x, g.m, g.line, g.samples[i:end])
+				} else {
+					s.judgeMany(ctx, x, g.m, g.line, g.samples[i:end], req.Effort)
+				}
 				cal.mu.Lock()
 				cal.Done += end - i
 				cal.mu.Unlock()
@@ -132,7 +149,7 @@ func (s *Server) modelCalibration(w http.ResponseWriter, r *http.Request) {
 		key := mv.Prompt + "/" + mv.Effort
 		st := stats[key]
 		if st == nil {
-			st = &calStats{Prompt: mv.Prompt, Effort: mv.Effort, Current: mv.Prompt == judge.Version, ByYours: map[string][2]int{}, Matrix: map[string]map[string]int{}, Disagree: []disagreement{}}
+			st = &calStats{Prompt: mv.Prompt, Effort: mv.Effort, Current: mv.Prompt == judge.Version || mv.Prompt == jev.Version, ByYours: map[string][2]int{}, Matrix: map[string]map[string]int{}, Disagree: []disagreement{}}
 			stats[key] = st
 		}
 		st.N++
