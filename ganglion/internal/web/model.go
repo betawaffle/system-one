@@ -1,8 +1,11 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"ganglion/internal/jev"
+	"ganglion/internal/llm"
 	"net/http"
 	"sort"
 	"strings"
@@ -169,11 +172,21 @@ func (s *Server) modelJudge(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 4*time.Minute)
 	defer cancel()
-	jsonOut(w, map[string]any{"results": s.judgeMany(ctx, x, req.Meaning, req.Line, req.Samples, "low"), "prompt": judge.Version})
+	var res []judgeOut
+	if s.cfg.Jev != nil { // Jev is the first pass when configured (10/J15)
+		res = s.jevMany(ctx, x, req.Meaning, req.Line, req.Samples)
+	} else {
+		res = s.judgeMany(ctx, x, req.Meaning, req.Line, req.Samples, "low")
+	}
+	jsonOut(w, map[string]any{"results": res, "prompt": s.firstPassVersion()})
 }
 
 // GET /api/model/status
 func (s *Server) modelStatus(w http.ResponseWriter, r *http.Request) {
+	if s.cfg.Jev != nil { // the first pass is Jev; no local model to warm up (10/J15)
+		jsonOut(w, map[string]any{"up": true, "state": "loaded", "model": "Jev", "first_pass": "jev", "prompt": jev.Version, "few_shot": false})
+		return
+	}
 	if s.cfg.LLM == nil {
 		jsonOut(w, map[string]any{"up": false, "state": "not configured"})
 		return
@@ -191,13 +204,21 @@ func (s *Server) modelPrompt(w http.ResponseWriter, r *http.Request) {
 // GET /api/model/call?id=ID: exactly what was sent and what came back for
 // one call, from the call log, including the model's reasoning.
 func (s *Server) modelCall(w http.ResponseWriter, r *http.Request) {
-	if s.cfg.LLM == nil {
+	if s.cfg.LLM == nil && s.cfg.Jev == nil {
 		http.Error(w, "no model configured", 503)
 		return
 	}
-	rec, err := s.cfg.LLM.Find(r.URL.Query().Get("id"))
+	rec, err := (&llm.Client{Dir: s.callDir()}).Find(r.URL.Query().Get("id"))
 	if err != nil {
 		http.Error(w, "no such call", 404)
+		return
+	}
+	if rec.Provider == "typesafe" { // Jev: show the exact JSON both ways
+		var req, resp bytes.Buffer
+		json.Indent(&req, rec.Request, "", "  ")
+		json.Indent(&resp, []byte(rec.Response), "", "  ")
+		jsonOut(w, map[string]any{"id": rec.ID, "provider": rec.Provider, "prompt": rec.Prompt, "sent": rec.Sent, "done": rec.Done, "model": rec.Returned,
+			"messages": []map[string]string{{"role": "request", "content": req.String()}}, "answer": resp.String(), "error": rec.Error})
 		return
 	}
 	var req struct {
@@ -226,4 +247,12 @@ func (s *Server) modelCall(w http.ResponseWriter, r *http.Request) {
 		out["reasoning"] = resp.Choices[0].Message.ReasoningContent
 	}
 	jsonOut(w, out)
+}
+
+// callDir is where model calls are logged, whichever provider.
+func (s *Server) callDir() string {
+	if s.cfg.Jev != nil {
+		return s.cfg.Jev.Dir
+	}
+	return s.cfg.LLM.Dir
 }

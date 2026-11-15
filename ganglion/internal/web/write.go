@@ -27,7 +27,9 @@ type writer struct {
 	verdicts      map[string]priorVerdict   // sample text -> latest verdict (08/D104)
 	meanings      map[string]author.Meaning // sentence event id -> the meaning it was written for
 	notes         map[string]map[string]int // Fine, But kind -> note -> times used (08/D107)
-	modelVerdicts map[string]modelVerdict   // sample text + prompt + effort -> the model\'s first pass (10/M1)
+	modelVerdicts map[string]modelVerdict   // sample text + prompt + effort -> the model's first pass (10/M1)
+	jevCache      map[string]modelVerdict   // exact request sha256 -> Jev's answer, never asked twice (10/J15)
+	jevInflight   map[string]chan struct{}  // requests being sent now
 }
 
 // priorVerdict is the latest verdict on a sentence, from the event log.
@@ -112,7 +114,7 @@ func newWriter(g *grammar.Store, lex *lexicon.Lexicon) (*writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	x := &writer{g: g, lex: lex, world: w, verdicts: map[string]priorVerdict{}, meanings: map[string]author.Meaning{}, notes: map[string]map[string]int{}, modelVerdicts: map[string]modelVerdict{}}
+	x := &writer{g: g, lex: lex, world: w, verdicts: map[string]priorVerdict{}, meanings: map[string]author.Meaning{}, notes: map[string]map[string]int{}, modelVerdicts: map[string]modelVerdict{}, jevCache: map[string]modelVerdict{}, jevInflight: map[string]chan struct{}{}}
 	err = g.Events(func(ev grammar.Event) {
 		switch ev.Type {
 		case "verdict":
@@ -121,6 +123,8 @@ func newWriter(g *grammar.Store, lex *lexicon.Lexicon) (*writer, error) {
 			x.noteMeaning(ev.ID, ev.Data)
 		case "model-verdict":
 			x.noteModelVerdict(ev.At, ev.Data)
+		case "jev-verdict":
+			x.noteJevVerdict(ev.Data)
 		}
 	})
 	return x, err

@@ -5,7 +5,7 @@
   },
   "filler": {
     "type": "noul",
-    "instructions": "Every person and thing in `sample` is the kind of thing that can do or be what `sample` says of it."
+    "instructions": "Everything in `sample` could really do or be what it says."
   },
   "meaning": {
     "type": "noul",

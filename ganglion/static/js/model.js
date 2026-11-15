@@ -34,7 +34,7 @@ export const checkTitle = { form: "Word Form", grammar: "Grammar", filler: "Fill
 export function line(h, text, accept) {
   const c = cache.get(text);
   if (!c) return null;
-  if (c === "pending") return h("div", { class: "model-line muted small" }, "Model: ", status && status.state !== "loaded" ? "warming up…" : "thinking…");
+  if (c === "pending") return h("div", { class: "model-line muted small" }, "Model: ", status && status.first_pass !== "jev" && status.state !== "loaded" ? "warming up…" : "checking…");
   if (c.error) return h("div", { class: "model-line muted small", "data-tip": c.error }, "Model: ", c.error === "not running" ? "not running" : "no answer");
   const v = c.result;
   const what = v.verdict === "ok" ? "fine" : v.verdict === "but" ? (v.but_kind === "context" ? "needs context" : "implies") : v.reason;
@@ -69,6 +69,8 @@ export async function showCall(h, id, checks) {
     c = await r.json();
   } catch (e) { d.replaceChildren(h("div", { class: "card-body" }, String(e.message || e))); return; }
   const tok = c.usage ? `${c.usage.prompt_tokens} in, ${c.usage.completion_tokens} out` : "";
+  const meta = c.provider === "typesafe" ? `${c.model}, questions ${c.prompt}. Each check is a 0–1 value; below 0.5 flags it.` :
+    `${c.model}, prompt ${c.prompt}, ${c.effort} effort, temperature ${c.temperature}, seed ${c.seed}. ${tok}`;
   const sec = (title, text) => text ? h("section", { class: "stack tight" }, h("h4", {}, title), h("pre", { class: "out wrap" }, text)) : null;
   const row = checks && checks.length ? h("div", { class: "row checks small" }, h("span", { class: "muted" }, "Checks:"),
     checks.map(ch => h("button", { class: "btn chip" + (ch.call === id ? "" : " ghostchip") + (ch.flagged ? " flagged" : ""),
@@ -77,11 +79,11 @@ export async function showCall(h, id, checks) {
   d.replaceChildren(
     h("div", { class: "card-head" },
       h("div", { class: "stack tight" }, h("h3", {}, "Model Call ", h("span", { class: "mono small" }, c.id)),
-        h("span", { class: "muted small" }, `${c.model}, prompt ${c.prompt}, ${c.effort} effort, temperature ${c.temperature}, seed ${c.seed}. ${tok}`)),
+        h("span", { class: "muted small" }, meta)),
       h("button", { class: "btn ghost", onclick: () => d.close() }, "Close")),
     h("div", { class: "card-body stack" },
       row,
-      (c.messages || []).map(m => sec(m.role === "system" ? "Instructions (system message)" : "The sample (user message)", m.content)),
+      (c.messages || []).map(m => sec(m.role === "system" ? "Instructions (system message)" : m.role === "request" ? "The request (exact JSON sent)" : "The sample (user message)", m.content)),
       sec("The model's reasoning", c.reasoning),
       sec("Its answer", c.answer),
       c.error ? sec("Error", c.error) : null));

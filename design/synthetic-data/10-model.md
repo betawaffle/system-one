@@ -93,7 +93,15 @@ P6. Jev `jev-6b03606e` (jev-1.14.0), minimal state (the sentence and its meaning
   - filler: good ≥ 0.57 ("That chair is tall."); broken 0.15 (an idea giving), 0.59 (an idea older than Noor, a weak case since ideas can be old). Overlaps; the least reliable.
   - context: good ≥ 0.87; not tested, since nothing in J11 needs context.
   - Not tested: the age-change ✕ (left to rules, J14 discussion), Word Form apart from "gived".
+P7. Jev `jev-a039e361`, after the user's corrections: "The idea is older than Noor" dropped from the broken set ("simply a completely fine sentence"), Filler reworded ("hard to parse even as a human"), Compare's direction spelled out as "age: a more than b" (the order of a and b wasn't stated), and a Compare swap added. **No false alarms on the 40; 8 of 9 broken caught**, including the Compare swap (meaning 0.04). The one miss is still "Ana older than Noor." at grammar 0.50, exactly on the line. Lowest values on good samples: grammar 0.82, filler 0.60, meaning 0.65, context 0.87. "That chair is tall" is fine but slightly strange (user), so a middling Filler value there is right.
 P6a. The user found that Jev knows "the relative age of two things doesn't change" only weakly (72%), and the answer flipped with rewording, so facts about how attributes change go in the meaning language, written by the user, not asked of a model.
+
+## Jev as the first pass
+
+J15. Jev does the first pass on Write and Coverage when its key is configured (`~/.config/ganglion/jev.key`: key, then endpoint; `-jev-key`); without it, the local model as before. Only samples you haven't judged are sent, as before.
+J15a. Never the same request twice: each answer is stored as a `jev-verdict` event under the sha256 of the exact request body and replayed at start, and a request already in flight is waited on, not repeated. Measured: the 49-sample set sent 49 calls, then 0 on a second run and 0 after a restart.
+J15b. Why? shows the exact JSON sent and received, and each check's value. Coverage's calibration panel stays, relabelled as the local model's, with a note that its run takes ~25 minutes.
+J15c. Cost: a request is ~750 bytes (~200 tokens); at the site's $42 per billion input tokens that's ~$0.00001 each, so the user's free $5 a month (user: "I think") covers hundreds of thousands.
 
 ## Plan before the next run
 
@@ -128,13 +136,12 @@ D113a. So prompts are versioned: each prompt lives in a file in the repo, its ha
 D114. Accept one sample at a time; no accept-all until calibration shows high agreement. Answers Q75. (user: yes)
 D115. Enable llm-server at boot. Answers Q76. (user: yes)
 D116. Low reasoning effort for the first pass, compared against medium during calibration. Answers Q77. (user: yes)
+D118. Jev is the first line of defence on Write and Coverage (J15), "only where we need it", and never asked the same thing twice (J15a). Answers Q79 and Q80, and supersedes Q78. (user: "Sure, let's make Jev the first line of defense, but only where we need it, and make sure we never ask the same thing twice (to save cost). They give me $5 of free usage per month (I think)." Key: copied from the user's other project to ~/.config/ganglion/jev.key on their say-so; samples sent after they reviewed the request.)
 D117. Try narrow checks (J1–J6) in place of the single prompt, and keep them only if calibration beats v2. (user: "Basically going the Jev route, but seeing if we can use a local model for it to save cost and get more data and control." … "let's try the jev thing." Also: "in this case I'm just trying to figure out if sentences make sense", not taste.)
 
 ## Open questions
 
-Q78. Plan J8–J13 as recommended in J13? In particular, is J11 (✕ samples made by breaking good ones in code) a fair test, or do you want ✕ cases you write yourself?
-Q79. Back to v2 on Write and Coverage now (J12), before anything else?
-Q80. Jev baseline (J14): where's the API key kept (I lean an env file read by the ganglion service, outside the repo), and OK to send the 44 judged samples plus the J11 broken ones? I lean running it on the small set (J10) first, the same as the local model.
+(none for this note)
 
 ## Superseded
 
@@ -143,3 +150,6 @@ Q74 (answered by D113). Few-shot from the user's verdicts?
 Q75 (answered by D114). Accept one at a time?
 Q76 (answered by D115). Enable llm-server at boot?
 Q77 (answered by D116). Low reasoning effort first?
+Q78 (superseded by D118). The plan for the next local checks run, J8–J13.
+Q79 (answered by D118). Back to v2 on Write and Coverage? Jev replaced the first pass instead.
+Q80 (answered by D118). Where to keep the Jev key, and OK to send samples?

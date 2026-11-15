@@ -88,3 +88,5 @@ dialog.calldlg { max-width: min(860px, calc(100vw - 32px)); max-height: calc(100
 /* narrow checks in the model call dialog (sd/10/J6) */
 .row.checks { flex-wrap: wrap; }
 .btn.chip.flagged { border-color: var(--warn); }
+/* the local model's calibration panel, when Jev does the first pass (sd/10/J15) */
+.notice-warn { padding: var(--s2) var(--s3); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); border-radius: 6px; background: color-mix(in srgb, var(--warn) 8%, transparent); }
