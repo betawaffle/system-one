@@ -27,6 +27,20 @@ type Attribute struct {
 	// by holder type with "*" as the default (06/P4).
 	Scale []string                     `json:"scale"`
 	Words map[string]map[string]string `json:"words"`
+	// StableOrder: which of two holders ranks higher never changes (age between
+	// people). Comparisons on it stay in the present until the world model can
+	// say who exists when (06/D100).
+	StableOrder bool `json:"stable_order,omitempty"`
+}
+
+// Stable reports whether a meaning compares on a stable-order attribute.
+func (w *World) Stable(m Meaning) bool {
+	for _, fl := range m.Roles {
+		if fl.Value != nil && fl.Value.Dir != "" && w.Attributes["attribute:"+fl.Value.Attribute].StableOrder {
+			return true
+		}
+	}
+	return false
 }
 
 type Role struct {

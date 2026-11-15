@@ -1,13 +1,20 @@
 package author
 
-import "ganglion/internal/grammar"
+import (
+	"strings"
+
+	"ganglion/internal/grammar"
+)
 
 // Seed writes the starting grammar when the store has no frames yet: the type
 // tree (06/Y1), a few attributes (06/P7), the first frames, and entities to
 // fill them. Everything after this grows from what the user writes (02/D60).
+var ageAttr = Attribute{Name: "age", AppliesTo: []string{"physical"}, Scale: []string{"young", "old"},
+	Words: map[string]map[string]string{"young": {"*": "young", "artifact": "new"}, "old": {"*": "old"}}, StableOrder: true}
+
 func Seed(g *grammar.Store) (bool, error) {
 	if len(g.Heads("frame")) > 0 {
-		return false, nil
+		return false, upgrade(g)
 	}
 	m := grammar.Meta{By: "ganglion", Why: "create", Client: "ganglion/seed"}
 	put := func(id, kind string, v any) error { _, err := g.Put(id, kind, v, m); return err }
@@ -28,8 +35,7 @@ func Seed(g *grammar.Store) (bool, error) {
 		}
 	}
 	attrs := []Attribute{
-		{Name: "age", AppliesTo: []string{"physical"}, Scale: []string{"young", "old"},
-			Words: map[string]map[string]string{"young": {"*": "young", "artifact": "new"}, "old": {"*": "old"}}},
+		ageAttr,
 		{Name: "height", AppliesTo: []string{"person", "animal", "artifact"}, Scale: []string{"short", "tall"},
 			Words: map[string]map[string]string{"short": {"*": "short"}, "tall": {"*": "tall"}}},
 		{Name: "size", AppliesTo: []string{"physical"}, Scale: []string{"small", "big"},
@@ -82,4 +88,21 @@ func Seed(g *grammar.Store) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+// upgrade brings seeded objects nobody has edited up to the current seed, so a
+// grammar seeded before a change gets it too. Objects with any later version
+// are left alone.
+func upgrade(g *grammar.Store) error {
+	for id, want := range map[string]any{"attribute:age": ageAttr} {
+		h := g.History(id)
+		if len(h) != 1 || h[0].By != "ganglion" || h[0].Client != "ganglion/seed" {
+			continue
+		}
+		kind := id[:strings.IndexByte(id, ':')]
+		if _, err := g.Put(id, kind, want, grammar.Meta{By: "ganglion", Why: "edit", Client: "ganglion/seed"}); err != nil {
+			return err
+		}
+	}
+	return nil
 }

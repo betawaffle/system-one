@@ -40,6 +40,7 @@ R4. Degree: a property value can carry a degree (`age=old, degree=very`). DESC t
 
 P8. The user's note on "In a few years, Ana will be older than Lee." (an Other verdict, 2026-11-15): "Age differences between people never change." So for age, which of two people is older is fixed for life: if Ana is older than Lee now, she always was and always will be. Changing the tense of that comparison doesn't make a new meaning, it makes an odd one, and the Sounds Odd fix (a time modifier) made it worse, not better.
 P8a. Proposal: an attribute can say its order between two holders is stable (`stable_order: true` for age). Comparisons on a stable attribute are generated in the present only (or the tense of the authored sentence), and Sounds Odd doesn't offer a time modifier for them. Height, size and weight can change, so they keep all tenses. (Q72)
+P8b. The user's nuance: "X will be younger than Y" is fine if X isn't born yet, and the past tense is generally fine too, but it implies the person has died. So other tenses aren't wrong, they carry extra meaning about existence: future implies X doesn't exist yet, past implies X (or Y) no longer does. Those need entities with an existence state, which is the world model (sd/00/T10). Until then, stable-order comparisons are generated in the present only.
 
 ## Starting types
 
@@ -72,6 +73,7 @@ T16. Numbers and quantities ("four legs", "two books"), and numeric values for a
 
 ## Decided
 
+D100. Age has a stable order; its comparisons are generated in the present only for now, and Sounds Odd adds no time modifier to them (P8a). Past and future come back with the world model, carrying their implied meaning: not born yet, or no longer alive (P8b). Answers Q72. (user: "Proposal sounds fine. Slight nuance: "X will be younger than Y" would be _ok_ if X is a baby that isn't born yet. And past tense is generally fine too, but kinda implies the person died.")
 D81. First frames F1–F6; kinship and has-attribute later (F7). Answers Q54. (user: "Yes.")
 D82. Properties as attribute + value, with per-type domains and ordered scales seeded from WordNet (P1–P6). Answers Q55. (user: "Yes.")
 D83. "Not old" and "new" are different meanings (P5). Answers Q56. (user: "Yes.")
@@ -80,7 +82,7 @@ D85. Starting types and attributes as in Y1 and P7, grown as the user writes. An
 
 ## Open questions
 
-Q72. Attributes with a stable order (age), whose comparisons don't vary by tense (P8a)? I lean yes.
+(none for this note)
 
 ## Superseded
 

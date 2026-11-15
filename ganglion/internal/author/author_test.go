@@ -230,3 +230,52 @@ func BenchmarkPreview(b *testing.B) {
 		Samples(tpl, m, w, lex, 42, 8)
 	}
 }
+
+func TestStableOrder(t *testing.T) {
+	w, lex := setup(t)
+	m := Meaning{Frame: "frame:compare", Features: realize.Features{Tense: "present", Polarity: "positive", Mood: "statement"},
+		Roles: map[string]Filler{"a": {Entity: "entity:mara"}, "b": {Entity: "entity:tom"}, "attribute": {Value: &Value{Attribute: "age", Dir: "more"}}}}
+	l := Align("Mara is older than Tom.", m, w, lex)
+	tpl, err := Build(l, m, w, nil, []Need{{Tense: "future", Modifier: "time"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range Samples(tpl, m, w, lex, 7, 8) {
+		if s.Features.Tense != "present" || s.Time != "" {
+			t.Errorf("age comparisons stay in the present: %q %+v", s.Text, s.Features)
+		}
+	}
+	m.Roles["attribute"] = Filler{Value: &Value{Attribute: "height", Dir: "more"}}
+	tenses := map[string]bool{}
+	for _, s := range Samples(tpl, m, w, lex, 7, 8) {
+		tenses[s.Features.Tense] = true
+	}
+	if len(tenses) < 2 {
+		t.Errorf("height comparisons vary tense: %v", tenses)
+	}
+}
+
+func TestUpgradeSeededAge(t *testing.T) {
+	g, _ := grammar.Open(t.TempDir())
+	seedMeta := grammar.Meta{By: "ganglion", Why: "create", Client: "ganglion/seed"}
+	old := ageAttr
+	old.StableOrder = false
+	g.Put("attribute:age", "attribute", old, seedMeta)
+	g.Put("frame:x", "frame", Frame{Name: "x"}, seedMeta)
+	if _, err := Seed(g); err != nil {
+		t.Fatal(err)
+	}
+	var a Attribute
+	g.Get("attribute:age", &a)
+	if !a.StableOrder || len(g.History("attribute:age")) != 2 {
+		t.Fatal("an unedited seeded age should be upgraded")
+	}
+	// once someone has edited it, upgrade leaves it alone
+	a.StableOrder = false
+	g.Put("attribute:age", "attribute", a, grammar.Meta{By: "user"})
+	Seed(g)
+	g.Get("attribute:age", &a)
+	if a.StableOrder {
+		t.Fatal("upgrade must not overwrite an edit")
+	}
+}

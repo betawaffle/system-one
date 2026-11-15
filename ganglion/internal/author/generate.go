@@ -165,7 +165,7 @@ func Generate(t Template, m Meaning, w *World, lex *lexicon.Lexicon, st realize.
 	}
 	time := ""
 	for _, nd := range t.Needs {
-		if nd.Tense == f.Tense && nd.Modifier == "time" {
+		if nd.Tense == f.Tense && nd.Modifier == "time" && !w.Stable(m) {
 			opts := timeMods[f.Tense]
 			time = opts[r.IntN(len(opts))]
 			words = append(strings.Fields(time), lowerFirst(words, w)...)
@@ -210,6 +210,9 @@ func Samples(t Template, m Meaning, w *World, lex *lexicon.Lexicon, seed uint64,
 	var out []Sample
 	seen := map[string]bool{}
 	tenses := t.Supports.Tense
+	if w.Stable(m) {
+		tenses = []string{"present"} // 06/D100
+	}
 	for i := 0; len(out) < n && i < n*6; i++ {
 		mm := m
 		mm.Roles = map[string]Filler{}

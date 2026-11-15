@@ -11,7 +11,7 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 
 - sd/05 inflection: D74 rules propose, look up at generation, vet as needed, D75 WordNet + CMUdict, clean licence (no share-alike), D76 explicit pronoun sets (amends sd/02/L2), D77 style features, US default, D78 first verb-group scope, D79 retroactive fixes and doubt flags, no pre-vetting, D80 unsupported verb groups saved frozen and usable.
 
-- sd/06 first frames: D81 frames F1–F6, D82 properties as attribute + value, D83 "not old" ≠ "new", D84 adjective order by code, D85 starting types and attributes.
+- sd/06 first frames: D81 frames F1–F6, D82 properties as attribute + value, D83 "not old" ≠ "new", D84 adjective order by code, D85 starting types and attributes, D100 age comparisons present-only until the world model.
 - sd/07 storage: D86 authoring events and model calls logged per the capture requirements, D87 content-addressed versions (id outside the hash), heads, snapshots, D88 datasets as recipes plus derivations, D89 authored sentences as utterances, D90 one logged model-call path, D91 append-only source of truth plus a snapshot step in the backup (done).
 
 - sd/08 writing screen: D92 one page, D93 Next from coverage gaps, D94 align while typing, D95 suggestions automatic / helper on request, D96 keys as K1, D97 mock-up first, D98 Sounds Odd makes the generator add a modifier, D99 "!" is extra meaning.
@@ -20,7 +20,6 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 
 ## Open questions (all)
 
-- Q72 stable-order attributes: comparisons on age don't vary by tense (sd/06/P8a). Lean yes.
 - Q71 data shapes for the first build (sd/09). Comment on anything off; cheap to change for now.
 
 ## Future topics (all)
