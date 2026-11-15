@@ -1,0 +1,47 @@
+{{define "head"}}<link rel="stylesheet" href="{{asset "css/write.css"}}">
+<script type="module" src="{{asset "js/write.js"}}"></script>{{end}}
+{{define "content"}}
+<div class="page-head">
+  <div>
+    <div class="eyebrow">Mock-Up · Hard-Coded Data · Nothing Is Saved</div>
+    <h1>Write</h1>
+    <p>Write sentences for the meaning below, one per line. Words that match the meaning are underlined in their role's colour as you type; words that don't get a dashed underline and a ?. Samples, suggestions and the word helper here are faked in the browser: the real generator isn't built yet (design/synthetic-data/08). Press <span class="kbd">?</span> for keys.</p>
+  </div>
+</div>
+
+<div class="stack">
+  <section class="card" id="meaning" aria-label="Meaning"></section>
+
+  <section class="card" aria-label="Writing">
+    <div class="card-head"><h3>Your Sentences</h3><span class="muted label">One per line · <span class="kbd">Ctrl</span>+<span class="kbd">Enter</span> saves</span></div>
+    <div class="card-body stack tight">
+      <textarea class="input" id="text" rows="3" spellcheck="true" placeholder="Write a sentence that means exactly this…" aria-label="Your sentences"></textarea>
+      <div id="lines" class="stack tight"></div>
+    </div>
+  </section>
+
+  <section id="review" class="stack" aria-label="Review"></section>
+
+  <section class="card" id="samples" aria-label="Samples"></section>
+
+  <section class="card" id="saved" aria-label="Saved"></section>
+</div>
+
+<dialog class="card keys" id="keys" aria-label="Keys">
+  <div class="card-head"><h3>Keys</h3><button class="btn ghost" data-close>Close</button></div>
+  <div class="card-body">
+    <table class="table"><tbody>
+      <tr><td><span class="kbd">Enter</span></td><td>New line: another way to say it</td></tr>
+      <tr><td><span class="kbd">Ctrl</span>+<span class="kbd">Enter</span></td><td>Save fully traced sentences</td></tr>
+      <tr><td><span class="kbd">Alt</span>+<span class="kbd">N</span></td><td>Next meaning</td></tr>
+      <tr><td><span class="kbd">Alt</span>+<span class="kbd">F</span></td><td>New fillers</td></tr>
+      <tr><td><span class="kbd">Tab</span> / <span class="kbd">Shift</span>+<span class="kbd">Tab</span></td><td>Move between untraced spans</td></tr>
+      <tr><td><span class="kbd">1</span>–<span class="kbd">5</span></td><td>Pick the focused span's choice</td></tr>
+      <tr><td><span class="kbd">J</span> / <span class="kbd">K</span></td><td>Next / previous sample</td></tr>
+      <tr><td><span class="kbd">Y</span> / <span class="kbd">X</span></td><td>Sample is right / wrong</td></tr>
+      <tr><td><span class="kbd">R</span></td><td>Fresh draw of samples</td></tr>
+      <tr><td><span class="kbd">?</span></td><td>This list</td></tr>
+    </tbody></table>
+  </div>
+</dialog>
+{{end}}

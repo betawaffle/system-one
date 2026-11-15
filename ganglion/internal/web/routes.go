@@ -24,6 +24,7 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /utterances/{hash}", s.utterance)
 	m.HandleFunc("GET /samples", s.samples)
 	m.HandleFunc("POST /api/labels", s.addLabel)
+	m.HandleFunc("GET /write", s.write)
 	m.HandleFunc("GET /ettin", s.ettin)
 	m.HandleFunc("GET /design", s.design)
 	m.HandleFunc("GET /ws", s.ws)
@@ -468,6 +469,12 @@ func derefStr(p *string) string {
 		return ""
 	}
 	return *p
+}
+
+// write is the writing screen mock-up (design/synthetic-data/08, D97): all its
+// data is hard-coded in static/js/write-data.js and nothing is saved.
+func (s *Server) write(w http.ResponseWriter, r *http.Request) {
+	s.render(w, "write", Page{Title: "Write", Nav: "write"})
 }
 
 func (s *Server) design(w http.ResponseWriter, r *http.Request) {

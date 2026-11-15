@@ -74,13 +74,22 @@ O1. Frames and types: browse and create (sd/03/A15). Lexicon entry. Coverage map
 
 ## Decided
 
-(none yet)
+D92. One page laid out as in W1. Answers Q64. (user: "Yes.")
+D93. **Next** picks from coverage gaps by default, with manual override (W8). Answers Q65. (user: "Yes.")
+D94. Alignment while typing (W3a). Answers Q66. (user: "Yes.")
+D95. Span suggestions automatic, word helper on request (W4, W5). Answers Q67. (user: "Yes.")
+D96. Keyboard keys as in K1. Answers Q68. (user: "Yes.")
+D97. Next step: a working mock-up of this page in ganglion with hard-coded data, before any generator code. Answers Q69. (user: "Yes.")
 
 ## Open questions
 
-Q64. One page laid out as in W1? I lean yes.
-Q65. **Next** picks from coverage gaps by default, with manual override (W8)? I lean yes.
-Q66. Alignment while typing rather than on submit (W3a)? I lean while typing.
-Q67. Span suggestions automatic, word helper on request (W4, W5)? I lean yes.
-Q68. Keyboard keys as in K1? I lean yes; easy to change once you've used it.
-Q69. Next step: a working mock-up of this page in ganglion with hard-coded data, before any generator code, so you can try the flow? I lean yes.
+(none for this note)
+
+## Superseded
+
+Q64 (answered by D92). One-page layout?
+Q65 (answered by D93). Next picks from coverage gaps?
+Q66 (answered by D94). Align while typing?
+Q67 (answered by D95). Span suggestions automatic, word helper on request?
+Q68 (answered by D96). Keyboard keys?
+Q69 (answered by D97). Mock-up first?
