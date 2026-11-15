@@ -134,7 +134,8 @@ func upgrade(g *grammar.Store) error {
 			continue
 		}
 		kind := id[:strings.IndexByte(id, ':')]
-		if _, err := g.Put(id, kind, want, grammar.Meta{By: "ganglion", Why: "edit", Client: "ganglion/seed"}); err != nil {
+		// Why left empty: Put records "create" for new ids and "edit" otherwise
+		if _, err := g.Put(id, kind, want, grammar.Meta{By: "ganglion", Client: "ganglion/seed"}); err != nil {
 			return err
 		}
 	}
