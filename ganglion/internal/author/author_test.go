@@ -406,3 +406,44 @@ func TestCoverage(t *testing.T) {
 		}
 	}
 }
+
+func TestImplications(t *testing.T) {
+	w, lex := setup(t)
+	m := give(pastStatement)
+	m.Roles["thing"] = Filler{Entity: "entity:umbrella"}
+	tpl, err := Build(Align("Mara gave Tom that umbrella.", m, w, lex), m, w, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pres := m
+	pres.Features = realize.Features{Tense: "present", Aspect: "simple", Polarity: "positive", Mood: "question"}
+	if imp, skip := w.Implications(tpl, pres); !skip || strings.Join(imp, ",") != "habit" {
+		t.Fatalf("a habit of giving that one umbrella should be skipped: %v %v", imp, skip)
+	}
+	pres.Roles = map[string]Filler{"giver": m.Roles["giver"], "recipient": m.Roles["recipient"], "thing": {Entity: "entity:umbrella", Det: "a"}}
+	if imp, skip := w.Implications(tpl, pres); skip || strings.Join(imp, ",") != "habit" {
+		t.Fatalf("giving an umbrella as a habit is fine, tagged: %v %v", imp, skip)
+	}
+	fut := m
+	fut.Features = realize.Features{Tense: "future", Aspect: "simple", Polarity: "negative", Mood: "statement"}
+	if imp, _ := w.Implications(tpl, fut); strings.Join(imp, ",") != "refuses" {
+		t.Fatalf("won't give reads as refusing: %v", imp)
+	}
+	for seed := uint64(0); seed < 20; seed++ {
+		for _, s := range Samples(tpl, m, w, lex, seed, 8) {
+			if s.Features.Tense == "present" && strings.Contains(strings.ToLower(s.Text), "give") {
+				for _, d := range []string{" that ", " this ", " the "} {
+					if strings.Contains(s.Text, d) {
+						t.Fatalf("present habit with a particular thing: %q", s.Text)
+					}
+				}
+			}
+		}
+	}
+	// states aren't affected
+	hp := Meaning{Frame: "frame:has-property", Features: realize.Features{Tense: "present", Polarity: "positive", Mood: "statement"},
+		Roles: map[string]Filler{"holder": {Entity: "entity:apple"}, "property": {Value: &Value{Attribute: "age", Value: "old"}}}}
+	if imp, skip := w.Implications(tpl, hp); skip || len(imp) > 0 {
+		t.Fatal("states have no habit reading")
+	}
+}

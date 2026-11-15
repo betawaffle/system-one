@@ -5,7 +5,7 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 ## By topic
 
 - sd/00 idea: D52 meaning first, D53 user writes text from meaning, D54 templates are the dataset (count distinct templates), D55 tooling in ganglion.
-- sd/02 meaning language: D56 our own small typed language, D57 UI explains roles, D59 plain role names plus generic names with explainers, D60 grow frames from scratch, D61 humour and boundary tests on purpose.
+- sd/02 meaning language: D56 our own small typed language, D108 implication rules (habit, refuses), D57 UI explains roles, D59 plain role names plus generic names with explainers, D60 grow frames from scratch, D61 humour and boundary tests on purpose.
 - sd/03 authoring: D58 word-by-word helper, D62 trees all the way down, D63 flag extra meaning and ask, D64 states and properties first, then transfer, D65 the extra-meaning mechanism (A13), D72 live fast samples while editing (A16), D73 generator in Go inside ganglion.
 - sd/04 template trees: D66 node types and kinds, D67 code-realised verb groups, D68 derived REL templates, D69 reference choice by code, D70 JSON stored / text shown, D71 lemma classes count once but every lemma generates, D103 determiners in the reference; possessives are owners.
 
@@ -14,7 +14,7 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 - sd/06 first frames: D81 frames F1–F6, D82 properties as attribute + value, D83 "not old" ≠ "new", D84 adjective order by code, D85 starting types and attributes, D100 age comparisons present-only until the world model, D102 age only increases.
 - sd/07 storage: D86 authoring events and model calls logged per the capture requirements, D87 content-addressed versions (id outside the hash), heads, snapshots, D88 datasets as recipes plus derivations, D89 authored sentences as utterances, D90 one logged model-call path, D91 append-only source of truth plus a snapshot step in the backup (done).
 
-- sd/08 writing screen: D92 one page, D93 Next from coverage gaps, D94 align while typing, D95 suggestions automatic / helper on request, D96 keys as K1, D97 mock-up first, D98 Sounds Odd makes the generator add a modifier, D99 "!" is extra meaning, D101 Save holds back broken lines, D104 verdicts carry over by sentence, D105 Coverage page, D106 Judged list.
+- sd/08 writing screen: D92 one page, D93 Next from coverage gaps, D94 align while typing, D95 suggestions automatic / helper on request, D96 keys as K1, D97 mock-up first, D98 Sounds Odd makes the generator add a modifier, D99 "!" is extra meaning, D101 Save holds back broken lines, D104 verdicts carry over by sentence, D105 Coverage page, D106 Judged list, D107 Fine, But… verdict.
 
 - sd/09 data shapes: (none yet)
 

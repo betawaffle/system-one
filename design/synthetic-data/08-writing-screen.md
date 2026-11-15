@@ -46,6 +46,7 @@ W6a. Each sample has ✓ and ✕. ✕ asks what's wrong, one tap: Word Form, Wro
 W6a1. Each reason has a one-line explainer (shown on hover, and under the chips once picked, so it works on a phone) and says where the verdict goes. (user: "The 'What's wrong?' buttons need explainers.")
 W6a2. New reason **Sounds Odd**: correct and means what its tags say, but nobody would say it like that without more context. Found by the user in the mock-up: "This book will be old." It's grammatical and the meaning is right (has-property, future), but a future statement about a state reads oddly with no time anchor ("by next year this book will be old"), and it hints the book isn't old now. That's the pragmatic oddness risk (sd/00/X2), not a mock-up bug: the real generator would make it too. None of the first five reasons fit it.
 W6a3. Where Sounds Odd goes: the template's supported features (sd/04/N1a). That combination is marked "needs a modifier" (here a time), so the generator either adds one ("by next year", "someday") or skips the combination. (Q70)
+W6e. A third verdict, ◐ Fine, But… (user: some samples are hard to judge without context): right, but it needs context (a scene or an earlier sentence: "what could come before it?") or implies more than its tags ("what does it imply?"). The user can pick a note written before, most used first, or write a new one (user: "Maybe I'd want to see things I've already said and select one or write a new one?"). It counts as judged and doesn't hold a line back. Rows of those kinds will be tagged in datasets: a standalone-sentence set can leave them out, and a later set of sentence pairs can use the "what could come before" notes. Key: B.
 W6d. Verdicts carry over (user asked whether a ✓ would still show next time): the server reads every verdict from the event log at start and keeps the latest per sentence text; a sample whose sentence was judged before shows that verdict, dimmed and tagged Judged Before. Keyed on the text alone, since a sentence is right or wrong whichever template made it, except Means Something Else, which only carries over when the tags match. Clearing a verdict clears it for good. Prior Ungrammatical / Means Something Else verdicts also hold a line back (W7d).
 W6b. A sample can also be saved as a ★ favourite: a good example to show later, or a boundary case worth keeping (sd/02/D61).
 
@@ -97,6 +98,7 @@ D95. Span suggestions automatic, word helper on request (W4, W5). Answers Q67. (
 D96. Keyboard keys as in K1. Answers Q68. (user: "Yes.")
 D97. Next step: a working mock-up of this page in ganglion with hard-coded data, before any generator code. Answers Q69. (user: "Yes.")
 
+D107. ◐ Fine, But… with Needs Context / Implies Something and pickable past notes (W6e). (user)
 D106. A Judged list per template, filterable by kind, with verdicts changeable in place (W9e). (user)
 D105. A Coverage page with Show Me, as in W9. (user: "Yes")
 D104. Verdicts carry over to later sessions by sentence text (W6d). (user: "Yes")

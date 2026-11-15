@@ -1,3 +1,5 @@
+import * as fineBut from "./fine-but.js";
+
 // The writing screen (design/synthetic-data/08). Alignment, templates and
 // samples come from the server (plain Go, no model). Two model features aren't
 // connected yet and say so: span suggestions are keyword guesses, and the word
@@ -273,7 +275,7 @@ function renderSamples() {
 }
 // a verdict given before, in any session, comes from the server (08/D104)
 function fromPrior(p) {
-  return p ? { v: p.verdict || null, reason: p.reason || null, note: p.note || "", star: !!p.star, prior: p.at } : {};
+  return p ? { v: p.verdict || null, but_kind: p.but_kind || null, reason: p.reason || null, note: p.note || "", star: !!p.star, prior: p.at } : {};
 }
 function sampleRow(l, s) {
   const key = l.text + "\u0000" + s.text;
@@ -281,7 +283,8 @@ function sampleRow(l, s) {
   const send = patch => {
     const nv = { ...v, ...patch, prior: null };
     verdicts.set(key, nv);
-    api("/api/write/verdict", { meaning: card.meaning, line: l.text, sample: s, verdict: nv.v || "", reason: nv.reason || "", note: nv.note || "", star: !!nv.star }).catch(fail);
+    api("/api/write/verdict", { meaning: card.meaning, line: l.text, sample: s, verdict: nv.v || "", but_kind: nv.v === "but" ? nv.but_kind || "" : "", reason: nv.reason || "", note: nv.note || "", star: !!nv.star })
+      .then(() => { if (nv.v === "but" && nv.note) fineBut.loadNotes(); }).catch(fail);
     if (patch.reason === "Sounds Odd") {
       const cur = needs.get(l.text) || [];
       if (!cur.some(x => x.tense === s.features.tense)) needs.set(l.text, [...cur, { tense: s.features.tense, modifier: "time" }]);
@@ -295,16 +298,19 @@ function sampleRow(l, s) {
     ...Object.entries(s.fillers).map(([r, f]) => [`${r}: ${f}`, s.changed.includes(r)]),
     ...(s.time ? [[`time: ${s.time}`, true]] : []),
   ];
+  const implies = (s.implies || []).map(x => h("span", { class: "tag mini implies", "data-tip": impliesTip[x] || "What a reader infers beyond the tags" }, "implies: ", x));
   return h("div", { class: "sample-row" + (v.v ? " judged" : "") + (v.prior ? " prior" : ""), "data-key": key },
     h("div", { class: "sample-main" },
       h("div", { class: "sample-text" }, s.text,
         v.prior ? h("span", { class: "tag mini", "data-tip": `Your verdict from ${new Date(v.prior).toLocaleString()}. Change it any time.` }, "Judged Before") : null),
-      h("div", { class: "row sample-tags" }, tags.map(([t, c]) => h("span", { class: "tag mini" + (c ? " accent" : "") }, t)))),
+      h("div", { class: "row sample-tags" }, tags.map(([t, c]) => h("span", { class: "tag mini" + (c ? " accent" : "") }, t)), implies)),
     h("div", { class: "row" },
       h("div", { class: "seg rate", role: "group", "aria-label": "Verdict" },
         h("button", { "aria-pressed": String(v.v === "ok"), "data-rate": "good", onclick: () => send({ v: v.v === "ok" ? null : "ok", reason: null }), "data-tip": "Right (Y)" }, "✓"),
+        h("button", { "aria-pressed": String(v.v === "but"), "data-rate": "but", onclick: () => send({ v: v.v === "but" ? null : "but", reason: null }), "data-tip": "Fine, but it needs context or implies more (B)" }, "◐"),
         h("button", { "aria-pressed": String(v.v === "bad"), "data-rate": "bad", onclick: () => send({ v: v.v === "bad" ? null : "bad" }), "data-tip": "Wrong (X)" }, "✕"),
         h("button", { "aria-pressed": String(!!v.star), onclick: () => send({ star: !v.star }), "data-tip": "Keep as a good example or boundary case" }, "★"))),
+    v.v === "but" ? fineBut.block(h, v, send) : null,
     v.v === "bad" ? h("div", { class: "row reasons" },
       h("span", { class: "label" }, "What's wrong?"),
       reasons.map(([x, why]) => h("button", { class: "btn chip" + (v.reason === x ? " picked" : ""), "data-tip": why, onclick: () => send({ reason: x }) }, x)),
@@ -315,6 +321,10 @@ function sampleRow(l, s) {
           v.note ? h("span", { class: "tag ok", "data-tip": "Saved in the grammar's event log with this sample" }, "✓ Note Saved") : null) : null,
         h("div", { class: "muted" }, "Goes to ", goes, ".")))(reasons.find(r => r[0] === v.reason)) : null) : null);
 }
+const impliesTip = {
+  habit: "An action verb's simple present means a habit, not right now (sd/02/L9).",
+  refuses: "\"Won't\" with something a person chooses to do reads as refusing (sd/02/L9).",
+};
 function freshDraw() { seed = Math.floor(Math.random() * 1e6); refresh(); }
 function moveSample(d) {
   const rows = $$(".sample-row");
@@ -327,7 +337,7 @@ function judge(v) {
   if (curSample < 0) moveSample(1);
   const row = $$(".sample-row")[curSample];
   if (!row) return;
-  row.querySelector(v === "ok" ? '[data-rate="good"]' : '[data-rate="bad"]').click();
+  row.querySelector({ ok: '[data-rate="good"]', bad: '[data-rate="bad"]', but: '[data-rate="but"]' }[v]).click();
   if (v === "ok") setTimeout(() => moveSample(1), 50);
 }
 
@@ -403,9 +413,10 @@ document.addEventListener("keydown", e => {
   else if (e.key === "k") { e.preventDefault(); moveSample(-1); }
   else if (e.key === "y") { e.preventDefault(); judge("ok"); }
   else if (e.key === "x") { e.preventDefault(); judge("bad"); }
+  else if (e.key === "b") { e.preventDefault(); judge("but"); }
   else if (e.key === "r") { e.preventDefault(); freshDraw(); }
   else if (e.key === "?") { e.preventDefault(); $("#keys").showModal(); }
 });
 $("#keys [data-close]").addEventListener("click", () => $("#keys").close());
 
-if (!$("#write-error")) { renderMeaning(); load(); loadSaved(); }
+if (!$("#write-error")) { renderMeaning(); load(); loadSaved(); fineBut.loadNotes(); }

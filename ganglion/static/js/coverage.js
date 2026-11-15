@@ -1,3 +1,5 @@
+import * as fineBut from "./fine-but.js";
+
 // The coverage view (design/synthetic-data/08/W9): which kinds of sample each
 // saved template can make, which you've judged, and samples aimed at the rest.
 
@@ -102,12 +104,13 @@ async function show(it) {
 function sampleRow(it, s) {
   const key = it.id + "\u0000" + s.text;
   const p = s.prior;
-  const v = verdicts.get(key) || (p ? { v: p.verdict || null, reason: p.reason || null, note: p.note || "", star: !!p.star, prior: p.at } : {});
+  const v = verdicts.get(key) || (p ? { v: p.verdict || null, but_kind: p.but_kind || null, reason: p.reason || null, note: p.note || "", star: !!p.star, prior: p.at } : {});
   const send = async patch => {
     const nv = { ...v, ...patch, prior: null };
     verdicts.set(key, nv);
     try {
-      await api("/api/write/verdict", { meaning: it.meaning, line: it.text, sample: s, verdict: nv.v || "", reason: nv.reason || "", note: nv.note || "", star: !!nv.star });
+      await api("/api/write/verdict", { meaning: it.meaning, line: it.text, sample: s, verdict: nv.v || "", but_kind: nv.v === "but" ? nv.but_kind || "" : "", reason: nv.reason || "", note: nv.note || "", star: !!nv.star });
+      if (nv.v === "but" && nv.note) await fineBut.loadNotes();
       if (patch.reason === "Sounds Odd") await api("/api/template/need", { id: it.id, tense: s.features.tense });
     } catch (e) { alert(e.message); }
     const fresh = (await api("/api/coverage")).templates;
@@ -127,12 +130,15 @@ function sampleRow(it, s) {
   return h("div", { class: "sample-row" + (v.v ? " judged" : "") + (v.prior ? " prior" : "") },
     h("div", { class: "sample-main" },
       h("div", { class: "sample-text" }, s.text, v.prior ? h("span", { class: "tag mini", "data-tip": `Judged ${new Date(v.prior).toLocaleString()}` }, "Judged ", new Date(v.prior).toLocaleDateString()) : null),
-      h("div", { class: "row sample-tags" }, tags, s.time ? h("span", { class: "tag mini" }, "time: ", s.time) : null)),
+      h("div", { class: "row sample-tags" }, tags, s.time ? h("span", { class: "tag mini" }, "time: ", s.time) : null,
+        (s.implies || []).map(x => h("span", { class: "tag mini implies" }, "implies: ", x)))),
     h("div", { class: "row" },
       h("div", { class: "seg rate", role: "group", "aria-label": "Verdict" },
         h("button", { "aria-pressed": String(v.v === "ok"), "data-rate": "good", onclick: () => send({ v: v.v === "ok" ? null : "ok", reason: null }), "data-tip": "Right" }, "✓"),
+        h("button", { "aria-pressed": String(v.v === "but"), "data-rate": "but", onclick: () => send({ v: v.v === "but" ? null : "but", reason: null }), "data-tip": "Fine, but it needs context or implies more" }, "◐"),
         h("button", { "aria-pressed": String(v.v === "bad"), "data-rate": "bad", onclick: () => { verdicts.set(key, { ...v, v: v.v === "bad" ? null : "bad", prior: null }); render(); sizeBars(); }, "data-tip": "Wrong: then say why" }, "✕"),
         h("button", { "aria-pressed": String(!!v.star), onclick: () => send({ star: !v.star }), "data-tip": "Keep as a good example or boundary case" }, "★"))),
+    v.v === "but" ? fineBut.block(h, v, send) : null,
     v.v === "bad" ? h("div", { class: "row reasons" },
       h("span", { class: "label" }, "What's wrong?"),
       reasons.map(([x, why]) => h("button", { class: "btn chip" + (v.reason === x ? " picked" : ""), "data-tip": why, onclick: () => send({ v: "bad", reason: x }) }, x)),
@@ -146,4 +152,4 @@ function sampleRow(it, s) {
 function sizeBars() {
   document.querySelectorAll("[data-w]").forEach(el => { el.style.width = (Math.max(0, Math.min(1, +el.dataset.w)) * 100).toFixed(1) + "%"; });
 }
-if (!$("#cov-error")) load().then(sizeBars);
+if (!$("#cov-error")) { fineBut.loadNotes(); load().then(sizeBars); }

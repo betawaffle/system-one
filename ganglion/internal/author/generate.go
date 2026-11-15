@@ -255,6 +255,7 @@ type Sample struct {
 	Fillers  map[string]string `json:"fillers"` // role -> display
 	Changed  []string          `json:"changed"` // which tags differ from the authored meaning
 	Time     string            `json:"time,omitempty"`
+	Implies  []string          `json:"implies,omitempty"` // what a reader infers beyond the tags (02/L9)
 }
 
 // Samples draws n previews spread across fillers and supported features (03/A16a).
@@ -320,12 +321,16 @@ func Samples(t Template, m Meaning, w *World, lex *lexicon.Lexicon, seed uint64,
 		if !w.Allowed(mm) {
 			continue
 		}
+		implies, skip := w.Implications(t, mm)
+		if skip {
+			continue
+		}
 		text, time, err := Generate(t, mm, w, lex, realize.Style{Contract: true}, r)
 		if err != nil || seen[text] {
 			continue
 		}
 		seen[text] = true
-		s := Sample{Text: text, Features: mm.Features, Fillers: map[string]string{}, Changed: []string{}, Time: time}
+		s := Sample{Text: text, Features: mm.Features, Fillers: map[string]string{}, Changed: []string{}, Time: time, Implies: implies}
 		for _, k := range []string{"tense", "polarity", "mood"} {
 			if feat(mm.Features, k) != feat(m.Features, k) {
 				s.Changed = append(s.Changed, k)

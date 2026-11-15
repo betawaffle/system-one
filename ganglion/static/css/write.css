@@ -75,3 +75,6 @@ details.tree[open] summary, details.forms[open] summary { margin-bottom: var(--s
 .chipbtn:hover { border-color: var(--ok); }
 .review { border-top: 1px solid var(--line); padding-top: var(--s3); }
 .review h4, .card-body h4 { font-size: var(--t-sm); }
+.tag.implies { border-style: dotted; color: var(--series-3); }
+.seg.rate button[data-rate="but"][aria-pressed="true"] { color: var(--warn); }
+.pastnotes { gap: 6px; }

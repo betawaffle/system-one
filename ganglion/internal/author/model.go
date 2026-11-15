@@ -90,6 +90,11 @@ type Frame struct {
 	Roles     []Role   `json:"roles"`
 	Verbs     []string `json:"verbs"`
 	Converse  []string `json:"converse"`
+	// Kind is "state" (is old: the present means now) or "action" (give: the
+	// simple present means a habit). Volitional actions are chosen by the
+	// agent, so "won't" reads as refusing (02/L9).
+	Kind       string `json:"kind,omitempty"`
+	Volitional bool   `json:"volitional,omitempty"`
 }
 
 type Entity struct {
@@ -237,4 +242,37 @@ func (w *World) IsName(word string) bool {
 		}
 	}
 	return false
+}
+
+// Implications says what a reader infers beyond the meaning's tags, and
+// whether a combination is too odd to generate at all (02/L9). Rules come from
+// implications the user notices again and again.
+func (w *World) Implications(t Template, m Meaning) (implies []string, skip bool) {
+	f := w.Frames[m.Frame]
+	if f.Kind != "action" {
+		return nil, false
+	}
+	simple := m.Features.Aspect == "" || m.Features.Aspect == "simple"
+	if m.Features.Tense == "present" && simple {
+		implies = append(implies, "habit")
+		// a habit of giving one particular thing over and over is odd
+		// ("Does Ana give Mara that umbrella?")
+		dets := detSlots(t)
+		for _, ro := range f.Roles {
+			if ro.Generic != "theme" {
+				continue
+			}
+			d := m.Roles[ro.Name].Det
+			if d == "" {
+				d = dets[ro.Name].Det
+			}
+			if d == "the" || d == "this" || d == "that" {
+				return implies, true
+			}
+		}
+	}
+	if f.Volitional && m.Features.Tense == "future" && m.Features.Polarity == "negative" {
+		implies = append(implies, "refuses")
+	}
+	return implies, false
 }

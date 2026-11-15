@@ -160,11 +160,15 @@ func Draw(t Template, m Meaning, w *World, lex *lexicon.Lexicon, r *rand.Rand, w
 	if !w.Allowed(mm) {
 		return Sample{}, fmt.Errorf("not allowed: %v", mm.Features)
 	}
+	implies, skip := w.Implications(t, mm)
+	if skip {
+		return Sample{}, fmt.Errorf("too odd: %v", mm.Features)
+	}
 	text, time, err := Generate(t, mm, w, lex, realize.Style{Contract: true}, r)
 	if err != nil {
 		return Sample{}, err
 	}
-	s := Sample{Text: text, Features: mm.Features, Fillers: map[string]string{}, Changed: []string{}, Time: time}
+	s := Sample{Text: text, Features: mm.Features, Fillers: map[string]string{}, Changed: []string{}, Time: time, Implies: implies}
 	for role, fl := range mm.Roles {
 		if fl.Entity != "" {
 			s.Fillers[role] = w.Entities[fl.Entity].Display()

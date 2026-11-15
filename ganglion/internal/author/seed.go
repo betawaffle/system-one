@@ -9,6 +9,26 @@ import (
 // Seed writes the starting grammar when the store has no frames yet: the type
 // tree (06/Y1), a few attributes (06/P7), the first frames, and entities to
 // fill them. Everything after this grows from what the user writes (02/D60).
+var seedFrames = []Frame{
+	{Name: "has-property", Title: "Has Property", Explainer: "Something has a quality, like being old or big.",
+		Roles: []Role{
+			{Name: "holder", Type: "physical", Generic: "theme", Explainer: "The thing or person that has the quality."},
+			{Name: "property", Type: "property", Generic: "attribute", Explainer: "The quality: an attribute and a value, like age = old."},
+		}, Verbs: []string{"be"}, Kind: "state"},
+	{Name: "give", Title: "Give", Explainer: "Someone passes something to someone else, who then has it.",
+		Roles: []Role{
+			{Name: "giver", Type: "person", Generic: "agent", Explainer: "Who gives it. They had it before."},
+			{Name: "thing", Type: "physical", Generic: "theme", Explainer: "What changes hands."},
+			{Name: "recipient", Type: "person", Generic: "recipient", Explainer: "Who gets it. They have it after."},
+		}, Verbs: []string{"give", "hand"}, Converse: []string{"get", "receive"}, Kind: "action", Volitional: true},
+	{Name: "compare", Title: "Compare", Explainer: "Two things are compared on one attribute: more, less, or the same.",
+		Roles: []Role{
+			{Name: "a", Type: "physical", Generic: "theme", Explainer: "The first thing compared."},
+			{Name: "b", Type: "physical", Generic: "standard", Explainer: "What it's compared against."},
+			{Name: "attribute", Type: "property", Generic: "attribute", Explainer: "What they're compared on, and which way."},
+		}, Verbs: []string{"be"}, Kind: "state"},
+}
+
 var ageAttr = Attribute{Name: "age", AppliesTo: []string{"physical"}, Scale: []string{"young", "old"},
 	Words: map[string]map[string]string{"young": {"*": "young", "artifact": "new"}, "old": {"*": "old"}}, StableOrder: true, Direction: "increasing"}
 
@@ -48,25 +68,7 @@ func Seed(g *grammar.Store) (bool, error) {
 			return false, err
 		}
 	}
-	frames := []Frame{
-		{Name: "has-property", Title: "Has Property", Explainer: "Something has a quality, like being old or big.",
-			Roles: []Role{
-				{Name: "holder", Type: "physical", Generic: "theme", Explainer: "The thing or person that has the quality."},
-				{Name: "property", Type: "property", Generic: "attribute", Explainer: "The quality: an attribute and a value, like age = old."},
-			}, Verbs: []string{"be"}},
-		{Name: "give", Title: "Give", Explainer: "Someone passes something to someone else, who then has it.",
-			Roles: []Role{
-				{Name: "giver", Type: "person", Generic: "agent", Explainer: "Who gives it. They had it before."},
-				{Name: "thing", Type: "physical", Generic: "theme", Explainer: "What changes hands."},
-				{Name: "recipient", Type: "person", Generic: "recipient", Explainer: "Who gets it. They have it after."},
-			}, Verbs: []string{"give", "hand"}, Converse: []string{"get", "receive"}},
-		{Name: "compare", Title: "Compare", Explainer: "Two things are compared on one attribute: more, less, or the same.",
-			Roles: []Role{
-				{Name: "a", Type: "physical", Generic: "theme", Explainer: "The first thing compared."},
-				{Name: "b", Type: "physical", Generic: "standard", Explainer: "What it's compared against."},
-				{Name: "attribute", Type: "property", Generic: "attribute", Explainer: "What they're compared on, and which way."},
-			}, Verbs: []string{"be"}},
-	}
+	frames := seedFrames
 	for _, f := range frames {
 		if err := put("frame:"+f.Name, "frame", f); err != nil {
 			return false, err
@@ -94,7 +96,11 @@ func Seed(g *grammar.Store) (bool, error) {
 // grammar seeded before a change gets it too. Objects with any later version
 // are left alone.
 func upgrade(g *grammar.Store) error {
-	for id, want := range map[string]any{"attribute:age": ageAttr} {
+	want := map[string]any{"attribute:age": ageAttr}
+	for _, f := range seedFrames {
+		want["frame:"+f.Name] = f
+	}
+	for id, want := range want {
 		h := g.History(id)
 		untouched := len(h) > 0
 		for _, v := range h {

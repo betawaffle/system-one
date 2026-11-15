@@ -66,6 +66,17 @@ e1: give(giver=mara, thing=d1, recipient=tom), purpose=gift, occasion=birthday(o
 ```
 The coercion is explicit in the meaning, so the joke is computable: code knows exactly which type rule it broke. A sentence whose text has more than one reading gets that recorded with its template, so a reader-side task can ask for the reading.
 
+## Implications
+
+L9. A sentence can match its meaning and still say more: a reader infers something the tags don't have. Found by the user on 2026-11-15:
+  - "This apple was old." implies it's gone (age only increases; sd/06/D102)
+  - "Mara won't give Noor the box." reads as refusing, not a plain prediction: "won't" with something a person chooses to do
+  - "Does Ana give Mara that umbrella?" reads as a habit: an action verb's simple present means a habit, and a habit of giving one particular umbrella is odd
+  - "…this box" needs a scene where the speaker can point
+  - "…her chair" says who owns it (now a span to resolve; sd/04/F6)
+L9a. Two ways in. The user marks samples ◐ Fine, But… with a note (sd/08/W6e), picking a note said before where one fits, so repeats show. Repeats become rules, as the age rules did.
+L9b. First rules (D108): frames say whether they're a state or an action, and whether the action is chosen by its agent. An action's simple present is tagged `implies: habit`, and skipped when its theme is a particular thing (the, this, that). A chosen action's future negative is tagged `implies: refuses`. Tags travel with the sample, so the meaning a dataset records is closer to what the sentence says.
+
 ## Role names
 
 L7. The UI has to remind the user what roles are (user: "The UI is definitely going to need to remind me what these things (agent, theme) are, lol.").
@@ -84,6 +95,7 @@ L8c. Coerced and boundary meanings stay marked as such, so they can be included 
 
 ## Decided
 
+D108. Implication rules: action frames' simple present implies a habit (skipped with a particular theme), and chosen actions' "won't" implies refusing; samples carry `implies` tags (L9b). (user: "Yes, do both.")
 D56. Our own small typed language (L1–L5). (user: "Fine with me, but you'll have to explain.")
 D57. The UI explains what each role means (L7). (user)
 D59. Plain per-frame role names, with the generic names kept; generic names showing in the UI with small explainers is fine too. Answers Q33. (user: "Fine with this, but I'd also be fine with the generic names having little explainers in the UI.")

@@ -26,11 +26,13 @@ type writer struct {
 	world    *author.World
 	verdicts map[string]priorVerdict   // sample text -> latest verdict (08/D104)
 	meanings map[string]author.Meaning // sentence event id -> the meaning it was written for
+	notes    map[string]map[string]int // Fine, But kind -> note -> times used (08/D107)
 }
 
 // priorVerdict is the latest verdict on a sentence, from the event log.
 type priorVerdict struct {
-	Verdict  string           `json:"verdict"` // ok, bad
+	Verdict  string           `json:"verdict"`            // ok, bad, but (fine, but…)
+	ButKind  string           `json:"but_kind,omitempty"` // context, implies
 	Reason   string           `json:"reason,omitempty"`
 	Note     string           `json:"note,omitempty"`
 	Star     bool             `json:"star,omitempty"`
@@ -57,6 +59,7 @@ func (x *writer) noteVerdict(at string, d map[string]any) {
 		Sample  author.Sample `json:"sample"`
 		Line    string        `json:"line"`
 		Verdict string        `json:"verdict"`
+		ButKind string        `json:"but_kind"`
 		Reason  string        `json:"reason"`
 		Note    string        `json:"note"`
 		Star    bool          `json:"star"`
@@ -64,11 +67,17 @@ func (x *writer) noteVerdict(at string, d map[string]any) {
 	if json.Unmarshal(b, &v) != nil || v.Sample.Text == "" {
 		return
 	}
+	if v.Verdict == "but" && v.ButKind != "" && strings.TrimSpace(v.Note) != "" {
+		if x.notes[v.ButKind] == nil {
+			x.notes[v.ButKind] = map[string]int{}
+		}
+		x.notes[v.ButKind][strings.TrimSpace(v.Note)]++
+	}
 	if v.Verdict == "" && !v.Star { // cleared
 		delete(x.verdicts, v.Sample.Text)
 		return
 	}
-	x.verdicts[v.Sample.Text] = priorVerdict{Verdict: v.Verdict, Reason: v.Reason, Note: v.Note, Star: v.Star, At: at,
+	x.verdicts[v.Sample.Text] = priorVerdict{Verdict: v.Verdict, ButKind: v.ButKind, Reason: v.Reason, Note: v.Note, Star: v.Star, At: at,
 		Features: v.Sample.Features, Fillers: fillersKey(v.Sample.Fillers), Line: v.Line, Sample: v.Sample}
 }
 
@@ -100,7 +109,7 @@ func newWriter(g *grammar.Store, lex *lexicon.Lexicon) (*writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	x := &writer{g: g, lex: lex, world: w, verdicts: map[string]priorVerdict{}, meanings: map[string]author.Meaning{}}
+	x := &writer{g: g, lex: lex, world: w, verdicts: map[string]priorVerdict{}, meanings: map[string]author.Meaning{}, notes: map[string]map[string]int{}}
 	err = g.Events(func(ev grammar.Event) {
 		switch ev.Type {
 		case "verdict":
@@ -452,4 +461,35 @@ func (s *Server) lexiconWord(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	jsonOut(w, map[string]any{"word": word, "entries": out, "base": x.lex.Hash})
+}
+
+// GET /api/write/notes: Fine, But notes written so far, most used first, so one
+// can be picked again instead of retyped (08/D107).
+func (s *Server) writeNotes(w http.ResponseWriter, r *http.Request) {
+	x, err := s.wr()
+	if err != nil {
+		http.Error(w, err.Error(), 503)
+		return
+	}
+	type note struct {
+		Note  string `json:"note"`
+		Count int    `json:"count"`
+	}
+	out := map[string][]note{"context": {}, "implies": {}}
+	x.mu.RLock()
+	for kind, ns := range x.notes {
+		for n, c := range ns {
+			out[kind] = append(out[kind], note{n, c})
+		}
+	}
+	x.mu.RUnlock()
+	for _, ns := range out {
+		sort.Slice(ns, func(i, j int) bool {
+			if ns[i].Count != ns[j].Count {
+				return ns[i].Count > ns[j].Count
+			}
+			return ns[i].Note < ns[j].Note
+		})
+	}
+	jsonOut(w, out)
 }
