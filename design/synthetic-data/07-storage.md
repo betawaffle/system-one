@@ -12,7 +12,7 @@ O2b. References between objects inside content use stable ids (a template's `lex
 ## Versions
 
 V1. A version's content is the object's canonical JSON, without id or metadata, stored once as a blob under its sha256, like utterances today. Content never changes.
-V2. A version record ties it together: stable id, content hash, parent version, who made it (user, model id, import), when, and why (edit, fix from a sample, import). Records are append-only rows, separate from the content blob, so two edits that arrive at the same content share the blob but keep their own records.
+V2. A version record ties it together: stable id, content hash, parent version, who made it (user, model id, import), when, and why (edit, fix from a sample, import). Records are append-only (JSONL as the source of truth, indexed in SQLite; B1d.2), separate from the content blob, so two edits that arrive at the same content share the blob but keep their own records.
 V3. An index table maps id → current version (the head). An edit writes a new version and moves the head. Retiring an object is a version too (state retired). Nothing is deleted, matching the capture rules' append-only requirement (CAPTURE-REQUIREMENTS 2).
 V4. History per object is the parent chain, so the UI can show what changed and roll back by writing an older content as a new version.
 
@@ -60,7 +60,13 @@ U1. The user's sentences are their own prose, written to a meaning. They could a
 
 B1. All of this lives in ganglion's data directory, which is backed up with everything else. Not in git: templates are data, and prose stays out of the repo (system-one data rules).
 B1a. Checked 2026-11-15 (user asked): the nightly backup timer is active and its last runs succeeded, and its path list includes `~/.local/share`, so ganglion's data directory is covered.
-B1b. Gap found: the backup copies SQLite files with rsync while ganglion may be writing them, which can leave an inconsistent copy of `index.db` or `blobs.db`. The append-only JSONL files are safe. Fix: ganglion writes a consistent copy (SQLite's `VACUUM INTO`, or the backup API) into its data directory before the backup window, and that copy is what a restore uses. (Q63)
+B1b. Gap found: the backup copies SQLite files with rsync while ganglion may be writing them, which can leave an inconsistent copy of `index.db` or `blobs.db`. The append-only JSONL files are safe. Fix: ganglion writes a consistent copy (SQLite's `VACUUM INTO`, or the backup API) into its data directory before the backup window, and that copy is what a restore uses. (Q63) Amended by B1d.
+B1c. Would WAL mode help? (user) Ganglion already opens both databases in WAL mode (`internal/store/store.go`). WAL keeps readers and the writer apart inside SQLite, but a file copy isn't a SQLite reader: rsync copies the main file and the `-wal` file at different moments, and a checkpoint in between leaves a pair that don't match. So it doesn't fix this, and it adds a second file that has to be copied in step.
+B1d. The user's concern with B1b: it's fragile, because the backup time could change without ganglion knowing. Two ways out that don't depend on timing:
+  1. **The backup takes the copy.** The backup service runs a pre-step that asks ganglion for a consistent copy (SQLite's online backup API) right before rsync starts. The backup owns the timing, so moving the timer moves the copy with it.
+  2. **Nothing precious lives only in SQLite.** For the synthetic data, the source of truth is append-only files: version records and authoring events as JSONL, content as blob files. SQLite is only an index that can be rebuilt from them (as 08/D33 already frames it). A broken index copy then costs a rebuild, not data.
+B1e. I lean both: 2 for everything new here, so correctness never depends on the backup, and 1 for the existing `index.db` and `blobs.db`, whose contents I haven't checked are fully rebuildable from `raw/`. (Q63, revised)
+B1f. Done 2026-11-15 (user: "Let's do it, thanks."): `~/projects` added to the backup path list. A dry run lists it without errors (about 115k files, 9.8 GB in all).
 
 ## Future topics
 
@@ -76,7 +82,7 @@ D90. One model-call path in the Go server that logs everything (M2). Answers Q62
 
 ## Open questions
 
-Q63. Consistent SQLite copies before the nightly backup (B1b)? I lean yes.
+Q63. Revised: source of truth in append-only files with SQLite as a rebuildable index, plus a pre-backup step in the backup service for the existing databases (B1d, B1e)? I lean both. (user on the original B1b: "I'm fine with Q63, but it feels fragile, since the backup time could change without ganglion knowing.")
 
 ## Superseded
 

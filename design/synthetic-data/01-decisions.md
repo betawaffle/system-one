@@ -16,7 +16,7 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 
 ## Open questions (all)
 
-- Q63 consistent SQLite copies before the nightly backup (sd/07/B1b). Lean yes.
+- Q63 (revised) append-only files as source of truth, SQLite rebuildable, plus a pre-backup step (sd/07/B1d, B1e). Lean both.
 
 ## Future topics (all)
 
