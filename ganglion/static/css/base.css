@@ -315,6 +315,13 @@ a.bar:hover .name { color: var(--accent); }
 .notice-fail { background: var(--fail-wash); border-color: color-mix(in srgb, var(--fail) 25%, transparent); }
 .prose-text { white-space: pre-wrap; word-break: break-word; line-height: 1.65; max-height: 28em; overflow: auto; max-width: 80ch; }
 .prose-text.sentence { font-size: var(--t-lg); line-height: 1.5; max-height: none; }
+.ratebar { gap: var(--s3); margin-bottom: var(--s4); }
+.sample { outline: none; transition: box-shadow 120ms var(--ease), opacity 120ms var(--ease); }
+.sample.current { box-shadow: var(--shadow), 0 0 0 2px var(--accent); }
+.sample.rated:not(.current) { opacity: 0.72; }
+.sample.failed { box-shadow: var(--shadow), 0 0 0 2px var(--fail); }
+.seg.rate button[data-rate="good"][aria-pressed="true"] { color: var(--ok); }
+.seg.rate button[data-rate="bad"][aria-pressed="true"] { color: var(--fail); }
 .sample .src { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .preview { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 90ch; color: var(--ink); }
 .out.prose { font-family: var(--sans); font-size: var(--t-md); line-height: 1.6; color: var(--ink); counter-reset: none; }

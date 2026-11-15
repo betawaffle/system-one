@@ -43,6 +43,7 @@ func main() {
 	data := flag.String("data", defaultData, "data directory")
 	hosts := flag.String("hosts", os.Getenv("GANGLION_HOSTS"), "comma-separated hostnames to accept besides IPs and localhost (default $GANGLION_HOSTS)")
 	sock := flag.String("worker", "", "worker socket (default <data>/worker.sock)")
+	user := flag.String("user", envOr("GANGLION_USER", "user"), "name labels are recorded under (a claim, not a login; default $GANGLION_USER)")
 	flag.Parse()
 	if *sock == "" {
 		*sock = filepath.Join(*data, "worker.sock")
@@ -65,6 +66,7 @@ func main() {
 		Store:     st,
 		Worker:    wk,
 		Hosts:     strings.Split(*hosts, ","),
+		User:      *user,
 	})
 	if err != nil {
 		log.Fatalf("web: %v", err)
@@ -85,7 +87,14 @@ func main() {
 	}
 }
 
-// blacklistCmd: ganglion blacklist list | ganglion blacklist add HASH-PREFIX REASON [-by NAME]
+func envOr(k, def string) string {
+	if v := os.Getenv(k); v != "" {
+		return v
+	}
+	return def
+}
+
+// blacklistCmd:ganglion blacklist list | ganglion blacklist add HASH-PREFIX REASON [-by NAME]
 func blacklistCmd(defaultData string, args []string) {
 	fl := flag.NewFlagSet("blacklist", flag.ExitOnError)
 	data := fl.String("data", defaultData, "data directory")

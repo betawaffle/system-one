@@ -1,3 +1,4 @@
+{{define "head"}}<script type="module" src="{{asset "js/samples.js"}}"></script>{{end}}
 {{define "content"}}{{$d := .Data}}
 <div class="page-head">
   <div>
@@ -6,6 +7,15 @@
     <p>Random draws from any dataset, each marked with where it came from. The seed is in the address, so a draw can be revisited. Press <span class="kbd">n</span> for another draw.</p>
   </div>
   <div class="row"><a class="btn primary" href="{{$d.Again}}" id="again">Draw Again</a></div>
+</div>
+
+<div class="card card-pad row ratebar">
+  <span class="label">Your Ratings</span>
+  <span class="tag ok" data-tip="Good prose">{{template "icon-ok"}}<span id="count-good">{{index $d.Counts "good"}}</span> Good</span>
+  <span class="tag fail" data-tip="Prose, but bad">{{template "icon-fail"}}<span id="count-bad">{{index $d.Counts "bad"}}</span> Bad</span>
+  <span class="tag" data-tip="Not prose at all">{{template "icon-none"}}<span id="count-not-prose">{{index $d.Counts "not-prose"}}</span> Not Prose</span>
+  <span class="spacer"></span>
+  <span class="muted small">Keys: <span class="kbd">j</span>/<span class="kbd">k</span> move · <span class="kbd">1</span> good · <span class="kbd">2</span> bad · <span class="kbd">3</span> not prose · <span class="kbd">0</span> clear · <span class="kbd">n</span> new draw. Saved as {{$d.User}}.</span>
 </div>
 
 <form class="card card-pad filters" method="get" action="/samples" data-autosubmit>
@@ -34,7 +44,7 @@
 {{else}}
 <div class="stack">
 {{range $i, $s := $d.Items}}
-  <section class="card sample">
+  <section class="card sample" tabindex="-1" data-target="{{$s.Target}}" data-set="{{$d.SetID}}" data-seed="{{$d.Seed}}" data-context="{{index $d.Ctx $s.Target}}" data-rating="{{index $d.Rated $s.Target}}">
     <div class="card-head">
       <div class="row">
         <span class="muted num small">{{add $i 1}}</span>
@@ -46,11 +56,23 @@
         {{with $s.Meta.score}}<span class="tag" data-tip="fineweb-edu's educational quality score (0–5)">score {{printf "%.2f" .}}</span>{{end}}
       </div>
       <div class="row">
+        <div class="seg rate" role="group" aria-label="Rate this sample">
+          <button data-rate="good" aria-pressed="false" data-tip="Good prose (1)">Good</button>
+          <button data-rate="bad" aria-pressed="false" data-tip="Prose, but bad (2)">Bad</button>
+          <button data-rate="not-prose" aria-pressed="false" data-tip="Not prose (3)">Not Prose</button>
+        </div>
         {{if $s.Hash}}{{if eq $s.Kind "command"}}<a class="label" href="/events/{{$s.Hash}}">Open</a>{{else}}<a class="label" href="/utterances/{{$s.Hash}}">Open</a>{{end}}{{end}}
       </div>
     </div>
     <div class="card-body stack tight">
       {{if eq $s.Kind "command"}}<pre class="out wrap">{{$s.Text}}</pre>{{else}}<div class="prose-text {{if eq $s.Kind "line"}}sentence{{end}}">{{$s.Text}}</div>{{end}}
+      {{with $s.Features}}<div class="row feats">
+        <span class="tag {{if gt .Joined 0}}fail{{end}}" data-tip="Sentences run together without a space, like word.Next">{{.Joined}} joined</span>
+        <span class="tag {{if lt .Sentenced 0.5}}warn{{end}}" data-tip="Share of lines that end like a sentence">{{printf "%.0f" (pctf .Sentenced)}}% lines end like sentences</span>
+        <span class="tag" data-tip="Lines that appear more than once">{{.RepeatLines}} repeated lines</span>
+        <span class="tag" data-tip="Distinct words divided by words">variety {{printf "%.2f" .Variety}}</span>
+        <span class="muted small">{{.Lines}} lines</span>
+      </div>{{end}}
       {{if $s.Cut}}<div class="muted small">… {{comma $s.Cut}} more characters; <a href="/utterances/{{$s.Hash}}">open the full text</a>.</div>{{end}}
       <div class="muted small mono src">{{$s.Source}}{{with $s.Meta.url}} · <a href="{{.}}" rel="noreferrer noopener" target="_blank">{{.}}</a>{{end}}</div>
     </div>

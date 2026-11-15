@@ -8,6 +8,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -63,6 +64,7 @@ func (s *Store) SampleSets() ([]SampleSet, error) {
 // Sample is one drawn item. Text is cut at MaxSampleText (the full item is a link away).
 type Sample struct {
 	Kind      string // utterance, command, line
+	Target    string // what a label on this sample refers to (labels.go)
 	Hash      string // utterance or event hash, when there is one
 	Speaker   string
 	What      string // kind for utterances, program for commands
@@ -74,9 +76,58 @@ type Sample struct {
 	ExitCode  *int
 	Meta      map[string]any
 	LineIndex int
+	Features  *DocFeatures // documents only
 }
 
 const MaxSampleText = 6000
+
+// DocFeatures are computable signs of messy text, shown beside documents while
+// rating (11/R2). Software measures; the person (and later a model) judges.
+type DocFeatures struct {
+	Lines       int     // non-empty lines
+	Sentenced   float64 // share of lines ending in . ! ? (optionally followed by a quote or bracket)
+	Joined      int     // "word.Next": sentences run together without a space
+	RepeatLines int     // lines that occur more than once, counted beyond the first
+	Variety     float64 // distinct words / words
+}
+
+var (
+	joinedRe   = regexp.MustCompile(`[a-z]{2}[.!?][A-Z][a-z]`)
+	sentEndRe  = regexp.MustCompile(`[.!?]["'”’)\]]*\s*$`)
+	wordTrimRe = regexp.MustCompile(`^[^A-Za-z0-9]+|[^A-Za-z0-9]+$`)
+)
+
+func Features(text string) *DocFeatures {
+	f := &DocFeatures{Joined: len(joinedRe.FindAllStringIndex(text, -1))}
+	seen := map[string]int{}
+	ended := 0
+	for _, l := range strings.Split(text, "\n") {
+		l = strings.TrimSpace(l)
+		if l == "" {
+			continue
+		}
+		f.Lines++
+		if sentEndRe.MatchString(l) {
+			ended++
+		}
+		seen[l]++
+		if seen[l] > 1 {
+			f.RepeatLines++
+		}
+	}
+	if f.Lines > 0 {
+		f.Sentenced = float64(ended) / float64(f.Lines)
+	}
+	words := strings.Fields(text)
+	distinct := map[string]bool{}
+	for _, w := range words {
+		distinct[strings.ToLower(wordTrimRe.ReplaceAllString(w, ""))] = true
+	}
+	if len(words) > 0 {
+		f.Variety = float64(len(distinct)) / float64(len(words))
+	}
+	return f
+}
 
 func cut(t string) (string, int) {
 	if len(t) <= MaxSampleText {
@@ -150,7 +201,10 @@ func (s *Store) drawUtterances(source, speaker, kind string, n int, seed uint64)
 		}
 		var u Utterance
 		json.Unmarshal(b, &u)
-		sm.Kind = "utterance"
+		sm.Kind, sm.Target = "utterance", "u:"+sm.Hash
+		if u.Kind == "document" || u.Kind == "issue" {
+			sm.Features = Features(u.Text)
+		}
 		sm.Text, sm.Cut = cut(u.Text)
 		json.Unmarshal([]byte(meta), &sm.Meta)
 		out = append(out, sm)
@@ -176,7 +230,7 @@ func (s *Store) drawCommands(source string, n int, seed uint64) ([]Sample, int, 
 		if err != nil {
 			return nil, 0, err
 		}
-		sm.Kind, sm.Source, sm.ExitCode = "command", source, ev.ExitCode
+		sm.Kind, sm.Source, sm.ExitCode, sm.Target = "command", source, ev.ExitCode, "c:"+sm.Hash
 		sm.Text, sm.Cut = cut(ev.Command + "\n\n" + ev.MainText())
 		json.Unmarshal([]byte(meta), &sm.Meta)
 		out = append(out, sm)
@@ -273,7 +327,7 @@ func (s *Store) drawLines(name, speaker, kind string, n int, seed uint64) ([]Sam
 			continue
 		}
 		sm := Sample{Kind: "line", Hash: str(m, "utterance"), Speaker: str(m, "speaker"), What: str(m, "kind"), Model: str(m, "model"),
-			Source: str(m, "source"), LineIndex: i, Meta: m}
+			Source: str(m, "source"), LineIndex: i, Meta: m, Target: SentenceTarget(str(m, "text"))}
 		sm.Text, sm.Cut = cut(str(m, "text"))
 		out = append(out, sm)
 	}

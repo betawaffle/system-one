@@ -23,6 +23,7 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /utterances", s.utterances)
 	m.HandleFunc("GET /utterances/{hash}", s.utterance)
 	m.HandleFunc("GET /samples", s.samples)
+	m.HandleFunc("POST /api/labels", s.addLabel)
 	m.HandleFunc("GET /ettin", s.ettin)
 	m.HandleFunc("GET /design", s.design)
 	m.HandleFunc("GET /ws", s.ws)
@@ -366,10 +367,46 @@ func (s *Server) samples(w http.ResponseWriter, r *http.Request) {
 		again[k] = vs
 	}
 	again.Set("seed", strconv.FormatUint(rand.Uint64()%1_000_000, 10))
+	labels, counts, _ := s.cfg.Store.CurrentLabels(s.cfg.User)
+	rated := map[string]string{}
+	ctx := map[string]string{}
+	for _, it := range items {
+		rated[it.Target] = labels[it.Target]
+		c := map[string]any{"source": it.Source, "speaker": it.Speaker, "kind": it.What, "utterance": it.Hash, "line": it.LineIndex}
+		if it.Features != nil {
+			c["features"] = it.Features // what the person saw when judging, kept with the label
+		}
+		b, _ := json.Marshal(c)
+		ctx[it.Target] = string(b)
+	}
 	s.render(w, "samples", Page{Title: "Samples", Nav: "samples", Data: map[string]any{
+		"Rated": rated, "Counts": counts, "User": s.cfg.User, "Ctx": ctx,
 		"Sets": sets, "Set": cur, "SetID": set, "Items": items, "Total": total, "N": n, "Seed": seed,
 		"Speaker": v.Get("speaker"), "Kind": v.Get("kind"), "Again": "/samples?" + again.Encode(),
 	}})
+}
+
+// addLabel records a rating. Only same-origin JSON is accepted: a cross-site
+// page can't send application/json without a preflight we never answer, and
+// browsers mark cross-site requests in Sec-Fetch-Site.
+func (s *Server) addLabel(w http.ResponseWriter, r *http.Request) {
+	if !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") || r.Header.Get("Sec-Fetch-Site") == "cross-site" {
+		http.Error(w, "same-origin JSON only", http.StatusForbidden)
+		return
+	}
+	var l store.Label
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&l); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	l.By, l.Client = s.cfg.User, "ganglion/samples"
+	if err := s.cfg.Store.AddLabel(l); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	_, counts, _ := s.cfg.Store.CurrentLabels(s.cfg.User)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{"ok": true, "counts": counts})
 }
 
 func (s *Server) utterance(w http.ResponseWriter, r *http.Request) {

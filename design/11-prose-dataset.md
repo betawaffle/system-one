@@ -70,7 +70,17 @@ L4a. Tuned on prose-v2 (2026-11-14):
 L4b. With the blacklist switched off (--ignore-blacklist), quote detection alone catches 14 of the read-aloud reply's 26 sentences (13 exact, 1 paraphrase). The other 12 are my framing, short sentences under the length limits, or lines I reworded for speech. So detection is a backstop, and the blacklist is what removes a whole reproduced text.
 L5. Sentences are cached per utterance hash and rules version (datasets/.cache/sentences-r2.sqlite) and segmented in parallel, so rebuilds only segment new text.
 
+## Ratings and document features (2026-11-15)
+
+R1. Rating on the Samples page: Good / Bad / Not Prose per sample, by button or key (j/k move, 1/2/3 rate, 0 clears, pressing the current rating again clears it; rating moves to the next sample). Labels are append-only in <data>/labels.jsonl: target, rating, who (name claim from GANGLION_USER, set to andy in ~/.config/ganglion/env), when, the dataset and seed it was drawn in, what the page showed (source, speaker, kind, line, document features), and the client. Targets: u:<utterance hash>, c:<event hash>, s:<sha256 of the sentence> so sentence labels survive rebuilds. A later label replaces an earlier one for the same target and person. Labels are never in the rebuildable index.
+R1a. The label API only takes same-origin JSON (a form post or a cross-site request gets 403). Tests run against a separate instance with -user claude-test, so no test label is ever recorded under the real labeller's name; four such labels exist.
+R2. User's example of fineweb's quality (0ee47e132e): "missing spaces after periods, there's no structure to how it's formatted… it's awful". fineweb scored it 3.5 (int 4, above this shard's mean of 3.0). Measured without reading it: 31% of lines end like sentences, repeated lines; 4 of its sentences had entered prose-v2.
+R3. Document features shown on each document sample, and saved with its label: missing-space joins ("word.Next"), share of lines ending like sentences, repeated lines, word variety. Software measures; the person, and later a model, judges.
+R4. Sentence rule r3 rejects missing-space joins. Across the fineweb sample: 45,484 documents have none, 2,240 have 1–2, 363 have 3–9, 104 have 10 or more. The user's example has none of this form, so its missing spaces take another shape (not yet identified; text not read here, per F3).
+
 ## Decided
+
+D51. Ratings on the Samples page, saved as labels. (user: "Yes, add ratings")
 
 D50. Detect quotes and paraphrases of other sources in our text, and keep a blacklist for Claude's own output; the read-aloud reply is its first entry. (user: "Add it and also implement a blacklist for your own output, then add this to the blacklist.")
 

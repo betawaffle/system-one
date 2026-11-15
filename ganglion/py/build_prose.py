@@ -39,7 +39,7 @@ import warnings
 
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 
-RULES = "r2"  # bump when prose_blocks / clean / is_sentence change
+RULES = "r3"  # bump when prose_blocks / clean / is_sentence change (r3: reject missing-space joins)
 PROSE_KINDS = {"typed", "pasted", "reply", "thinking", "summary", "document", "commit", "issue", "prompt"}
 OURS = {"human", "claude", "subagent"}
 
@@ -48,6 +48,7 @@ LINK = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 EMPH = re.compile(r"(\*\*|__)(.+?)\1")
 LIST = re.compile(r"^\s*(?:[-*+]|\d+[.)]|[A-Z]\d+[a-z]?\.)\s+")
 URL = re.compile(r"https?://\S+")
+JOINED = re.compile(r"[a-z]{2}[.!?][A-Z][a-z]")
 
 
 def prose_blocks(text):
@@ -99,6 +100,8 @@ def is_sentence(s):
     if not re.search(r"[a-z]", s) or s[0] in "-*/\\|=;:,.)]}":
         return False
     if not re.search(r"[.!?][\"')\]`*]*$", s):  # a sentence ends like one
+        return False
+    if JOINED.search(s):  # "word.Next": two sentences run together without a space (user, 11/R2)
         return False
     return True
 

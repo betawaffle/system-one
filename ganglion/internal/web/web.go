@@ -33,6 +33,7 @@ type Config struct {
 	Store     *store.Store
 	Worker    *worker.Client
 	Hosts     []string
+	User      string // who labels come from: a name claim, no logins yet
 }
 
 type Server struct {
@@ -165,6 +166,7 @@ func (s *Server) loadTemplates() error {
 		"pow2":  func(s string) string { n, _ := strconv.Atoi(s); return humanBytes(1 << n) },
 		"add":   func(a, b int) int { return a + b },
 		"sub":   func(a, b int) int { return a - b },
+		"pctf":  func(f float64) float64 { return 100 * f },
 		"list":  func(xs ...string) []string { return xs },
 		"split": func(s string) []string { return strings.SplitN(s, ":", 2) },
 	}
