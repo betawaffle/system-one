@@ -447,3 +447,51 @@ func TestImplications(t *testing.T) {
 		t.Fatal("states have no habit reading")
 	}
 }
+
+func TestRodsAndNext(t *testing.T) {
+	w, _ := setup(t)
+	h, l := w.Attributes["attribute:height"], w.Attributes["attribute:length"]
+	if h.Applies("rod", w) || !h.Applies("artifact", w) || !h.Applies("person", w) {
+		t.Fatal("height: people and most things, not rods")
+	}
+	if !l.Applies("rod", w) || l.Applies("person", w) {
+		t.Fatal("length: rods")
+	}
+	if w.Entities["entity:umbrella"].Type != "rod" {
+		t.Fatal("an umbrella is a rod")
+	}
+	// Next never offers height for an umbrella, and skips meanings already used
+	used := map[string]bool{}
+	for n := 0; n < 60; n++ {
+		m, err := Next(w, n, "frame:has-property", used)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if m.Roles["holder"].Entity == "entity:umbrella" && m.Roles["property"].Value.Attribute == "height" {
+			t.Fatal("tall umbrella")
+		}
+		if used[Signature(m)] {
+			t.Fatalf("repeated %s after %d", Signature(m), n)
+		}
+		used[Signature(m)] = true
+	}
+}
+
+func TestUpgradeAddsSeedObjects(t *testing.T) {
+	g, _ := grammar.Open(t.TempDir())
+	meta := grammar.Meta{By: "ganglion", Why: "create", Client: "ganglion/seed"}
+	g.Put("frame:x", "frame", Frame{Name: "x"}, meta)
+	g.Put("entity:umbrella", "entity", Entity{Type: "artifact", Noun: "umbrella", Pronouns: "it"}, meta)
+	Seed(g)
+	var e Entity
+	g.Get("entity:umbrella", &e)
+	if e.Type != "rod" {
+		t.Fatal("seeded umbrella should become a rod")
+	}
+	if _, ok := g.Head("entity:pencil"); !ok {
+		t.Fatal("new seed entities should be added")
+	}
+	if _, ok := g.Head("type:rod"); !ok {
+		t.Fatal("new seed types should be added")
+	}
+}

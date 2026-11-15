@@ -205,7 +205,11 @@ func (s *Server) writeNext(w http.ResponseWriter, r *http.Request) {
 	x.mu.RLock()
 	defer x.mu.RUnlock()
 	n, _ := strconv.Atoi(r.URL.Query().Get("n"))
-	m, err := author.Next(x.world, n, r.URL.Query().Get("frame"))
+	used := map[string]bool{}
+	for _, mm := range x.meanings {
+		used[author.Signature(mm)] = true
+	}
+	m, err := author.Next(x.world, n, r.URL.Query().Get("frame"), used)
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return

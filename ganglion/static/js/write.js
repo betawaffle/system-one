@@ -26,7 +26,7 @@ async function api(path, body) {
 }
 
 // ---------- state ----------
-let n = 0;            // how many times Next was pressed
+let n = Math.floor(Math.random() * 1000); // where Next starts; the server also skips meanings already written for
 let card = null;      // the meaning card from the server
 let seed = 42;
 let lines = [];       // preview results per line

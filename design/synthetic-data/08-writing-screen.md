@@ -70,6 +70,7 @@ W7b. Sentences using unsupported verb groups save frozen (sd/05/D80) with a tag 
 ## What to write next
 
 W8. **Next** picks a meaning from the coverage map's gaps (sd/03/A10): frame × feature combinations with the fewest templates, favouring the current frame family (sd/06/D81). The user can override with **Change**.
+W8b. Next skips meanings already written for (any saved or drafted sentence with the same frame and fillers), walks every combination of fillers, attributes and both ends of each scale in a shuffled order, and starts somewhere random on each page load. Before this it offered "Ana, Noor, age more" on every visit (user: "it gave me Ana Noor age=more again"). The seed gained more people (Kai, Omar, Lin) and things (pencil, ladder, bottle, table); grammars seeded earlier get them, and the umbrella becomes a rod, at start-up as long as nobody has edited those objects.
 W8a. Occasionally **Next** offers a deliberate joke or boundary meaning (sd/02/L8), marked as such, since humour and boundary tests are generated on purpose (sd/02/D61).
 
 ## Keyboard

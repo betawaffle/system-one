@@ -29,8 +29,49 @@ var seedFrames = []Frame{
 		}, Verbs: []string{"be"}, Kind: "state"},
 }
 
+var seedTypes = []Type{
+	{"entity", "", "Anything at all."},
+	{"physical", "entity", "Something you could touch."},
+	{"abstract", "entity", "Something you can't touch: an idea, a feeling."},
+	{"person", "physical", "A human being."},
+	{"animal", "physical", "A living creature that isn't a person."},
+	{"artifact", "physical", "A made thing."},
+	{"food", "physical", "Something to eat or drink."},
+	{"rod", "artifact", "A long, thin made thing: an umbrella, a pencil. Long or short, not tall."},
+	{"idea", "abstract", "A thought or plan."},
+	{"feeling", "abstract", "Something felt."},
+}
+
+var seedAttrs = []Attribute{
+	ageAttr,
+	// umbrellas aren't tall, they're long (user, 2026-11-15): height skips rods, length covers them
+	{Name: "height", AppliesTo: []string{"person", "animal", "artifact"}, Except: []string{"rod"}, Scale: []string{"short", "tall"},
+		Words: map[string]map[string]string{"short": {"*": "short"}, "tall": {"*": "tall"}}},
+	{Name: "length", AppliesTo: []string{"rod"}, Scale: []string{"short", "long"},
+		Words: map[string]map[string]string{"short": {"*": "short"}, "long": {"*": "long"}}},
+	{Name: "size", AppliesTo: []string{"physical"}, Scale: []string{"small", "big"},
+		Words: map[string]map[string]string{"small": {"*": "small"}, "big": {"*": "big"}}},
+	{Name: "weight", AppliesTo: []string{"physical"}, Scale: []string{"light", "heavy"},
+		Words: map[string]map[string]string{"light": {"*": "light"}, "heavy": {"*": "heavy"}}},
+}
+
+var seedEntities = map[string]Entity{
+	"mara": {Type: "person", Name: "Mara", Pronouns: "she"}, "tom": {Type: "person", Name: "Tom", Pronouns: "he"},
+	"sam": {Type: "person", Name: "Sam", Pronouns: "they"}, "ana": {Type: "person", Name: "Ana", Pronouns: "she"},
+	"lee": {Type: "person", Name: "Lee", Pronouns: "he"}, "noor": {Type: "person", Name: "Noor", Pronouns: "she"},
+	"book": {Type: "artifact", Noun: "book", Pronouns: "it"}, "cup": {Type: "artifact", Noun: "cup", Pronouns: "it"},
+	"box": {Type: "artifact", Noun: "box", Pronouns: "it"}, "lamp": {Type: "artifact", Noun: "lamp", Pronouns: "it"},
+	"umbrella": {Type: "rod", Noun: "umbrella", Pronouns: "it"}, "chair": {Type: "artifact", Noun: "chair", Pronouns: "it"},
+	"dog": {Type: "animal", Noun: "dog", Pronouns: "it"}, "apple": {Type: "food", Noun: "apple", Pronouns: "it"},
+	"kai": {Type: "person", Name: "Kai", Pronouns: "they"}, "omar": {Type: "person", Name: "Omar", Pronouns: "he"},
+	"lin":    {Type: "person", Name: "Lin", Pronouns: "she"},
+	"pencil": {Type: "rod", Noun: "pencil", Pronouns: "it"}, "ladder": {Type: "artifact", Noun: "ladder", Pronouns: "it"},
+	"bottle": {Type: "artifact", Noun: "bottle", Pronouns: "it"}, "table": {Type: "artifact", Noun: "table", Pronouns: "it"},
+	"doom": {Type: "feeling", Noun: "sense of impending doom", Pronouns: "it", Coerced: "physical"},
+}
+
 var ageAttr = Attribute{Name: "age", AppliesTo: []string{"physical"}, Scale: []string{"young", "old"},
-	Words: map[string]map[string]string{"young": {"*": "young", "artifact": "new"}, "old": {"*": "old"}}, StableOrder: true, Direction: "increasing"}
+	Words: map[string]map[string]string{"young": {"*": "young", "artifact": "new", "food": "fresh"}, "old": {"*": "old"}}, StableOrder: true, Direction: "increasing"}
 
 func Seed(g *grammar.Store) (bool, error) {
 	if len(g.Heads("frame")) > 0 {
@@ -38,31 +79,13 @@ func Seed(g *grammar.Store) (bool, error) {
 	}
 	m := grammar.Meta{By: "ganglion", Why: "create", Client: "ganglion/seed"}
 	put := func(id, kind string, v any) error { _, err := g.Put(id, kind, v, m); return err }
-	types := []Type{
-		{"entity", "", "Anything at all."},
-		{"physical", "entity", "Something you could touch."},
-		{"abstract", "entity", "Something you can't touch: an idea, a feeling."},
-		{"person", "physical", "A human being."},
-		{"animal", "physical", "A living creature that isn't a person."},
-		{"artifact", "physical", "A made thing."},
-		{"food", "physical", "Something to eat or drink."},
-		{"idea", "abstract", "A thought or plan."},
-		{"feeling", "abstract", "Something felt."},
-	}
+	types := seedTypes
 	for _, t := range types {
 		if err := put("type:"+t.Name, "type", t); err != nil {
 			return false, err
 		}
 	}
-	attrs := []Attribute{
-		ageAttr,
-		{Name: "height", AppliesTo: []string{"person", "animal", "artifact"}, Scale: []string{"short", "tall"},
-			Words: map[string]map[string]string{"short": {"*": "short"}, "tall": {"*": "tall"}}},
-		{Name: "size", AppliesTo: []string{"physical"}, Scale: []string{"small", "big"},
-			Words: map[string]map[string]string{"small": {"*": "small"}, "big": {"*": "big"}}},
-		{Name: "weight", AppliesTo: []string{"physical"}, Scale: []string{"light", "heavy"},
-			Words: map[string]map[string]string{"light": {"*": "light"}, "heavy": {"*": "heavy"}}},
-	}
+	attrs := seedAttrs
 	for _, a := range attrs {
 		if err := put("attribute:"+a.Name, "attribute", a); err != nil {
 			return false, err
@@ -74,16 +97,7 @@ func Seed(g *grammar.Store) (bool, error) {
 			return false, err
 		}
 	}
-	ents := map[string]Entity{
-		"mara": {Type: "person", Name: "Mara", Pronouns: "she"}, "tom": {Type: "person", Name: "Tom", Pronouns: "he"},
-		"sam": {Type: "person", Name: "Sam", Pronouns: "they"}, "ana": {Type: "person", Name: "Ana", Pronouns: "she"},
-		"lee": {Type: "person", Name: "Lee", Pronouns: "he"}, "noor": {Type: "person", Name: "Noor", Pronouns: "she"},
-		"book": {Type: "artifact", Noun: "book", Pronouns: "it"}, "cup": {Type: "artifact", Noun: "cup", Pronouns: "it"},
-		"box": {Type: "artifact", Noun: "box", Pronouns: "it"}, "lamp": {Type: "artifact", Noun: "lamp", Pronouns: "it"},
-		"umbrella": {Type: "artifact", Noun: "umbrella", Pronouns: "it"}, "chair": {Type: "artifact", Noun: "chair", Pronouns: "it"},
-		"dog": {Type: "animal", Noun: "dog", Pronouns: "it"}, "apple": {Type: "food", Noun: "apple", Pronouns: "it"},
-		"doom": {Type: "feeling", Noun: "sense of impending doom", Pronouns: "it", Coerced: "physical"},
-	}
+	ents := seedEntities
 	for id, e := range ents {
 		if err := put("entity:"+id, "entity", e); err != nil {
 			return false, err
@@ -96,13 +110,23 @@ func Seed(g *grammar.Store) (bool, error) {
 // grammar seeded before a change gets it too. Objects with any later version
 // are left alone.
 func upgrade(g *grammar.Store) error {
-	want := map[string]any{"attribute:age": ageAttr}
+	want := map[string]any{}
+	for _, t := range seedTypes {
+		want["type:"+t.Name] = t
+	}
+	for _, a := range seedAttrs {
+		want["attribute:"+a.Name] = a
+	}
 	for _, f := range seedFrames {
 		want["frame:"+f.Name] = f
 	}
+	for id, e := range seedEntities {
+		want["entity:"+id] = e
+	}
 	for id, want := range want {
+		// new seed objects are added; seeded ones nobody has touched are updated
 		h := g.History(id)
-		untouched := len(h) > 0
+		untouched := true
 		for _, v := range h {
 			untouched = untouched && v.By == "ganglion" && v.Client == "ganglion/seed"
 		}

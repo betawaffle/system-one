@@ -23,6 +23,7 @@ type Type struct {
 type Attribute struct {
 	Name      string   `json:"name"`
 	AppliesTo []string `json:"applies_to"`
+	Except    []string `json:"except,omitempty"` // types it doesn't apply to after all (a rod isn't tall)
 	// Scale lists values low to high; Words gives each value's adjective,
 	// by holder type with "*" as the default (06/P4).
 	Scale []string                     `json:"scale"`
@@ -275,4 +276,19 @@ func (w *World) Implications(t Template, m Meaning) (implies []string, skip bool
 		implies = append(implies, "refuses")
 	}
 	return implies, false
+}
+
+// Applies reports whether an attribute fits a holder type (06/P2).
+func (a Attribute) Applies(t string, w *World) bool {
+	for _, x := range a.Except {
+		if w.IsA(t, x) {
+			return false
+		}
+	}
+	for _, x := range a.AppliesTo {
+		if w.IsA(t, x) {
+			return true
+		}
+	}
+	return false
 }

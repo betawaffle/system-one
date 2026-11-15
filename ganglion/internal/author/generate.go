@@ -368,11 +368,8 @@ func fitting(pool []string, m Meaning, w *World) []string {
 		a := w.Attributes["attribute:"+fl.Value.Attribute]
 		var out []string
 		for _, id := range pool {
-			for _, t := range a.AppliesTo {
-				if w.IsA(w.Entities[id].Type, t) {
-					out = append(out, id)
-					break
-				}
+			if a.Applies(w.Entities[id].Type, w) {
+				out = append(out, id)
 			}
 		}
 		return out

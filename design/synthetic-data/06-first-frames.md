@@ -45,6 +45,9 @@ P8b. The user's nuance: "X will be younger than Y" is fine if X isn't born yet, 
 P9. The user asked whether the age rule should apply to "this apple is old". Not the stable-order one (P8): one holder's age does change, so "wasn't old" and "will be old" are real meanings. But age only goes up, which gives a neighbouring rule. For the high value, "was old" implies the holder is gone (it's older now), and "won't be old" implies it won't last. For the low value, "will be new" can't happen. Other combinations are fine.
 P9a. An attribute can say `direction: increasing` (age). Those combinations are skipped by the generator until the world model can state existence, as in P8b. The rule sits on the attribute and applies at generation time, so templates saved before or after it are the same.
 
+P10. "Umbrellas aren't tall, they are long." (user, from a meaning card offering "umbrella, height = tall"). Which dimension a thing has depends on its shape, finer than "artifact". Fix: a new type `rod` (long, thin made things: umbrella, pencil) under artifact; attributes can list types they don't apply to (`except`), so height skips rods; a new attribute `length` (short/long) covers them. Also: age = young is "fresh" for food, now that Next offers both ends of a scale.
+P10a. This is the type system growing from what the user notices (sd/02/D60). Doing it by hand for now; editing types and attributes in the UI is T18.
+
 ## Starting types
 
 Y1. A small tree, grown as the user writes (sd/02/D60):
@@ -69,6 +72,8 @@ E3. located(b1, on, t1) + own(tom, b1) + has-property(b1, age=old): "Tom's old b
 
 ## Future topics
 
+T18. Editing types, attributes and entities in the UI, so findings like P10 don't need code.
+
 T13. Superlatives ("the tallest"): compare against a group, so it needs groups of entities first.
 T14. Generics ("Dogs are animals", "Books have pages"): statements about kinds, not individuals.
 T15. Existentials ("There is a book on the table", "There are two"): a viewpoint on located, with its own agreement quirks.
@@ -76,6 +81,7 @@ T16. Numbers and quantities ("four legs", "two books"), and numeric values for a
 
 ## Decided
 
+D109. Rods (umbrella, pencil) have length, not height; attributes can have exceptions (P10). (user: "Umbrellas aren't tall, they are long.")
 D102. Age only increases; the generator skips "was old", "won't be old" and "will be new" (and their questions) until the world model (P9, P9a). (user: "Yes")
 D100. Age has a stable order; its comparisons are generated in the present only for now, and Sounds Odd adds no time modifier to them (P8a). Past and future come back with the world model, carrying their implied meaning: not born yet, or no longer alive (P8b). Answers Q72. (user: "Proposal sounds fine. Slight nuance: "X will be younger than Y" would be _ok_ if X is a baby that isn't born yet. And past tense is generally fine too, but kinda implies the person died.")
 D81. First frames F1–F6; kinship and has-attribute later (F7). Answers Q54. (user: "Yes.")

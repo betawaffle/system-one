@@ -3,6 +3,7 @@ package author
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"ganglion/internal/realize"
 )
@@ -10,7 +11,43 @@ import (
 // Next picks a meaning to write for (08/W8, D93): the frame with the fewest
 // templates, with distinctive fillers. Every fifth pick is a deliberate joke
 // when the grammar has a coerced entity (02/L8, D61). n varies the choice.
-func Next(w *World, n int, frameID string) (Meaning, error) {
+func Next(w *World, n int, frameID string, used map[string]bool) (Meaning, error) {
+	// skip meanings already written for, so Next keeps offering new ones
+	var first Meaning
+	var err error
+	for k := 0; k < 97; k++ {
+		m, e := nextAt(w, n+k, frameID)
+		if e != nil {
+			if k == 0 {
+				err = e
+			}
+			continue
+		}
+		if k == 0 {
+			first = m
+		}
+		if !used[Signature(m)] {
+			return m, nil
+		}
+	}
+	return first, err
+}
+
+// Signature identifies a meaning by frame and fillers, ignoring features.
+func Signature(m Meaning) string {
+	var parts []string
+	for role, fl := range m.Roles {
+		v := fl.Entity
+		if fl.Value != nil {
+			v = fl.Value.Attribute + "=" + fl.Value.Value + fl.Value.Dir
+		}
+		parts = append(parts, role+":"+v)
+	}
+	sort.Strings(parts)
+	return m.Frame + "|" + strings.Join(parts, ",")
+}
+
+func nextAt(w *World, n int, frameID string) (Meaning, error) {
 	counts := map[string]int{}
 	for _, t := range w.Templates {
 		counts[t.Means.Frame]++
@@ -49,7 +86,21 @@ func Next(w *World, n int, frameID string) (Meaning, error) {
 		m.Why = "Picked by hand."
 	}
 	used := map[string]bool{}
-	for i, r := range f.Roles {
+	stride := 1
+	// shuffle the walk so consecutive presses differ in every role, not just
+	// the first: step through all combinations by a large prime
+	total := 8 // attribute choices times scale ends, at most
+	for _, r := range f.Roles {
+		if r.Type != "property" {
+			total *= max(1, len(w.EntitiesOf(r.Type)))
+		}
+	}
+	step := 7919
+	for gcd(step, total) != 1 {
+		step += 2
+	}
+	n = (n*step + 1) % total
+	for _, r := range f.Roles {
 		if r.Type == "property" {
 			continue
 		}
@@ -74,8 +125,12 @@ func Next(w *World, n int, frameID string) (Meaning, error) {
 				pool = things
 			}
 		}
+		// each role takes its own digit of n, so successive n walk through
+		// every combination of fillers instead of a short cycle
+		pick := (n / stride) % len(pool)
+		stride *= len(pool)
 		for k := 0; k < len(pool); k++ {
-			e := pool[(n*7+i*3+k)%len(pool)]
+			e := pool[(pick+k)%len(pool)]
 			if !used[e] {
 				m.Roles[r.Name] = Filler{Entity: e}
 				used[e] = true
@@ -90,22 +145,22 @@ func Next(w *World, n int, frameID string) (Meaning, error) {
 		holder := holderType(m, w)
 		var attrs []string
 		for aid, a := range w.Attributes {
-			for _, t := range a.AppliesTo {
-				if w.IsA(holder, t) {
-					attrs = append(attrs, aid)
-					break
-				}
+			if a.Applies(holder, w) {
+				attrs = append(attrs, aid)
 			}
 		}
 		sort.Strings(attrs)
 		if len(attrs) == 0 {
 			return Meaning{}, fmt.Errorf("no attribute fits %s", holder)
 		}
-		a := w.Attributes[attrs[n%len(attrs)]]
+		a := w.Attributes[attrs[(n/stride)%len(attrs)]]
+		stride *= len(attrs)
+		end := (n / stride) % 2 // both ends of the scale: old and new, tall and short
+		stride *= 2
 		if id == "frame:compare" {
-			m.Roles[r.Name] = Filler{Value: &Value{Attribute: a.Name, Dir: "more"}}
+			m.Roles[r.Name] = Filler{Value: &Value{Attribute: a.Name, Dir: []string{"more", "less"}[end]}}
 		} else {
-			m.Roles[r.Name] = Filler{Value: &Value{Attribute: a.Name, Value: a.Scale[len(a.Scale)-1]}}
+			m.Roles[r.Name] = Filler{Value: &Value{Attribute: a.Name, Value: a.Scale[[]int{len(a.Scale) - 1, 0}[end]]}}
 		}
 	}
 	if joke {
@@ -122,4 +177,11 @@ func Next(w *World, n int, frameID string) (Meaning, error) {
 		}
 	}
 	return m, nil
+}
+
+func gcd(a, b int) int {
+	for b != 0 {
+		a, b = b, a%b
+	}
+	return a
 }
