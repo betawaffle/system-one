@@ -1,4 +1,4 @@
-# First frames: states and properties (draft 1, 2026-11-15)
+# First frames: states and properties (draft 2, 2026-11-15)
 
 The first frame family (sd/03/D64). These frames give the descriptions every other frame needs inside its REF slots (sd/04/N3), so they come before transfer.
 
@@ -11,6 +11,7 @@ F4. `part-of(whole: physical, part: physical)`: "The chair has four legs." "The 
 F5. `compare(a: entity, b: entity, attribute: A, direction: more | less | same)`: "Mara is taller than Tom." "The book is as old as the chair."
 F6. `located(thing: physical, place: physical, relation: on | in | under | next-to | …)`: "The book is on the table." A static state, so it belongs here rather than with motion.
 F7. "have" is several frames, like "give" (sd/02/L6): own (F3), part-of (F4), kinship ("Mara has a sister") and attributes ("Mara has red hair"). Kinship and has-attribute come later.
+F8. These frames are also really useful for a model to understand: they are facts about things. (user) So the data serves both directions: generating text from facts, and training a model to read the facts back out of text, with the meaning as an exact label.
 
 ## Properties
 
@@ -66,12 +67,20 @@ T16. Numbers and quantities ("four legs", "two books"), and numeric values for a
 
 ## Decided
 
-(none yet)
+D81. First frames F1–F6; kinship and has-attribute later (F7). Answers Q54. (user: "Yes.")
+D82. Properties as attribute + value, with per-type domains and ordered scales seeded from WordNet (P1–P6). Answers Q55. (user: "Yes.")
+D83. "Not old" and "new" are different meanings (P5). Answers Q56. (user: "Yes.")
+D84. Adjective order applied by code (R3). Answers Q57. (user: "I guess so, not sure I understand what you're asking. What is the alternative? Oh, yeah, ok, this is fine.") The alternative would have been each template spelling out its own adjective order.
+D85. Starting types and attributes as in Y1 and P7, grown as the user writes. Answers Q58. (user: "Yup, sounds good.")
 
 ## Open questions
 
-Q54. First frames F1–F6, with kinship and has-attribute later (F7)? I lean yes. F6 (located) is the most debatable; I include it because it's a state and descriptions like "the book on the table" are too useful to wait for.
-Q55. Properties as attribute + value, with per-type domains and ordered scales seeded from WordNet (P1–P6)? I lean yes.
-Q56. "Not old" and "new" kept as different meanings (P5)? I lean yes.
-Q57. Adjective order applied by code (R3)? I lean yes.
-Q58. Starting types and attributes (Y1, P7)? I lean yes as listed, grown as you write.
+(none for this note)
+
+## Superseded
+
+Q54 (answered by D81). First frames F1–F6?
+Q55 (answered by D82). Properties as attribute + value?
+Q56 (answered by D83). "Not old" and "new" as different meanings?
+Q57 (answered by D84). Adjective order by code?
+Q58 (answered by D85). Starting types and attributes?
