@@ -25,7 +25,7 @@ type Dim struct {
 // Dims lists a template's dimensions for a meaning like the one it was written for.
 func Dims(t Template, m Meaning, w *World) []Dim {
 	var out []Dim
-	verb := Dim{Name: "verb", Title: "Verb form"}
+	verb := Dim{Name: "verb", Title: "Verb form", Values: []string{}}
 	for _, te := range t.Supports.Tense {
 		for _, po := range t.Supports.Polarity {
 			for _, mo := range t.Supports.Mood {
@@ -34,7 +34,9 @@ func Dims(t Template, m Meaning, w *World) []Dim {
 				if w.Stable(m) && te != "present" {
 					continue
 				}
-				if !w.Allowed(mm) {
+				// the form's rules only: a template written for fillers the size
+				// rule now skips still has every form (its samples use others)
+				if !w.FormAllowed(mm) {
 					continue
 				}
 				verb.Values = append(verb.Values, te+" "+po+" "+mo)

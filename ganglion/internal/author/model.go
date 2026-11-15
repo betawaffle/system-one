@@ -82,11 +82,21 @@ func (w *World) KindOf(t string) string {
 // model: an only-increasing attribute rules out combinations that imply the
 // holder stops existing, or that can't happen (06/D102).
 func (w *World) Allowed(m Meaning) bool {
+	return w.Placed(m) && w.FormAllowed(m)
+}
+
+// Placed reports whether a Located meaning's fillers fit by size (06/F6e):
+// the chair isn't in the bottle. It depends on the fillers, not the verb form.
+func (w *World) Placed(m Meaning) bool {
 	if rel, ok := m.Roles["relation"]; ok && rel.Value != nil && m.Roles["thing"].Entity != "" && m.Roles["place"].Entity != "" {
-		if !w.FitsIn(w.Entities[m.Roles["thing"].Entity], w.Entities[m.Roles["place"].Entity], rel.Value.Value) {
-			return false // the chair isn't in the bottle (06/F6e)
-		}
+		return w.FitsIn(w.Entities[m.Roles["thing"].Entity], w.Entities[m.Roles["place"].Entity], rel.Value.Value)
 	}
+	return true
+}
+
+// FormAllowed is the part of Allowed that depends on the verb form: the
+// age rules (06/D102).
+func (w *World) FormAllowed(m Meaning) bool {
 	for _, fl := range m.Roles {
 		v := fl.Value
 		if v == nil || v.Value == "" {

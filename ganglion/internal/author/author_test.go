@@ -684,3 +684,26 @@ func TestCompareSameAndSkip(t *testing.T) {
 		t.Errorf("as…as for same: %v", l.Warnings)
 	}
 }
+
+// a template written for fillers the size rule now skips ("the table's under
+// the bottle") still has every verb form; Coverage crashed on an empty list
+func TestDimsWithSkippedFillers(t *testing.T) {
+	w, lex := setup(t)
+	m := Meaning{Frame: "frame:located", Features: realize.Features{Tense: "present", Polarity: "positive", Mood: "statement"},
+		Roles: map[string]Filler{"thing": {Entity: "entity:table"}, "place": {Entity: "entity:bottle"}, "relation": {Value: &Value{Attribute: "position", Value: "under"}}}}
+	if w.Allowed(m) {
+		t.Fatal("the table under the bottle should be skipped")
+	}
+	tpl, err := Build(Align("the table's under the bottle", m, w, lex), m, w, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range Dims(tpl, m, w) {
+		if d.Name == "verb" && len(d.Values) < 6 {
+			t.Errorf("verb forms: %v", d.Values)
+		}
+	}
+	if len(Samples(tpl, m, w, lex, 1, 6)) == 0 {
+		t.Error("no samples")
+	}
+}

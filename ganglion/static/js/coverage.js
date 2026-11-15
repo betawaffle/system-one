@@ -87,9 +87,9 @@ function card(it) {
         h("button", { class: "btn", onclick: () => review.has(it.id) ? (review.delete(it.id), render(), sizeBars()) : openReview(it), "aria-expanded": String(review.has(it.id)) }, "Judged"),
         h("button", { class: "btn primary", onclick: () => show(it) }, it.done < it.total ? "Show Me" : "Show More"))),
     h("div", { class: "card-body stack tight" },
-      it.dims.map(d => h("div", { class: "dimrow" },
+      (it.dims || []).map(d => h("div", { class: "dimrow" },
         h("span", { class: "label" }, d.title),
-        h("div", { class: "row chips" }, d.values.map((v, i) => d.judged[i]
+        h("div", { class: "row chips" }, (d.values || []).map((v, i) => (d.judged || [])[i]
           ? h("button", { class: "tag ok chipbtn", "data-tip": "Judged: click to see the samples", onclick: () => openReview(it, [d.name, v]) }, "✓ ", v)
           : h("span", { class: "tag pending", "data-tip": "Not judged yet" }, "○ ", v))))),
       review.has(it.id) ? reviewBlock(it) : null,
