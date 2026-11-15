@@ -84,13 +84,17 @@ A15. With no frames yet, writing starts from a frame, not a meaning:
 D58. A word-by-word helper as in A8. (user)
 D62. Templates are trees, all the way down. Answers Q36. (user: "Fine with me. It's trees all the way down, my friend.")
 D63. Flag extra meaning and ask what was added. Answers Q37. (user: "Yes, but how?" Mechanism proposed in A13; Q39.)
+D64. First frames: states and properties, then transfer (A14a). Answers Q38. (user: "Sounds good.")
+D65. The A13 mechanism, including the A13d choices. Answers Q39. (user: "Yep, sounds good.")
 
 ## Open questions
 
-Q38. First frame family (A14)? I lean states and properties, then transfer. (user: "Maybe? What other options could we choose from?")
-Q39. Does the A13 mechanism look right, especially the A13d choices?
+(none for this note)
 
 ## Superseded
+
+Q38 (answered by D64). First frame family (A14)?
+Q39 (answered by D65). Does the A13 mechanism look right?
 
 Q36 (answered by D62). Templates as small trees or flat strings?
 Q37 (answered by D63). Sentences with extra meaning: flag and ask what was added?
