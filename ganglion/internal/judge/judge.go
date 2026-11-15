@@ -22,6 +22,9 @@ var promptFile string
 
 var tmpl = template.Must(template.New("judge").Parse(promptFile))
 
+// PromptFile is the prompt template itself, for the page to show.
+func PromptFile() string { return promptFile }
+
 // Version is the prompt file's hash, recorded with every call and verdict.
 var Version = func() string { s := sha256.Sum256([]byte(promptFile)); return hex.EncodeToString(s[:])[:12] }()
 

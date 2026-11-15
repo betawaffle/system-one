@@ -177,3 +177,49 @@ func (s *Server) modelStatus(w http.ResponseWriter, r *http.Request) {
 	up, state := s.cfg.LLM.Status(r.Context())
 	jsonOut(w, map[string]any{"up": up, "state": state, "model": s.cfg.LLM.Model, "prompt": judge.Version, "few_shot": s.cfg.FewShot})
 }
+
+// GET /api/model/prompt: the current judge prompt template (10/D113a).
+func (s *Server) modelPrompt(w http.ResponseWriter, r *http.Request) {
+	jsonOut(w, map[string]any{"version": judge.Version, "text": judge.PromptFile(), "few_shot": s.cfg.FewShot,
+		"file": "ganglion/internal/judge/prompts/judge.md"})
+}
+
+// GET /api/model/call?id=ID: exactly what was sent and what came back for
+// one call, from the call log, including the model's reasoning.
+func (s *Server) modelCall(w http.ResponseWriter, r *http.Request) {
+	if s.cfg.LLM == nil {
+		http.Error(w, "no model configured", 503)
+		return
+	}
+	rec, err := s.cfg.LLM.Find(r.URL.Query().Get("id"))
+	if err != nil {
+		http.Error(w, "no such call", 404)
+		return
+	}
+	var req struct {
+		Messages        []map[string]string `json:"messages"`
+		ReasoningEffort string              `json:"reasoning_effort"`
+		Temperature     float64             `json:"temperature"`
+		Seed            int                 `json:"seed"`
+	}
+	json.Unmarshal(rec.Request, &req)
+	var resp struct {
+		Choices []struct {
+			Message struct {
+				Content          string `json:"content"`
+				ReasoningContent string `json:"reasoning_content"`
+			} `json:"message"`
+		} `json:"choices"`
+		Usage   map[string]any `json:"usage"`
+		Timings map[string]any `json:"timings"`
+	}
+	json.Unmarshal([]byte(rec.Response), &resp)
+	out := map[string]any{"id": rec.ID, "prompt": rec.Prompt, "sent": rec.Sent, "done": rec.Done, "model": rec.Returned,
+		"messages": req.Messages, "effort": req.ReasoningEffort, "temperature": req.Temperature, "seed": req.Seed,
+		"usage": resp.Usage, "timings": resp.Timings, "error": rec.Error}
+	if len(resp.Choices) > 0 {
+		out["answer"] = resp.Choices[0].Message.Content
+		out["reasoning"] = resp.Choices[0].Message.ReasoningContent
+	}
+	jsonOut(w, out)
+}

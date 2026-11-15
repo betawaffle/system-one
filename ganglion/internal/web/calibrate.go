@@ -91,11 +91,14 @@ func (s *Server) modelCalibrate(w http.ResponseWriter, r *http.Request) {
 }
 
 type disagreement struct {
-	Text  string       `json:"text"`
-	Line  string       `json:"line"`
-	Yours string       `json:"yours"`
-	Model modelVerdict `json:"model"`
-	At    string       `json:"at"`
+	Text    string         `json:"text"`
+	Line    string         `json:"line"`
+	Yours   string         `json:"yours"`
+	Mine    priorVerdict   `json:"mine"`
+	Model   modelVerdict   `json:"model"`
+	At      string         `json:"at"`
+	Sample  author.Sample  `json:"sample"` // so the page can change your verdict here
+	Meaning author.Meaning `json:"meaning"`
 }
 
 type calStats struct {
@@ -127,7 +130,7 @@ func (s *Server) modelCalibration(w http.ResponseWriter, r *http.Request) {
 		key := mv.Prompt + "/" + mv.Effort
 		st := stats[key]
 		if st == nil {
-			st = &calStats{Prompt: mv.Prompt, Effort: mv.Effort, Current: mv.Prompt == judge.Version, ByYours: map[string][2]int{}, Matrix: map[string]map[string]int{}}
+			st = &calStats{Prompt: mv.Prompt, Effort: mv.Effort, Current: mv.Prompt == judge.Version, ByYours: map[string][2]int{}, Matrix: map[string]map[string]int{}, Disagree: []disagreement{}}
 			stats[key] = st
 		}
 		st.N++
@@ -141,7 +144,7 @@ func (s *Server) modelCalibration(w http.ResponseWriter, r *http.Request) {
 			st.Agree++
 			b[0]++
 		} else {
-			st.Disagree = append(st.Disagree, disagreement{Text: text, Line: v.Line, Yours: describe(v), Model: mv, At: v.At})
+			st.Disagree = append(st.Disagree, disagreement{Text: text, Line: v.Line, Yours: describe(v), Mine: v, Model: mv, At: v.At, Sample: v.Sample, Meaning: v.Meaning})
 		}
 		st.ByYours[v.Verdict] = b
 	}

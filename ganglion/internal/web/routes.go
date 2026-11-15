@@ -34,6 +34,8 @@ func (s *Server) routes() {
 	m.HandleFunc("GET /api/write/notes", s.writeNotes)
 	m.HandleFunc("POST /api/model/judge", s.modelJudge)
 	m.HandleFunc("GET /api/model/status", s.modelStatus)
+	m.HandleFunc("GET /api/model/prompt", s.modelPrompt)
+	m.HandleFunc("GET /api/model/call", s.modelCall)
 	m.HandleFunc("POST /api/model/calibrate", s.modelCalibrate)
 	m.HandleFunc("GET /api/model/calibration", s.modelCalibration)
 	m.HandleFunc("GET /api/lexicon", s.lexiconWord)

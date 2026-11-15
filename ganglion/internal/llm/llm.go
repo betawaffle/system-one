@@ -294,3 +294,25 @@ func (c *Client) log(rec Record) error {
 	}
 	return f.Sync()
 }
+
+// Find returns one logged call by id, searching the monthly files newest first.
+func (c *Client) Find(id string) (*Record, error) {
+	paths, _ := filepath.Glob(filepath.Join(c.Dir, "*.jsonl"))
+	for i := len(paths) - 1; i >= 0; i-- {
+		b, err := os.ReadFile(paths[i])
+		if err != nil {
+			continue
+		}
+		needle := []byte(`"id":"` + id + `"`)
+		for _, line := range bytes.Split(b, []byte("\n")) {
+			if !bytes.Contains(line, needle) {
+				continue
+			}
+			var r Record
+			if json.Unmarshal(line, &r) == nil && r.ID == id {
+				return &r, nil
+			}
+		}
+	}
+	return nil, os.ErrNotExist
+}

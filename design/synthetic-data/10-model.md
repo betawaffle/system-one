@@ -53,6 +53,8 @@ M6. Later: the random audit before an export (sd/08/W9d), where the model judges
 ## Build status (2026-11-15)
 
 B1. Built: llm-server enabled at boot (D115); the logged call path (`internal/llm`, records in `<data>/model-calls/`, chat template stored by hash, model file sha256 cached in `model-files.json`); the first pass on Write and Coverage (M1) with Accept (key A), accepted verdicts recorded with `via: model` and the call id; calibration on Coverage (M2) per prompt version and effort, with the disagreements listed. Few-shot examples are built and off (`-few-shot` / `GANGLION_FEW_SHOT=1`).
+B1a. Seeing and fixing (user: couldn't undo a wrong verdict, and couldn't see the prompt): Coverage's model panel shows the prompt template (folded), and every suggestion and disagreement has **Why?**, which opens the exact messages sent, the model's reasoning and its answer, from the call log. Each disagreement has Use Model's, ✓ Fine and Clear Mine, so a wrong verdict of yours can be fixed where it shows up; the Judged list per template (sd/08/W9e) still works for any verdict.
+B1b. Editing the prompt: it's `ganglion/internal/judge/prompts/judge.md`; an edit plus a deploy makes a new version, and calibration then shows old and new side by side.
 B2. Not built yet: span suggestions (M3), the word helper's table (M4), rule ideas (M5), flagged-first sorting (M1 shows a highlighted border on flagged and low-confidence suggestions instead, so the list doesn't jump while you review).
 B3. Measured: 8 samples judged in 11–16 s in parallel at low effort; a cold start adds ~20 s.
 

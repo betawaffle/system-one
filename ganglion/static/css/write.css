@@ -82,3 +82,6 @@ details.tree[open] summary, details.forms[open] summary { margin-bottom: var(--s
 .model-line.flagged { border-color: var(--warn); }
 .model-who { font: 600 var(--t-xs) var(--sans); color: var(--series-1); text-transform: uppercase; letter-spacing: 0.06em; }
 .disagree { display: grid; gap: 2px; padding: var(--s2) var(--s3); border: 1px solid var(--line); border-radius: var(--r-md); }
+dialog.calldlg { max-width: min(860px, calc(100vw - 32px)); max-height: calc(100vh - 48px); }
+.calldlg pre { max-height: 40vh; overflow: auto; }
+.btn.chip.ghostchip { border-style: dashed; }
