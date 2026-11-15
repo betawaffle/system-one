@@ -88,7 +88,10 @@ func (x *writer) brokenSet(texts []string) []jevItem {
 	}
 	if v, ok := find("frame:compare", "present", "positive", "statement"); ok {
 		t, a := v.Sample.Text, v.Sample.Fillers["a"]
-		add(v, strings.Replace(t, " is ", " are ", 1), "grammar", "agreement: are", nil)
+		// not "Ana are": a band named Ana takes "are" in British English (user)
+		if at, ok := v.Meaning.Roles["attribute"]; ok && at.Value != nil && at.Value.Attribute == "age" {
+			add(v, strings.Replace(t, " is older ", " is more older ", 1), "grammar", "double comparative: more older", nil)
+		}
 		add(v, strings.Replace(t, " is ", " ", 1), "grammar", "verb dropped", nil)
 		if a != "" && strings.HasPrefix(t, cap1(a)+" is ") {
 			add(v, "The idea is "+strings.TrimPrefix(t, cap1(a)+" is "), "filler", "an idea in a comparison", func(s *author.Sample) { s.Fillers["a"] = "the idea" })
