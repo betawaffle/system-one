@@ -5,6 +5,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"embed"
 	"flag"
 	"fmt"
@@ -18,6 +20,8 @@ import (
 	"syscall"
 	"time"
 
+	"ganglion/internal/grammar"
+	"ganglion/internal/lexicon"
 	"ganglion/internal/store"
 	"ganglion/internal/web"
 	"ganglion/internal/worker"
@@ -36,6 +40,10 @@ func main() {
 	}
 	if len(os.Args) > 1 && os.Args[1] == "blacklist" {
 		blacklistCmd(defaultData, os.Args[2:])
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "lexicon" {
+		lexiconCmd(defaultData, os.Args[2:])
 		return
 	}
 	if len(os.Args) > 1 && os.Args[1] == "snapshot-db" {
@@ -96,6 +104,55 @@ func envOr(k, def string) string {
 		return v
 	}
 	return def
+}
+
+// lexiconCmd: ganglion lexicon import [-data DIR] [-wordnet DIR] [-cmudict FILE]
+// Builds a lexicon base file from the raw downloads (design/synthetic-data/05, 09/Z6).
+func lexiconCmd(defaultData string, args []string) {
+	if len(args) == 0 || args[0] != "import" {
+		log.Fatal("usage: ganglion lexicon import [-data DIR] [-wordnet DIR] [-cmudict FILE]")
+	}
+	fl := flag.NewFlagSet("lexicon import", flag.ExitOnError)
+	data := fl.String("data", defaultData, "data directory")
+	wn := fl.String("wordnet", "", "WordNet dict directory (default <data>/raw/wordnet-3.1/dict)")
+	cmu := fl.String("cmudict", "", "CMUdict file (default <data>/raw/cmudict/cmudict.dict)")
+	fl.Parse(args[1:])
+	if *wn == "" {
+		*wn = filepath.Join(*data, "raw", "wordnet-3.1", "dict")
+	}
+	if *cmu == "" {
+		*cmu = filepath.Join(*data, "raw", "cmudict", "cmudict.dict")
+	}
+	g, err := grammar.Open(filepath.Join(*data, "grammar"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	start := time.Now()
+	entries, err := lexicon.Build(lexicon.Sources{WordNetDict: *wn, CMUDict: *cmu})
+	if err != nil {
+		log.Fatal(err)
+	}
+	path, hash, err := lexicon.Write(filepath.Join(g.Dir(), "lexicon"), entries)
+	if err != nil {
+		log.Fatal(err)
+	}
+	doubt := map[string]int{}
+	for _, e := range entries {
+		doubt[e.POS] += min(len(e.Doubt), 1)
+	}
+	src := map[string]any{}
+	for name, p := range map[string]string{"wordnet_index_noun": filepath.Join(*wn, "index.noun"), "wordnet_index_verb": filepath.Join(*wn, "index.verb"), "wordnet_index_adj": filepath.Join(*wn, "index.adj"), "wordnet_verb_exc": filepath.Join(*wn, "verb.exc"), "wordnet_noun_exc": filepath.Join(*wn, "noun.exc"), "wordnet_adj_exc": filepath.Join(*wn, "adj.exc"), "cmudict": *cmu} {
+		b, err := os.ReadFile(p)
+		if err != nil {
+			log.Fatal(err)
+		}
+		sum := sha256.Sum256(b)
+		src[name] = hex.EncodeToString(sum[:])
+	}
+	if _, err := g.AddEvent("lexicon-import", "ganglion", "ganglion/cli", map[string]any{"base": hash, "entries": len(entries), "doubt": doubt, "sources": src}); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%d entries (%d nouns, %d verbs, %d adjectives with a guessed form) in %s\n%s\n", len(entries), doubt["noun"], doubt["verb"], doubt["adj"], time.Since(start).Round(time.Millisecond), path)
 }
 
 // snapshotCmd: ganglion snapshot-db [-data DIR] [-out DIR]
