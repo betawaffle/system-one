@@ -18,11 +18,13 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 
 - sd/09 data shapes: (none yet)
 
-- sd/10 model: D110 model first pass, user reviews, D111 llm-server with gpt-oss-120b, D112 one call per sample, D113 few-shot off to start, prompts versioned, D114 accept one at a time, D115 llm-server at boot, D116 low effort first.
+- sd/10 model: D110 model first pass, user reviews, D111 llm-server with gpt-oss-120b, D112 one call per sample, D113 few-shot off to start, prompts versioned, D114 accept one at a time, D115 llm-server at boot, D116 low effort first, D117 try narrow checks, keep only if they beat v2.
 
 ## Open questions (all)
 
 - Q71 data shapes for the first build (sd/09). Comment on anything off; cheap to change for now.
+- Q78 the plan for the next checks run (sd/10/J8–J13), and whether ✕ samples made in code are a fair test.
+- Q79 back to v2 on Write and Coverage now (sd/10/J12)?
 
 ## Future topics (all)
 

@@ -66,6 +66,36 @@ P2. `1b5ecc4381a3`: adds how to read a sample (the meaning says what it's about;
 P3. `26eece049f8f`: adds a list of what tense and wording imply (facts that don't change, habit, refusal, this/that, other meanings). Much worse: 26 of 44 against v2's 40 of 44 at low effort. It said "implies refusal" for nearly everything ("That apple isn't old."), probably the list combined with "use the person's earlier notes word for word" and "implies refusal" being one of those notes; and it still passed the age ✕. Reverted to v2 the same day; v3's results stay in the log.
 P3a. Lessons for the next try: change one thing at a time; don't push it to reuse notes word for word (offer them as wording to borrow only when they describe exactly the same thing); and add guidance aimed at the one gap (facts that can't change across tenses) rather than a list of everything.
 
+## Narrow checks (the Jev route)
+
+J1. Why: one open question ("is this okay?", five verdicts, six reasons) is hard for a local model; narrow yes/no questions suit it far better (sd/00 jev). The task is whether a sentence makes sense, which mostly has a right answer, so each check is a question with a fact behind it.
+J2. Checks, one call each, run in parallel; each answers yes or no, quotes the words involved, and says why in under 12 words:
+  - **form**: is any word spelled or inflected wrong? → ✕ Word Form
+  - **grammar**: is it broken English? → ✕ Ungrammatical
+  - **filler**: can each thing really fill its role, or have that property? → ✕ Wrong Kind of Filler
+  - **meaning**: does it say something its tags don't, or leave something out? → ✕ Means Something Else
+  - **change**: does the tense suggest the fact is different at another time, and if so, could it really be different? Only an impossible change counts → ✕ Other ("can't change"). The gap the single prompt never caught (P3a).
+  - **implies**: would a reader infer more than the tags say, beyond what's already recorded? → ◐ implies
+  - **context**: would it be natural as the first sentence of a conversation? No → ◐ context
+J3. Code makes the verdict, never the model: the first ✕ check in that order wins, then implies, then context, else ✓. Its note is the deciding check's reason. Confidence is the deciding check's, or for ✓ the lowest across checks.
+J4. The person's earlier notes go only to implies and context, as wording to borrow when it describes exactly the same thing (P3a).
+J5. Version: the hash of the checks prompt file plus the combining rules' version, so calibration compares it against v2 like any prompt.
+J6. Shown: the model line says which check decided; Why? opens that call, with every check's answer listed to switch between them. Calibration adds, per check, how often it fired on your ✓ (false alarms) and on your ◐ and ✕.
+J2a. Change is asked only for state frames; for actions ("Did Lee give…") code answers no without a call.
+J7. Cost: seven calls per sample instead of one, and with 16 running at once each takes ~75 s, so 44 samples take ~25 min (v2: a few minutes) and a Write preview of 8 samples waits ~1–2 min.
+
+P4. `20fb3318f9a9` (checks-1): **9 of 44** (✓ 8/39, ◐ 1/1, ✕ 0/4). False alarms on your ✓: implies 27/39, context 21/39, change 4/39, meaning 3/39, form 1/39. Implies counted the literal meaning (a negative implying the opposite, "his lamp" implying ownership, a question implying the speaker doesn't know); context said any named thing "needs prior mention"; meaning read "positive" on a question as a mismatch. Change saw the tense right on all four age ✕ ("future tense implies not older now") and then said the age order *can* change, despite that example in the prompt.
+P5. checks-3: implies and context tightened to exclude the literal meaning and to accept names, "this", "that" and possessives as openers (your ✓ include "That apple is old."); meaning told that a positive question isn't a mismatch; change skipped for actions, and made to write out the opposite fact first ("then") before judging whether it can change, with the reason ages keep their order. Caveat: that reason is close to the very ✕ cases being measured, so a catch here proves less than it looks; fresh ✕ samples are needed. Its run was stopped part way (user: "Just kill this run, and don't start the next one until we have a better plan in place.").
+
+## Plan before the next run
+
+J8. Measure first: the same check prompt at 1, 2, 4, 8 and 16 at once, about 50 short calls (~2 min). With 16 at once the server managed ~20 tok/s in total, below one call alone (~52 tok/s), so the fastest setting is probably far lower. Cap ganglion's parallel calls there (it affects v2 too).
+J9. One call per sample, with every question as its own field in a fixed order, each with its words and why; code still makes the verdict (J3). Seven times fewer prompts, at the cost of the checks seeing each other's answers. Drop Word Form: our inflection code makes those forms, and it flagged 1 of 39 and caught nothing.
+J10. A small set to iterate on: the 4 ✕, the ◐, and ~10 of your ✓ chosen to cover the traps seen so far (negative, question, "this"/"that", possessive, past action). A run takes a minute or two; the full 44 only when the small set looks right.
+J11. ✕ cases made by code, labelled by construction, so the test isn't only the four age samples the prompt was tuned on: a wrong inflection ("gived"), a wrong kind of filler (an idea as holder of height), a swapped role (giver and receiver), a dropped word, a tense that implies an impossible change on a different attribute. Kept apart from the prompt: never used as its examples.
+J12. Until checks beat v2 on both sets, Write and Coverage go back to v2, so previews stay fast.
+J13. Recommendation: J8, then J12 at once, then J9 + J10 + J11 together, with one calibration on the small set, and the user looks at the result before any full run.
+
 ## Guardrails
 
 G1. Model output is never a verdict, a choice or a rule until the user accepts it; everywhere it appears it says it's the model's.
@@ -83,10 +113,12 @@ D113a. So prompts are versioned: each prompt lives in a file in the repo, its ha
 D114. Accept one sample at a time; no accept-all until calibration shows high agreement. Answers Q75. (user: yes)
 D115. Enable llm-server at boot. Answers Q76. (user: yes)
 D116. Low reasoning effort for the first pass, compared against medium during calibration. Answers Q77. (user: yes)
+D117. Try narrow checks (J1–J6) in place of the single prompt, and keep them only if calibration beats v2. (user: "Basically going the Jev route, but seeing if we can use a local model for it to save cost and get more data and control." … "let's try the jev thing." Also: "in this case I'm just trying to figure out if sentences make sense", not taste.)
 
 ## Open questions
 
-(none for this note)
+Q78. Plan J8–J13 as recommended in J13? In particular, is J11 (✕ samples made by breaking good ones in code) a fair test, or do you want ✕ cases you write yourself?
+Q79. Back to v2 on Write and Coverage now (J12), before anything else?
 
 ## Superseded
 
