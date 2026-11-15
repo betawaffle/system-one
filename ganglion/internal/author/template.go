@@ -3,6 +3,8 @@ package author
 import (
 	"fmt"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // Template content (09/Z5).
@@ -317,4 +319,16 @@ func Compact(id string, t Template) string {
 	}
 	walk(t.Tree, 2)
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// Sentence is a typed line as saved: trimmed, first letter capitalised (user:
+// "I want it capitalized for real"). Alignment ignores case, so this changes
+// nothing but the text.
+func Sentence(text string) string {
+	text = strings.TrimSpace(text)
+	r, n := utf8.DecodeRuneInString(text)
+	if n == 0 || !unicode.IsLower(r) {
+		return text
+	}
+	return string(unicode.ToUpper(r)) + text[n:]
 }

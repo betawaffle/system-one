@@ -383,7 +383,8 @@ func (s *Server) writeSave(w http.ResponseWriter, r *http.Request) {
 		if strings.TrimSpace(lr.Text) == "" {
 			continue
 		}
-		l := author.Align(lr.Text, req.Meaning, world, x.lex)
+		text := author.Sentence(lr.Text)
+		l := author.Align(text, req.Meaning, world, x.lex)
 		traced := l.Traced(lr.Res)
 		if !req.Draft && (!traced || len(l.Warnings) > 0) {
 			// held back (08/D101): untraced, or the sentence disagrees with the meaning;
@@ -395,8 +396,11 @@ func (s *Server) writeSave(w http.ResponseWriter, r *http.Request) {
 		if how != "pasted" {
 			how = "typed"
 		}
-		ev, err := x.g.AddEvent("sentence", s.cfg.User, "ganglion/write", map[string]any{
-			"text": lr.Text, "how": how, "meaning": req.Meaning, "resolutions": lr.Res, "needs": lr.Needs, "draft": req.Draft, "warnings": l.Warnings})
+		d := map[string]any{"text": text, "how": how, "meaning": req.Meaning, "resolutions": lr.Res, "needs": lr.Needs, "draft": req.Draft, "warnings": l.Warnings}
+		if text != lr.Text {
+			d["typed"] = lr.Text // exactly as typed, before capitalising
+		}
+		ev, err := x.g.AddEvent("sentence", s.cfg.User, "ganglion/write", d)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -405,7 +409,7 @@ func (s *Server) writeSave(w http.ResponseWriter, r *http.Request) {
 		x.meanings[ev] = req.Meaning
 		x.mu.Unlock()
 		if req.Draft {
-			out = append(out, saved{Text: lr.Text, Draft: true})
+			out = append(out, saved{Text: text, Draft: true})
 			continue
 		}
 		t, err := author.Build(l, req.Meaning, world, lr.Res, lr.Needs)
@@ -420,7 +424,7 @@ func (s *Server) writeSave(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), 500)
 			return
 		}
-		out = append(out, saved{ID: id, Text: lr.Text, Compact: author.Compact(id, t)})
+		out = append(out, saved{ID: id, Text: text, Compact: author.Compact(id, t)})
 	}
 	if err := x.reload(); err != nil {
 		http.Error(w, err.Error(), 500)

@@ -77,7 +77,7 @@ function card(it) {
   return h("section", { class: "card", "data-id": it.id },
     h("div", { class: "card-head" },
       h("div", { class: "stack tight" },
-        h("div", { class: "row" }, h("span", { class: "tag" }, it.frame), (it.frozen || []).length ? h("span", { class: "tag" }, "Frozen") : null, h("b", { "data-tip": "Shown capitalised; saved as you typed it" }, cap(it.text))),
+        h("div", { class: "row" }, h("span", { class: "tag" }, it.frame), (it.frozen || []).length ? h("span", { class: "tag" }, "Frozen") : null, h("b", {}, cap(it.text))),
         h("div", { class: "row small muted" },
           h("span", { class: "covbar" }, h("i", { "data-w": pct })),
           `${it.done} of ${it.total} kinds judged`,

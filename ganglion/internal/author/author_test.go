@@ -707,3 +707,11 @@ func TestDimsWithSkippedFillers(t *testing.T) {
 		t.Error("no samples")
 	}
 }
+
+func TestSentence(t *testing.T) {
+	for in, want := range map[string]string{"the table's under the bottle": "The table's under the bottle", "  ana gave lee a chair ": "Ana gave lee a chair", "Is it old?": "Is it old?", "": "", "élan is old": "Élan is old"} {
+		if got := Sentence(in); got != want {
+			t.Errorf("%q: %q", in, got)
+		}
+	}
+}

@@ -85,7 +85,7 @@ func (x *writer) judgeInput(m author.Meaning, line string, s author.Sample, fewS
 	sort.Strings(in.Notes)
 	if fewShot { // off by default until the prompt settles (10/D113)
 		for _, v := range x.verdicts {
-			if v.Line == line && len(in.Examples) < 8 {
+			if strings.EqualFold(v.Line, line) && len(in.Examples) < 8 {
 				in.Examples = append(in.Examples, judge.Example{Text: v.Sample.Text, Verdict: describe(v)})
 			}
 		}

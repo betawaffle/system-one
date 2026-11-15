@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"sort"
+	"strings"
 
 	"ganglion/internal/author"
 	"ganglion/internal/grammar"
@@ -25,15 +26,21 @@ func (x *writer) noteMeaning(id string, d map[string]any) {
 // with the same shape becomes a new version of it ("Lee is shorter than Noor"
 // after "Ana is older than Noor"), and verdicts on either count (08/W9f).
 func (x *writer) sources(id string) []string {
-	seen := map[string]bool{}
+	// one entry per sentence whatever its case, in its latest spelling
+	seen := map[string]int{}
 	var out []string
 	for _, v := range x.g.History(id) {
 		if v.Why == "retire" {
 			continue
 		}
 		var t author.Template
-		if b, err := x.g.Object(v.Hash); err == nil && json.Unmarshal(b, &t) == nil && t.Source.Text != "" && !seen[t.Source.Text] {
-			seen[t.Source.Text] = true
+		if b, err := x.g.Object(v.Hash); err == nil && json.Unmarshal(b, &t) == nil && t.Source.Text != "" {
+			k := strings.ToLower(t.Source.Text)
+			if i, ok := seen[k]; ok {
+				out[i] = t.Source.Text
+				continue
+			}
+			seen[k] = len(out)
 			out = append(out, t.Source.Text)
 		}
 	}
@@ -43,11 +50,11 @@ func (x *writer) sources(id string) []string {
 func (x *writer) judged(lines []string) map[string]map[string]bool {
 	in := map[string]bool{}
 	for _, l := range lines {
-		in[l] = true
+		in[strings.ToLower(l)] = true // verdicts made before a sentence was capitalised still count
 	}
 	out := map[string]map[string]bool{}
 	for _, v := range x.verdicts {
-		if !in[v.Line] {
+		if !in[strings.ToLower(v.Line)] {
 			continue
 		}
 		for k, val := range author.ComboOf(v.Sample, x.world) {
@@ -257,7 +264,7 @@ func (s *Server) coverageJudged(w http.ResponseWriter, r *http.Request) {
 
 func inLines(l string, lines []string) bool {
 	for _, x := range lines {
-		if x == l {
+		if strings.EqualFold(x, l) {
 			return true
 		}
 	}
