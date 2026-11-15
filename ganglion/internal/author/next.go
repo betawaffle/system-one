@@ -105,8 +105,8 @@ func nextAt(w *World, n int, frameID string) (Meaning, error) {
 			continue
 		}
 		pool := w.EntitiesOf(r.Type)
-		if r.Name == "place" { // somewhere a relation fits (06/F6a)
-			pool = placeable(pool, w)
+		if r.Name == "place" { // somewhere a relation fits, by type and size (06/F6a, F6e)
+			pool = placeable(pool, w, w.Entities[m.Roles["thing"].Entity])
 		}
 		// people when the frame allows them, so names make alignment exact (03/A1)
 		var people []string
@@ -169,6 +169,9 @@ func nextAt(w *World, n int, frameID string) (Meaning, error) {
 					vals = append(vals, v)
 				}
 			}
+			if len(vals) == 0 {
+				return Meaning{}, fmt.Errorf("no relation fits %s and %s", th.Noun, pl.Noun)
+			}
 			m.Roles[r.Name] = Filler{Value: &Value{Attribute: a.Name, Value: vals[((n/stride)*2+end)%len(vals)]}}
 		} else if id == "frame:compare" {
 			m.Roles[r.Name] = Filler{Value: &Value{Attribute: a.Name, Dir: []string{"more", "less"}[end]}}
@@ -199,16 +202,28 @@ func gcd(a, b int) int {
 	return a
 }
 
-// placeable keeps entities some relation fits: places, containers, surfaces.
-func placeable(pool []string, w *World) []string {
+// placeable keeps entities that some relation fits, by type and, when the
+// thing is known, by size: places, containers, surfaces.
+func placeable(pool []string, w *World, thing Entity) []string {
 	var out []string
 	for _, id := range pool {
-		t := w.Entities[id].Type
+		pl := w.Entities[id]
+		if !w.Fits(pl, "physical") {
+			continue
+		}
+		fits := false
 		for _, a := range w.Attributes {
-			if a.Kind == "relation" && a.Applies(t, w) {
-				out = append(out, id)
-				break
+			if a.Kind != "relation" || !a.Applies(pl.Type, w) {
+				continue
 			}
+			for _, v := range a.Scale {
+				if a.HasWord(v, pl.Type, w) && (thing.Type == "" || w.FitsIn(thing, pl, v)) {
+					fits = true
+				}
+			}
+		}
+		if fits {
+			out = append(out, id)
 		}
 	}
 	return out

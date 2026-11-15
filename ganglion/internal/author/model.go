@@ -164,21 +164,21 @@ func (w *World) SizeRank(e Entity) int {
 	return sizeRank[e.Size]
 }
 
-// FitsIn reports whether a thing can be in, on, under or near a place by size
-// (06/F6e): in and under need it smaller, on needs it no bigger; near always
-// fits, and so does anything without a size.
+// FitsIn reports whether a thing sits naturally in, on, under or near a place
+// by size (06/F6e). In needs it smaller: anything else can't happen. The
+// others need it no bigger: "the table is under the bottle" is true when the
+// bottle is on it, but backwards, since we place the smaller thing relative
+// to the bigger one (user: "valid, but a weird way to write it"). Anything
+// without a size fits.
 func (w *World) FitsIn(thing, place Entity, relation string) bool {
 	a, b := w.SizeRank(thing), w.SizeRank(place)
 	if a == 0 || b == 0 {
 		return true
 	}
-	switch relation {
-	case "in", "under":
+	if relation == "in" {
 		return a < b
-	case "on":
-		return a <= b
 	}
-	return true
+	return a <= b
 }
 
 // Display is how an entity is written in tags and the meaning card.

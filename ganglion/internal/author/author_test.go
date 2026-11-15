@@ -607,7 +607,7 @@ func TestSizes(t *testing.T) {
 		th, pl, rel string
 		ok          bool
 	}{{"chair", "bottle", "in", false}, {"book", "box", "in", true}, {"box", "table", "on", true}, {"table", "chair", "on", false},
-		{"ladder", "cup", "near", true}, {"dog", "park", "in", true}, {"apple", "cup", "in", false}, {"book", "table", "under", true}} {
+		{"ladder", "cup", "near", false}, {"cup", "ladder", "near", true}, {"box", "chair", "under", true}, {"table", "bottle", "under", false}, {"dog", "park", "in", true}, {"apple", "cup", "in", false}, {"book", "table", "under", true}} {
 		if got := w.FitsIn(e(c.th), e(c.pl), c.rel); got != c.ok {
 			t.Errorf("%s %s %s: %v", c.th, c.rel, c.pl, got)
 		}
