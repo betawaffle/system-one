@@ -12,11 +12,15 @@ Index; detail lives in the topic notes. Numbers continue the global series in `d
 - sd/05 inflection: D74 rules propose, look up at generation, vet as needed, D75 WordNet + CMUdict, clean licence (no share-alike), D76 explicit pronoun sets (amends sd/02/L2), D77 style features, US default, D78 first verb-group scope, D79 retroactive fixes and doubt flags, no pre-vetting, D80 unsupported verb groups saved frozen and usable.
 
 - sd/06 first frames: D81 frames F1–F6, D82 properties as attribute + value, D83 "not old" ≠ "new", D84 adjective order by code, D85 starting types and attributes.
+- sd/07 storage: D86 authoring events and model calls logged per the capture requirements.
 
 ## Open questions (all)
 
-(none)
+- Q59 content-addressed versions, heads, snapshots (sd/07/V, N). Lean yes.
+- Q60 datasets as recipes plus rows with derivations; regenerate, don't patch (sd/07/G). Lean yes.
+- Q61 authored sentences into the utterance store as kind `authored` (sd/07/U1). Lean yes.
+- Q62 one logged model-call path in the Go server (sd/07/M2). Lean yes.
 
 ## Future topics (all)
 
-T10 world model (sd/00). T11 modals, passive, more aspects (sd/05). T12 coordination agreement (sd/05). T13 superlatives, T14 generics, T15 existentials, T16 numbers and quantities (sd/06).
+T10 world model (sd/00). T11 modals, passive, more aspects (sd/05). T12 coordination agreement (sd/05). T13 superlatives, T14 generics, T15 existentials, T16 numbers and quantities (sd/06). T17 publishing the grammar (sd/07).
