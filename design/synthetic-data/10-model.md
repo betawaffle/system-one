@@ -94,6 +94,13 @@ J9. One call per sample, with every question as its own field in a fixed order, 
 J10. A small set to iterate on: the 4 ✕, the ◐, and ~10 of your ✓ chosen to cover the traps seen so far (negative, question, "this"/"that", possessive, past action). A run takes a minute or two; the full 44 only when the small set looks right.
 J11. ✕ cases made by code, labelled by construction, so the test isn't only the four age samples the prompt was tuned on: a wrong inflection ("gived"), a wrong kind of filler (an idea as holder of height), a swapped role (giver and receiver), a dropped word, a tense that implies an impossible change on a different attribute. Kept apart from the prompt: never used as its examples.
 J12. Until checks beat v2 on both sets, Write and Coverage go back to v2, so previews stay fast.
+J14. Jev as the baseline (user: "Maybe we try using Jev as a baseline?"). Jev (typesafe.ai) takes a *state* plus typed questions in one request, answers them in parallel, with probabilities and a confidence, no reasoning. That is J9's shape exactly. Its pieces:
+  - State: the sample card the local model sees now (meaning, roles, the authored sentence, the sample, its tags, what's already recorded).
+  - Questions, all in one request: each check as a yes/no Choice with a description per option, plus one direct verdict Choice (✓, ◐ context, ◐ implies, and the six ✕ reasons) for comparison.
+  - Code makes the verdict from the checks (J3); the direct verdict is shown beside it. Calibration gets a third column, and the probabilities give a threshold to tune instead of low/medium/high.
+  - Logged like every model call (CAPTURE-REQUIREMENTS): what was sent, what came back, the model version from the response (`jev-1.x`), and tokens.
+  - Needs: an API key (`TYPESAFE_API_KEY`, from console.typesafe.ai), and the user's OK to send samples out. They're generated sentences with seed names, nothing personal. Price per the site: $42 per billion input tokens; 44 samples is ~25k tokens, about a tenth of a cent.
+  - −: an outside service, in early access; we can't see why it decided (no reasoning to read under Why?).
 J13. Recommendation: J8, then J12 at once, then J9 + J10 + J11 together, with one calibration on the small set, and the user looks at the result before any full run.
 
 ## Guardrails
@@ -119,6 +126,7 @@ D117. Try narrow checks (J1–J6) in place of the single prompt, and keep them o
 
 Q78. Plan J8–J13 as recommended in J13? In particular, is J11 (✕ samples made by breaking good ones in code) a fair test, or do you want ✕ cases you write yourself?
 Q79. Back to v2 on Write and Coverage now (J12), before anything else?
+Q80. Jev baseline (J14): where's the API key kept (I lean an env file read by the ganglion service, outside the repo), and OK to send the 44 judged samples plus the J11 broken ones? I lean running it on the small set (J10) first, the same as the local model.
 
 ## Superseded
 
