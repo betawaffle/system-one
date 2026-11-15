@@ -77,6 +77,7 @@ R1a. The label API only takes same-origin JSON (a form post or a cross-site requ
 R2. User's example of fineweb's quality (0ee47e132e): "missing spaces after periods, there's no structure to how it's formatted… it's awful". fineweb scored it 3.5 (int 4, above this shard's mean of 3.0). Measured without reading it: 31% of lines end like sentences, repeated lines; 4 of its sentences had entered prose-v2.
 R3. Document features shown on each document sample, and saved with its label: missing-space joins ("word.Next"), share of lines ending like sentences, repeated lines, word variety. Software measures; the person, and later a model, judges.
 R4. Sentence rule r3 rejects missing-space joins. Across the fineweb sample: 45,484 documents have none, 2,240 have 1–2, 363 have 3–9, 104 have 10 or more. The user's example has none of this form, so its missing spaces take another shape (not yet identified; text not read here, per F3).
+R5. prose-v2 rebuilt with r3: PR-author sentences 25,537 → 24,258 (the rule hits issue text most), fineweb still at its 150k cap (1.56M candidates), yours 2,788 → 2,787 and mine 24,200 → 24,115.
 
 ## Decided
 
